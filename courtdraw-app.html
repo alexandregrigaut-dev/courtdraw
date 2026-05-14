@@ -1,0 +1,1896 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>CourtDraw — Tactics Board</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="CourtDraw">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css?family=cabinet-grotesk:700,900|satoshi:400,500,700" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f172a; --surface: #1e293b; --surface2: #293548;
+  --border: #334155; --text: #f8fafc; --text2: #94a3b8;
+  --accent: #22c55e; --accent-dim: rgba(34,197,94,0.15);
+  --red: #ef4444; --blue: #3b82f6;
+  --header-h: 56px; --toolbar-h: 68px;
+  --radius: 10px; --transition: 0.18s ease;
+}
+[data-theme="light"] {
+  --bg: #f1f5f9; --surface: #ffffff; --surface2: #f8fafc;
+  --border: #e2e8f0; --text: #0f172a; --text2: #64748b;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Satoshi', system-ui, sans-serif;
+  background: var(--bg); color: var(--text);
+  display: flex; flex-direction: column;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none; -webkit-user-select: none;
+}
+button {
+  border: none; background: none; cursor: pointer;
+  font-family: inherit; color: inherit;
+  touch-action: manipulation;
+}
+/* ── Header ── */
+#app-header {
+  height: var(--header-h); min-height: var(--header-h);
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px; gap: 8px; z-index: 10;
+}
+#logo-wrap { display: flex; align-items: center; gap: 8px; }
+#logo-svg { width: 28px; height: 28px; }
+.app-title {
+  font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+  font-weight: 900; font-size: 18px;
+  background: linear-gradient(135deg, var(--accent) 0%, #86efac 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+#court-name-chip {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 20px; padding: 4px 12px;
+  font-size: 12px; font-weight: 500; color: var(--text2);
+  cursor: pointer; transition: var(--transition);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 140px;
+}
+#court-name-chip:hover { border-color: var(--accent); color: var(--accent); }
+.header-right { display: flex; align-items: center; gap: 4px; }
+.hdr-btn {
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; transition: var(--transition);
+  color: var(--text2);
+}
+.hdr-btn:hover { background: var(--surface2); color: var(--text); }
+.hdr-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+#pro-badge {
+  background: var(--accent-dim); border: 1px solid var(--accent);
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 11px; font-weight: 700; color: var(--accent);
+  letter-spacing: 0.05em; cursor: pointer;
+}
+#pro-badge.free-badge {
+  background: rgba(148,163,184,0.1); border-color: var(--border);
+  color: var(--text2);
+}
+/* ── Board area ── */
+#board-area {
+  flex: 1; overflow: hidden; position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+#court-container {
+  position: relative; width: 100%; height: 100%;
+}
+#court-svg {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  transition: opacity 0.25s ease;
+}
+#court-svg.switching { opacity: 0; }
+#drawing-canvas {
+  position: absolute; cursor: crosshair;
+  touch-action: none;
+}
+#token-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+/* ── Player tokens ── */
+.player-token {
+  position: absolute; width: 40px; height: 40px;
+  border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 11px; font-weight: 700;
+  cursor: grab; pointer-events: all; z-index: 5;
+  transition: transform 0.1s, box-shadow 0.1s;
+  border: 2.5px solid rgba(255,255,255,0.7);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  color: white; line-height: 1;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+.player-token.team-red { background: #dc2626; }
+.player-token.team-blue { background: #1d4ed8; }
+.player-token:active { cursor: grabbing; transform: translate(-50%,-50%) scale(1.15); box-shadow: 0 4px 16px rgba(0,0,0,0.6); }
+.ball-token { background: #f8fafc; border-color: #334155; color: #0f172a; }
+/* ── Toolbar ── */
+#toolbar {
+  height: var(--toolbar-h); min-height: var(--toolbar-h);
+  background: var(--surface); border-top: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 8px;
+  gap: 4px; overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; z-index: 10;
+}
+#toolbar::-webkit-scrollbar { display: none; }
+.tool-sep { width: 1px; min-width: 1px; height: 32px; background: var(--border); margin: 0 4px; }
+.tb-btn {
+  min-width: 44px; height: 44px; border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 2px; padding: 0 8px;
+  font-size: 10px; color: var(--text2); transition: var(--transition);
+  white-space: nowrap; flex-shrink: 0;
+}
+.tb-btn .icon { font-size: 18px; line-height: 1; }
+.tb-btn:hover { background: var(--surface2); color: var(--text); }
+.tb-btn.active { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); }
+.tb-btn.pro-lock { opacity: 0.6; }
+.tb-btn.pro-lock::after { content: '🔒'; font-size: 8px; position: absolute; top: 4px; right: 4px; }
+.color-dot {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 2.5px solid transparent; cursor: pointer; flex-shrink: 0;
+  transition: transform 0.12s, border-color 0.12s;
+}
+.color-dot:hover { transform: scale(1.15); }
+.color-dot.active { border-color: white; transform: scale(1.1); }
+#lw-slider { width: 60px; flex-shrink: 0; accent-color: var(--accent); }
+/* ── Modals ── */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  display: none; align-items: flex-end; justify-content: center;
+}
+.modal-backdrop.open { display: flex; animation: fadein 0.18s ease; }
+@keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+@media (min-width: 600px) {
+  .modal-backdrop { align-items: center; }
+}
+.modal-sheet {
+  background: var(--surface); border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 640px; max-height: 90vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
+  overflow: hidden;
+}
+@media (min-width: 600px) {
+  .modal-sheet { border-radius: 20px; max-height: 80vh; }
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 12px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-title { font-family: 'Cabinet Grotesk', system-ui, sans-serif; font-weight: 700; font-size: 18px; }
+.modal-close { width: 32px; height: 32px; border-radius: 8px; font-size: 18px; color: var(--text2); display: flex; align-items: center; justify-content: center; }
+.modal-close:hover { background: var(--surface2); color: var(--text); }
+.modal-body { overflow-y: auto; flex: 1; padding: 16px 20px; }
+.modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
+/* Court picker */
+#court-search {
+  width: 100%; padding: 10px 14px; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-size: 14px; font-family: inherit;
+  outline: none; margin-bottom: 16px;
+}
+#court-search:focus { border-color: var(--accent); }
+.court-category { margin-bottom: 20px; }
+.cat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text2); margin-bottom: 8px; }
+.court-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+.court-card {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 10px 8px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  transition: var(--transition); text-align: center;
+}
+.court-card:hover { border-color: var(--accent); background: var(--accent-dim); }
+.court-card.active { border-color: var(--accent); background: var(--accent-dim); }
+.court-card.locked { opacity: 0.55; }
+.court-card svg { width: 48px; height: 30px; }
+.court-card-name { font-size: 11px; font-weight: 500; line-height: 1.2; color: var(--text); }
+.free-pill { font-size: 9px; background: var(--accent-dim); color: var(--accent); border-radius: 4px; padding: 1px 5px; font-weight: 700; }
+/* Tactic library */
+.tactic-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px; background: var(--surface2); border-radius: 10px;
+  margin-bottom: 8px; border: 1px solid var(--border);
+}
+.tactic-info { flex: 1; min-width: 0; }
+.tactic-name { font-weight: 600; font-size: 14px; }
+.tactic-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.tactic-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.tac-btn { padding: 6px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; }
+.tac-btn.load { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); }
+.tac-btn.del { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text2); }
+.empty-state .es-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+.save-bar { display: flex; gap: 8px; }
+.save-bar input {
+  flex: 1; padding: 10px 14px; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-size: 14px; font-family: inherit; outline: none;
+}
+.save-bar input:focus { border-color: var(--accent); }
+.btn-accent {
+  padding: 10px 20px; border-radius: 10px;
+  background: var(--accent); color: #0f172a;
+  font-weight: 700; font-size: 14px; cursor: pointer;
+  transition: var(--transition); border: none;
+}
+.btn-accent:hover { filter: brightness(1.1); }
+/* Paywall */
+#modal-paywall .modal-sheet { max-width: 480px; }
+.paywall-hero { text-align: center; padding: 8px 0 16px; }
+.paywall-hero .pw-icon { font-size: 48px; }
+.paywall-hero h2 { font-family: 'Cabinet Grotesk', system-ui, sans-serif; font-size: 24px; font-weight: 900; margin: 8px 0 4px; }
+.paywall-hero p { color: var(--text2); font-size: 14px; line-height: 1.5; }
+.pw-features { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+.pw-features li { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.pw-features li::before { content: '✓'; color: var(--accent); font-weight: 700; flex-shrink: 0; }
+.pw-plans { display: flex; flex-direction: column; gap: 8px; }
+.pw-plan {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--border);
+  cursor: pointer; transition: var(--transition); text-decoration: none; color: inherit;
+}
+.pw-plan:hover { border-color: var(--accent); background: var(--accent-dim); }
+.pw-plan.featured { border-color: var(--accent); background: var(--accent-dim); }
+.pw-plan-name { font-weight: 700; font-size: 15px; }
+.pw-plan-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.pw-plan-price { font-weight: 900; font-size: 18px; color: var(--accent); }
+.pw-plan-price small { font-size: 12px; font-weight: 500; color: var(--text2); }
+/* Text input floating */
+#text-input-wrap {
+  position: fixed; z-index: 200; display: none;
+}
+#text-input-wrap.show { display: block; }
+#text-input-field {
+  background: var(--surface); border: 2px solid var(--accent);
+  border-radius: 8px; padding: 6px 10px; color: var(--text);
+  font-size: 14px; font-family: inherit; outline: none;
+  min-width: 140px; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+/* Confirm dialog */
+#modal-confirm .modal-sheet { max-width: 380px; }
+.confirm-body { text-align: center; padding: 8px 0 16px; }
+.confirm-body p { color: var(--text2); font-size: 14px; line-height: 1.5; margin-top: 8px; }
+.confirm-actions { display: flex; gap: 10px; }
+.btn-danger { flex: 1; padding: 12px; border-radius: 10px; background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); font-weight: 700; font-size: 14px; cursor: pointer; }
+.btn-cancel { flex: 1; padding: 12px; border-radius: 10px; background: var(--surface2); color: var(--text); border: 1px solid var(--border); font-weight: 600; font-size: 14px; cursor: pointer; }
+/* Toast */
+#toast {
+  position: fixed; bottom: calc(var(--toolbar-h) + 12px); left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 8px 16px; font-size: 13px; font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4); opacity: 0;
+  transition: opacity 0.2s, transform 0.2s; z-index: 300; white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* Pro-lock glow on hover */
+.pro-gate { position: relative; }
+/* Responsive */
+@media (max-width: 480px) {
+  .app-title { display: none; }
+  #court-name-chip { max-width: 110px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header id="app-header">
+  <div id="logo-wrap">
+    <svg id="logo-svg" viewBox="0 0 28 28" fill="none">
+      <rect x="1" y="1" width="26" height="26" rx="5" stroke="#22c55e" stroke-width="2"/>
+      <line x1="14" y1="1" x2="14" y2="27" stroke="#22c55e" stroke-width="1.5"/>
+      <line x1="1" y1="14" x2="27" y2="14" stroke="#22c55e" stroke-width="1.5"/>
+      <rect x="5" y="5" width="7" height="7" rx="1" fill="none" stroke="#22c55e" stroke-width="1" opacity="0.5"/>
+      <rect x="16" y="16" width="7" height="7" rx="1" fill="none" stroke="#22c55e" stroke-width="1" opacity="0.5"/>
+    </svg>
+    <span class="app-title">CourtDraw</span>
+  </div>
+  <button id="court-name-chip" onclick="openCourtPicker()">Tennis (Singles)</button>
+  <div class="header-right">
+    <button class="hdr-btn" id="btn-undo" title="Undo" onclick="undo()">↩</button>
+    <button class="hdr-btn" id="btn-redo" title="Redo" onclick="redo()">↪</button>
+    <button class="hdr-btn" id="btn-theme" title="Toggle theme" onclick="toggleTheme()">☀</button>
+    <button id="pro-badge" class="free-badge" onclick="openPaywall()">FREE</button>
+  </div>
+</header>
+
+<!-- Board -->
+<main id="board-area">
+  <div id="court-container">
+    <svg id="court-svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
+    <canvas id="drawing-canvas"></canvas>
+    <div id="token-layer"></div>
+  </div>
+</main>
+
+<!-- Toolbar -->
+<div id="toolbar">
+  <!-- Drawing tools -->
+  <button class="tb-btn active" data-tool="arrow" title="Arrow" onclick="setTool('arrow')">
+    <span class="icon">↗</span><span>Arrow</span>
+  </button>
+  <button class="tb-btn" data-tool="dashed-arrow" title="Dashed Arrow" onclick="setTool('dashed-arrow')">
+    <span class="icon">⤳</span><span>Dash</span>
+  </button>
+  <button class="tb-btn" data-tool="line" title="Line" onclick="setTool('line')">
+    <span class="icon">╱</span><span>Line</span>
+  </button>
+  <button class="tb-btn" data-tool="arc" title="Curved Arrow" onclick="setTool('arc')">
+    <span class="icon">↪</span><span>Curve</span>
+  </button>
+  <button class="tb-btn" data-tool="circle" title="Zone Circle" onclick="setTool('circle')">
+    <span class="icon">◯</span><span>Circle</span>
+  </button>
+  <button class="tb-btn" data-tool="rect" title="Zone Rectangle" onclick="setTool('rect')">
+    <span class="icon">▭</span><span>Zone</span>
+  </button>
+  <button class="tb-btn" data-tool="text" title="Text Label" onclick="setTool('text')">
+    <span class="icon">T</span><span>Text</span>
+  </button>
+  <button class="tb-btn" data-tool="eraser" title="Eraser" onclick="setTool('eraser')">
+    <span class="icon">⌫</span><span>Erase</span>
+  </button>
+  <div class="tool-sep"></div>
+  <!-- Colors -->
+  <div id="color-dots" style="display:flex;align-items:center;gap:6px;padding:0 4px;flex-shrink:0;"></div>
+  <div class="tool-sep"></div>
+  <!-- Actions -->
+  <button class="tb-btn" title="Clear board" onclick="confirmClear()">
+    <span class="icon">🗑</span><span>Clear</span>
+  </button>
+  <button class="tb-btn" title="Court picker" onclick="openCourtPicker()">
+    <span class="icon">⚽</span><span>Courts</span>
+  </button>
+  <button class="tb-btn" title="Save tactic" onclick="openSaveDialog()">
+    <span class="icon">💾</span><span>Save</span>
+  </button>
+  <button class="tb-btn" title="Tactic library" onclick="openLibrary()">
+    <span class="icon">📚</span><span>Library</span>
+  </button>
+  <button class="tb-btn" title="Export PNG" onclick="exportPNG()">
+    <span class="icon">⬇</span><span>Export</span>
+  </button>
+</div>
+
+<!-- Modal: Court Picker -->
+<div class="modal-backdrop" id="modal-court-picker">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title">Choose Sport</span>
+      <button class="modal-close" onclick="closeModal('modal-court-picker')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="search" id="court-search" placeholder="Search sport..." oninput="filterCourts(this.value)" autocomplete="off">
+      <div id="court-grid-container"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Tactic Library -->
+<div class="modal-backdrop" id="modal-library">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title">Tactic Library</span>
+      <button class="modal-close" onclick="closeModal('modal-library')">✕</button>
+    </div>
+    <div class="modal-body" id="library-body"></div>
+    <div class="modal-footer">
+      <div class="save-bar">
+        <input type="text" id="tactic-name-input" placeholder="Name this play…" maxlength="40">
+        <button class="btn-accent" onclick="saveTactic()">Save Play</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Paywall -->
+<div class="modal-backdrop" id="modal-paywall">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title">Upgrade to Pro</span>
+      <button class="modal-close" onclick="closeModal('modal-paywall')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="paywall-hero">
+        <div class="pw-icon">⚡</div>
+        <h2>Unlock Everything</h2>
+        <p id="paywall-reason">Upgrade to Pro to unlock all 37+ sport courts and unlimited saves.</p>
+      </div>
+      <ul class="pw-features">
+        <li>All 37+ sport courts unlocked</li>
+        <li>Unlimited tactic saves</li>
+        <li>PDF playbook export (no watermark)</li>
+        <li>Custom player names &amp; numbers</li>
+        <li>Step-through animation mode</li>
+        <li>Team sharing link</li>
+      </ul>
+      <div class="pw-plans">
+        <a href="#stripe-pro" class="pw-plan featured" onclick="closeModal('modal-paywall')">
+          <!-- REPLACE href="#stripe-pro" with your Stripe Payment Link before launch -->
+          <div>
+            <div class="pw-plan-name">Pro Monthly</div>
+            <div class="pw-plan-sub">Everything unlocked</div>
+          </div>
+          <div class="pw-plan-price">€6<small>/mo</small></div>
+        </a>
+        <a href="#stripe-pro-yearly" class="pw-plan" onclick="closeModal('modal-paywall')">
+          <!-- REPLACE href="#stripe-pro-yearly" with your Stripe yearly Payment Link -->
+          <div>
+            <div class="pw-plan-name">Pro Yearly</div>
+            <div class="pw-plan-sub">Save 32%</div>
+          </div>
+          <div class="pw-plan-price">€49<small>/yr</small></div>
+        </a>
+        <a href="#stripe-club" class="pw-plan" onclick="closeModal('modal-paywall')">
+          <!-- REPLACE href="#stripe-club" with your Stripe Club Payment Link -->
+          <div>
+            <div class="pw-plan-name">Club License</div>
+            <div class="pw-plan-sub">10 coaches · shared library · white-label</div>
+          </div>
+          <div class="pw-plan-price">€99<small>/yr</small></div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirm clear -->
+<div class="modal-backdrop" id="modal-confirm">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title">Clear Board</span>
+      <button class="modal-close" onclick="closeModal('modal-confirm')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="confirm-body">
+        <div style="font-size:36px">🗑</div>
+        <p>Clear all drawings? Player tokens will stay in place.</p>
+      </div>
+      <div class="confirm-actions">
+        <button class="btn-cancel" onclick="closeModal('modal-confirm')">Cancel</button>
+        <button class="btn-danger" onclick="clearBoard(); closeModal('modal-confirm')">Clear</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floating text input -->
+<div id="text-input-wrap">
+  <input type="text" id="text-input-field" placeholder="Add label…" maxlength="30">
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// COURTS DATA
+// ══════════════════════════════════════════════
+const COURTS = [
+  // ── RACKET SPORTS ──
+  {
+    id:'tennis_singles', name:'Tennis (Singles)', category:'racket', free:true,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d5a3e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#1a3a2a"/>
+      <rect x="70" y="151" width="860" height="298" fill="#2d5a3e"/>
+      <rect x="70" y="151" width="860" height="298" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="151" x2="500" y2="449" stroke="rgba(255,255,255,0.5)" stroke-width="6" stroke-dasharray="8,5"/>
+      <line x1="268" y1="151" x2="268" y2="449" stroke="white" stroke-width="2"/>
+      <line x1="732" y1="151" x2="732" y2="449" stroke="white" stroke-width="2"/>
+      <line x1="268" y1="300" x2="500" y2="300" stroke="white" stroke-width="2"/>
+      <line x1="500" y1="300" x2="732" y2="300" stroke="white" stroke-width="2"/>
+      <line x1="70" y1="295" x2="70" y2="305" stroke="white" stroke-width="3"/>
+      <line x1="930" y1="295" x2="930" y2="305" stroke="white" stroke-width="3"/>
+      <text x="500" y="548" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">TENNIS — SINGLES</text>`}
+  },
+  {
+    id:'tennis_doubles', name:'Tennis (Doubles)', category:'racket', free:true,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d5a3e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/><line x1="5" y1="2" x2="5" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="43" y1="2" x2="43" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#1a3a2a"/>
+      <rect x="70" y="102" width="860" height="396" fill="#2d5a3e"/>
+      <rect x="70" y="102" width="860" height="396" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="120" y1="102" x2="120" y2="498" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <line x1="880" y1="102" x2="880" y2="498" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <line x1="500" y1="102" x2="500" y2="498" stroke="rgba(255,255,255,0.5)" stroke-width="6" stroke-dasharray="8,5"/>
+      <line x1="268" y1="152" x2="268" y2="448" stroke="white" stroke-width="2"/>
+      <line x1="732" y1="152" x2="732" y2="448" stroke="white" stroke-width="2"/>
+      <line x1="120" y1="152" x2="880" y2="152" stroke="white" stroke-width="2"/>
+      <line x1="120" y1="448" x2="880" y2="448" stroke="white" stroke-width="2"/>
+      <line x1="268" y1="300" x2="500" y2="300" stroke="white" stroke-width="2"/>
+      <line x1="500" y1="300" x2="732" y2="300" stroke="white" stroke-width="2"/>
+      <line x1="70" y1="295" x2="70" y2="305" stroke="white" stroke-width="3"/>
+      <line x1="930" y1="295" x2="930" y2="305" stroke="white" stroke-width="3"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">TENNIS — DOUBLES</text>`}
+  },
+  {
+    id:'padel', name:'Padel', category:'racket', free:true,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1a4a6e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="#7dd3fc" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="15" y1="2" x2="15" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="33" y1="2" x2="33" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="2" y1="15" x2="15" y2="15" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="33" y1="15" x2="46" y2="15" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#0d2233"/>
+      <rect x="70" y="85" width="860" height="430" fill="#1a4a6e"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="#7dd3fc" stroke-width="3"/>
+      <line x1="500" y1="85" x2="500" y2="515" stroke="white" stroke-width="3"/>
+      <line x1="371" y1="85" x2="371" y2="515" stroke="white" stroke-width="2"/>
+      <line x1="629" y1="85" x2="629" y2="515" stroke="white" stroke-width="2"/>
+      <line x1="70" y1="300" x2="371" y2="300" stroke="white" stroke-width="2"/>
+      <line x1="629" y1="300" x2="930" y2="300" stroke="white" stroke-width="2"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="#7dd3fc" stroke-width="5" rx="0"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">PADEL</text>`}
+  },
+  {
+    id:'pickleball', name:'Pickleball', category:'racket', free:true,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1a4a6e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="16" y1="2" x2="16" y2="28" stroke="rgba(255,255,255,0.7)" stroke-width="1"/><line x1="32" y1="2" x2="32" y2="28" stroke="rgba(255,255,255,0.7)" stroke-width="1"/><rect x="16" y="9" width="16" height="12" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/><line x1="2" y1="15" x2="16" y2="15" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="32" y1="15" x2="46" y2="15" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#0d2233"/>
+      <rect x="70" y="104" width="860" height="392" fill="#1a4a6e"/>
+      <rect x="70" y="104" width="860" height="392" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="104" x2="500" y2="496" stroke="white" stroke-width="3"/>
+      <line x1="363" y1="104" x2="363" y2="496" stroke="white" stroke-width="2"/>
+      <line x1="637" y1="104" x2="637" y2="496" stroke="white" stroke-width="2"/>
+      <rect x="363" y="104" width="274" height="392" fill="rgba(255,255,255,0.06)"/>
+      <line x1="70" y1="300" x2="363" y2="300" stroke="white" stroke-width="2"/>
+      <line x1="637" y1="300" x2="930" y2="300" stroke="white" stroke-width="2"/>
+      <text x="500" y="556" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">PICKLEBALL</text>`}
+  },
+  {
+    id:'badminton_singles', name:'Badminton (Singles)', category:'racket', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#5c3a1e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="15" y1="7" x2="15" y2="23" stroke="rgba(255,255,255,0.7)" stroke-width="1"/><line x1="33" y1="7" x2="33" y2="23" stroke="rgba(255,255,255,0.7)" stroke-width="1"/><line x1="15" y1="15" x2="33" y2="15" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#2a1a0e"/>
+      <rect x="70" y="134" width="860" height="332" fill="#5c3a1e"/>
+      <rect x="70" y="134" width="860" height="332" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="134" x2="500" y2="466" stroke="rgba(255,255,255,0.5)" stroke-width="4" stroke-dasharray="6,4"/>
+      <line x1="373" y1="134" x2="373" y2="466" stroke="white" stroke-width="2"/>
+      <line x1="627" y1="134" x2="627" y2="466" stroke="white" stroke-width="2"/>
+      <line x1="373" y1="300" x2="627" y2="300" stroke="white" stroke-width="2"/>
+      <text x="500" y="548" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">BADMINTON — SINGLES</text>`}
+  },
+  {
+    id:'badminton_doubles', name:'Badminton (Doubles)', category:'racket', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#5c3a1e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="5" y1="5" x2="5" y2="25" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="43" y1="5" x2="43" y2="25" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="15" y1="2" x2="15" y2="28" stroke="rgba(255,255,255,0.7)" stroke-width="1"/><line x1="33" y1="2" x2="33" y2="28" stroke="rgba(255,255,255,0.7)" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#2a1a0e"/>
+      <rect x="70" y="104" width="860" height="392" fill="#5c3a1e"/>
+      <rect x="70" y="104" width="860" height="392" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="120" y1="104" x2="120" y2="496" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+      <line x1="880" y1="104" x2="880" y2="496" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+      <line x1="500" y1="104" x2="500" y2="496" stroke="rgba(255,255,255,0.4)" stroke-width="4" stroke-dasharray="6,4"/>
+      <line x1="373" y1="104" x2="373" y2="496" stroke="white" stroke-width="2"/>
+      <line x1="627" y1="104" x2="627" y2="496" stroke="white" stroke-width="2"/>
+      <line x1="70" y1="134" x2="880" y2="134" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+      <line x1="70" y1="466" x2="880" y2="466" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+      <line x1="373" y1="300" x2="627" y2="300" stroke="white" stroke-width="2"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">BADMINTON — DOUBLES</text>`}
+  },
+  {
+    id:'squash', name:'Squash', category:'racket', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#5c3a1e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="22" y1="2" x2="22" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="29" y1="2" x2="29" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="2" y1="15" x2="46" y2="15" stroke="white" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#2a1a0e"/>
+      <rect x="135" y="60" width="730" height="480" fill="#5c3a1e"/>
+      <rect x="135" y="60" width="730" height="480" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="135" y1="60" x2="865" y2="60" stroke="#ef4444" stroke-width="4"/>
+      <text x="150" y="80" font-family="system-ui" font-size="10" fill="rgba(255,0,0,0.6)">OUT LINE</text>
+      <line x1="135" y1="215" x2="865" y2="215" stroke="white" stroke-width="2"/>
+      <text x="150" y="210" font-family="system-ui" font-size="10" fill="rgba(255,255,255,0.5)">SERVICE LINE</text>
+      <line x1="135" y1="505" x2="865" y2="505" stroke="#f59e0b" stroke-width="3"/>
+      <text x="150" y="526" font-family="system-ui" font-size="10" fill="rgba(245,158,11,0.7)">TIN</text>
+      <line x1="452" y1="215" x2="452" y2="540" stroke="white" stroke-width="2"/>
+      <line x1="452" y1="215" x2="548" y2="215" stroke="white" stroke-width="2"/>
+      <line x1="548" y1="215" x2="548" y2="540" stroke="white" stroke-width="2"/>
+      <rect x="452" y="378" width="96" height="127" fill="rgba(255,255,255,0.05)"/>
+      <rect x="452" y="215" width="96" height="163" fill="rgba(255,255,255,0.05)"/>
+      <line x1="500" y1="60" x2="500" y2="215" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">SQUASH</text>`}
+  },
+  {
+    id:'table_tennis', name:'Table Tennis', category:'racket', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="4" width="44" height="22" fill="#1565c0" rx="1"/><rect x="2" y="4" width="44" height="22" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="4" x2="24" y2="26" stroke="white" stroke-width="1.5" stroke-dasharray="3,2"/><line x1="2" y1="15" x2="46" y2="15" stroke="rgba(255,255,255,0.3)" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#0a1525"/>
+      <rect x="70" y="61" width="860" height="478" fill="#1565c0"/>
+      <rect x="70" y="61" width="860" height="478" fill="none" stroke="white" stroke-width="4"/>
+      <line x1="500" y1="61" x2="500" y2="539" stroke="white" stroke-width="3" stroke-dasharray="10,6"/>
+      <line x1="70" y1="300" x2="930" y2="300" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+      <text x="500" y="575" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">TABLE TENNIS</text>`}
+  },
+  {
+    id:'racquetball', name:'Racquetball', category:'racket', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#5c3a1e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="16" y1="2" x2="16" y2="28" stroke="white" stroke-width="1"/><line x1="26" y1="2" x2="26" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="34" y1="2" x2="34" y2="28" stroke="rgba(255,255,255,0.3)" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#2a1a0e"/>
+      <rect x="70" y="74" width="860" height="452" fill="#5c3a1e"/>
+      <rect x="70" y="74" width="860" height="452" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="330" y1="74" x2="330" y2="526" stroke="white" stroke-width="2.5"/>
+      <line x1="500" y1="74" x2="500" y2="526" stroke="white" stroke-width="2" stroke-dasharray="8,4"/>
+      <line x1="630" y1="74" x2="630" y2="526" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <text x="200" y="560" text-anchor="middle" font-family="system-ui" font-size="11" fill="rgba(255,255,255,0.5)">SERVICE BOX</text>
+      <text x="415" y="560" text-anchor="middle" font-family="system-ui" font-size="11" fill="rgba(255,255,255,0.5)">SERVICE ZONE</text>
+      <text x="500" y="58" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">RACQUETBALL</text>`}
+  },
+  {
+    id:'beach_tennis', name:'Beach Tennis', category:'racket', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#c2a05a" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.5"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#7a5c2e"/>
+      <rect x="70" y="85" width="860" height="430" fill="#c2a05a"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="85" x2="500" y2="515" stroke="white" stroke-width="4"/>
+      <circle cx="490" cy="300" r="5" fill="white"/>
+      <circle cx="510" cy="300" r="5" fill="white"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.6)" font-weight="600">BEACH TENNIS</text>`}
+  },
+
+  // ── INDOOR TEAM ──
+  {
+    id:'handball', name:'Handball', category:'indoor', free:true,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#4a2e1e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><path d="M2,11 A9,9 0 0,1 2,19" fill="none" stroke="white" stroke-width="1.2"/><path d="M46,11 A9,9 0 0,0 46,19" fill="none" stroke="white" stroke-width="1.2"/><path d="M2,8 A13,13 0 0,1 2,22" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1" stroke-dasharray="2,2"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#2a1a0e"/>
+      <rect x="70" y="85" width="860" height="430" fill="#4a2e1e"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="85" x2="500" y2="515" stroke="white" stroke-width="2"/>
+      <circle cx="500" cy="300" r="45" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="37" y="267" width="33" height="66" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <rect x="930" y="267" width="33" height="66" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <path d="M70,139 A129,129 0 0,1 199,268 L199,332 A129,129 0 0,1 70,461" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M930,139 A129,129 0 0,0 801,268 L801,332 A129,129 0 0,0 930,461" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M70,69 A199,199 0 0,1 269,268 L269,332 A199,199 0 0,1 70,531" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="8,5"/>
+      <path d="M930,69 A199,199 0 0,0 731,268 L731,332 A199,199 0 0,0 930,531" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="8,5"/>
+      <circle cx="221" cy="300" r="5" fill="white"/>
+      <circle cx="779" cy="300" r="5" fill="white"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">HANDBALL</text>`}
+  },
+  {
+    id:'futsal', name:'Futsal', category:'indoor', free:true,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#4a2e1e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><circle cx="24" cy="15" r="5" fill="none" stroke="white" stroke-width="1"/><path d="M2,11 A6,6 0 0,1 2,19" fill="none" stroke="white" stroke-width="1.2"/><path d="M46,11 A6,6 0 0,0 46,19" fill="none" stroke="white" stroke-width="1.2"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#2a1a0e"/>
+      <rect x="70" y="85" width="860" height="430" fill="#4a2e1e"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="85" x2="500" y2="515" stroke="white" stroke-width="2"/>
+      <circle cx="500" cy="300" r="43" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M70,171 A129,129 0 0,1 199,300" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M199,300 A129,129 0 0,1 70,429" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M930,429 A129,129 0 0,1 801,300" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M801,300 A129,129 0 0,1 930,171" fill="none" stroke="white" stroke-width="2"/>
+      <line x1="199" y1="171" x2="199" y2="429" stroke="white" stroke-width="2"/>
+      <line x1="801" y1="171" x2="801" y2="429" stroke="white" stroke-width="2"/>
+      <rect x="37" y="272" width="33" height="56" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <rect x="930" y="272" width="33" height="56" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <circle cx="199" cy="300" r="5" fill="white"/>
+      <circle cx="801" cy="300" r="5" fill="white"/>
+      <circle cx="285" cy="300" r="4" fill="white" opacity="0.7"/>
+      <circle cx="715" cy="300" r="4" fill="white" opacity="0.7"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">FUTSAL</text>`}
+  },
+  {
+    id:'basketball_full', name:'Basketball (Full)', category:'indoor', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#6b3f2a" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><circle cx="24" cy="15" r="5" fill="none" stroke="white" stroke-width="1"/><rect x="2" y="9" width="10" height="12" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.6)" stroke-width="0.8"/><rect x="36" y="9" width="10" height="12" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.6)" stroke-width="0.8"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#3a2010"/>
+      <rect x="70" y="70" width="860" height="460" fill="#8B5e3c"/>
+      <rect x="70" y="70" width="860" height="460" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="70" x2="500" y2="530" stroke="white" stroke-width="2"/>
+      <circle cx="500" cy="300" r="60" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="70" y="184" width="178" height="232" fill="rgba(255,255,255,0.07)" stroke="white" stroke-width="2"/>
+      <rect x="752" y="184" width="178" height="232" fill="rgba(255,255,255,0.07)" stroke="white" stroke-width="2"/>
+      <path d="M248,184 A116,116 0 0,1 248,416" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M752,184 A116,116 0 0,0 752,416" fill="none" stroke="white" stroke-width="2"/>
+      <circle cx="159" cy="300" r="8" fill="none" stroke="white" stroke-width="1.5"/>
+      <circle cx="841" cy="300" r="8" fill="none" stroke="white" stroke-width="1.5"/>
+      <path d="M70,76 A224,224 0 0,1 70,524" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="8,5"/>
+      <path d="M930,76 A224,224 0 0,0 930,524" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="8,5"/>
+      <circle cx="500" cy="300" r="4" fill="white"/>
+      <text x="500" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">BASKETBALL</text>`}
+  },
+  {
+    id:'basketball_half', name:'Basketball (Half)', category:'indoor', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="24" height="26" fill="#6b3f2a" rx="1"/><rect x="2" y="2" width="24" height="26" fill="none" stroke="white" stroke-width="1.5"/><rect x="2" y="9" width="10" height="12" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.6)" stroke-width="0.8"/><path d="M26,9 A8,8 0 0,0 26,21" fill="none" stroke="white" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#3a2010"/>
+      <rect x="276" y="70" width="448" height="460" fill="#8B5e3c"/>
+      <rect x="276" y="70" width="448" height="460" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="276" y1="70" x2="276" y2="530" stroke="white" stroke-width="3"/>
+      <rect x="276" y="184" width="178" height="232" fill="rgba(255,255,255,0.07)" stroke="white" stroke-width="2"/>
+      <path d="M454,184 A116,116 0 0,1 454,416" fill="none" stroke="white" stroke-width="2"/>
+      <circle cx="365" cy="300" r="8" fill="none" stroke="white" stroke-width="1.5"/>
+      <path d="M276,76 A224,224 0 0,1 276,524" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="8,5"/>
+      <text x="500" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">BASKETBALL — HALF COURT</text>`}
+  },
+  {
+    id:'volleyball', name:'Volleyball', category:'indoor', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#4a2e1e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.5"/><line x1="14" y1="2" x2="14" y2="28" stroke="rgba(255,255,255,0.4)" stroke-width="1"/><line x1="34" y1="2" x2="34" y2="28" stroke="rgba(255,255,255,0.4)" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#2a1a0e"/>
+      <rect x="70" y="85" width="860" height="430" fill="#5a3a2e"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="85" x2="500" y2="515" stroke="white" stroke-width="4"/>
+      <line x1="357" y1="85" x2="357" y2="515" stroke="white" stroke-width="2" stroke-dasharray="6,4"/>
+      <line x1="643" y1="85" x2="643" y2="515" stroke="white" stroke-width="2" stroke-dasharray="6,4"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-dasharray="4,4"/>
+      <circle cx="490" cy="300" r="5" fill="white"/>
+      <circle cx="510" cy="300" r="5" fill="white"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">VOLLEYBALL</text>`}
+  },
+  {
+    id:'floorball', name:'Floorball', category:'indoor', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1e2a3e" rx="4"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5" rx="4"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><circle cx="24" cy="15" r="4" fill="none" stroke="white" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#0d1525"/>
+      <rect x="70" y="85" width="860" height="430" fill="#1e2a3e" rx="20"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="white" stroke-width="3" rx="20"/>
+      <line x1="500" y1="85" x2="500" y2="515" stroke="white" stroke-width="2"/>
+      <circle cx="500" cy="300" r="45" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M70,247 A53,53 0 0,1 123,300 A53,53 0 0,1 70,353" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M930,247 A53,53 0 0,0 877,300 A53,53 0 0,0 930,353" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="37" y="275" width="33" height="50" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <rect x="930" y="275" width="33" height="50" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">FLOORBALL</text>`}
+  },
+  {
+    id:'korfball', name:'Korfball', category:'indoor', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d5a3e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.5"/><circle cx="12" cy="15" r="3" fill="none" stroke="white" stroke-width="1.2"/><circle cx="36" cy="15" r="3" fill="none" stroke="white" stroke-width="1.2"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#1a3a2a"/>
+      <rect x="70" y="85" width="860" height="430" fill="#2d5a3e"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="85" x2="500" y2="515" stroke="white" stroke-width="2.5"/>
+      <circle cx="285" cy="300" r="18" fill="none" stroke="white" stroke-width="2.5"/>
+      <line x1="285" y1="265" x2="285" y2="225" stroke="white" stroke-width="4"/>
+      <circle cx="715" cy="300" r="18" fill="none" stroke="white" stroke-width="2.5"/>
+      <line x1="715" y1="265" x2="715" y2="225" stroke="white" stroke-width="4"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">KORFBALL</text>`}
+  },
+  {
+    id:'netball', name:'Netball', category:'indoor', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1a4a6e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="17" y1="2" x2="17" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="31" y1="2" x2="31" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><circle cx="24" cy="15" r="4" fill="none" stroke="white" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#0d2233"/>
+      <rect x="70" y="85" width="860" height="430" fill="#1a4a6e"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="357" y1="85" x2="357" y2="515" stroke="white" stroke-width="2"/>
+      <line x1="643" y1="85" x2="643" y2="515" stroke="white" stroke-width="2"/>
+      <circle cx="500" cy="300" r="40" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M70,162 A138,138 0 0,1 208,300 A138,138 0 0,1 70,438" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M930,162 A138,138 0 0,0 792,300 A138,138 0 0,0 930,438" fill="none" stroke="white" stroke-width="2"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">NETBALL</text>`}
+  },
+  {
+    id:'futsal_mini', name:'Futsal Mini / 5-a-side', category:'indoor', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="4" y="4" width="40" height="22" fill="#4a2e1e" rx="1"/><rect x="4" y="4" width="40" height="22" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="4" x2="24" y2="26" stroke="white" stroke-width="1"/><circle cx="24" cy="15" r="4" fill="none" stroke="white" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#2a1a0e"/>
+      <rect x="140" y="110" width="720" height="380" fill="#4a2e1e"/>
+      <rect x="140" y="110" width="720" height="380" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="110" x2="500" y2="490" stroke="white" stroke-width="2"/>
+      <circle cx="500" cy="300" r="38" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M140,233 A67,67 0 0,1 207,300 A67,67 0 0,1 140,367" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M860,233 A67,67 0 0,0 793,300 A67,67 0 0,0 860,367" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="107" y="272" width="33" height="56" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <rect x="860" y="272" width="33" height="56" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <text x="500" y="555" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">FUTSAL MINI / 5-A-SIDE</text>`}
+  },
+
+  // ── FIELD SPORTS ──
+  {
+    id:'football_full', name:'Football / Soccer (Full)', category:'field', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d6a4f" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><circle cx="24" cy="15" r="4" fill="none" stroke="white" stroke-width="1"/><rect x="2" y="9" width="8" height="12" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="0.8"/><rect x="38" y="9" width="8" height="12" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="0.8"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#1a3a2a"/>
+      <rect x="130" y="60" width="740" height="480" fill="#2d6a4f"/>
+      <rect x="130" y="60" width="740" height="480" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="60" x2="500" y2="540" stroke="white" stroke-width="2"/>
+      <circle cx="500" cy="300" r="70" fill="none" stroke="white" stroke-width="2"/>
+      <circle cx="500" cy="300" r="4" fill="white"/>
+      <rect x="130" y="177" width="145" height="246" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="725" y="177" width="145" height="246" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="130" y="224" width="55" height="152" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="815" y="224" width="55" height="152" fill="none" stroke="white" stroke-width="2"/>
+      <circle cx="235" cy="300" r="5" fill="white"/>
+      <circle cx="765" cy="300" r="5" fill="white"/>
+      <path d="M130,60 A10,10 0 0,1 140,70" fill="none" stroke="white" stroke-width="1.5"/>
+      <path d="M870,60 A10,10 0 0,0 860,70" fill="none" stroke="white" stroke-width="1.5"/>
+      <path d="M130,540 A10,10 0 0,0 140,530" fill="none" stroke="white" stroke-width="1.5"/>
+      <path d="M870,540 A10,10 0 0,1 860,530" fill="none" stroke="white" stroke-width="1.5"/>
+      <text x="500" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">FOOTBALL / SOCCER</text>`}
+  },
+  {
+    id:'football_half', name:'Football / Soccer (Half)', category:'field', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="24" height="26" fill="#2d6a4f" rx="1"/><rect x="2" y="2" width="24" height="26" fill="none" stroke="white" stroke-width="1.5"/><path d="M26,2 A12,12 0 0,1 26,28" fill="none" stroke="white" stroke-width="1"/><rect x="2" y="9" width="8" height="12" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="0.8"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#1a3a2a"/>
+      <rect x="130" y="60" width="370" height="480" fill="#2d6a4f"/>
+      <rect x="130" y="60" width="370" height="480" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="60" x2="500" y2="540" stroke="white" stroke-width="2"/>
+      <path d="M500,100 A200,200 0 0,1 500,500" fill="none" stroke="white" stroke-width="2" stroke-dasharray="8,5"/>
+      <rect x="130" y="177" width="145" height="246" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="130" y="224" width="55" height="152" fill="none" stroke="white" stroke-width="2"/>
+      <circle cx="235" cy="300" r="5" fill="white"/>
+      <path d="M130,60 A10,10 0 0,1 140,70" fill="none" stroke="white" stroke-width="1.5"/>
+      <path d="M130,540 A10,10 0 0,0 140,530" fill="none" stroke="white" stroke-width="1.5"/>
+      <text x="315" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">FOOTBALL — HALF PITCH</text>`}
+  },
+  {
+    id:'rugby_union', name:'Rugby Union', category:'field', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d6a4f" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="7" y1="2" x2="7" y2="28" stroke="white" stroke-width="1"/><line x1="41" y1="2" x2="41" y2="28" stroke="white" stroke-width="1"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><line x1="15" y1="2" x2="15" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/><line x1="33" y1="2" x2="33" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#1a3a2a"/>
+      <rect x="70" y="91" width="860" height="418" fill="#2d6a4f"/>
+      <rect x="70" y="91" width="860" height="418" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="131" y1="91" x2="131" y2="509" stroke="white" stroke-width="2.5"/>
+      <line x1="869" y1="91" x2="869" y2="509" stroke="white" stroke-width="2.5"/>
+      <line x1="500" y1="91" x2="500" y2="509" stroke="white" stroke-width="2"/>
+      <line x1="315" y1="91" x2="315" y2="509" stroke="white" stroke-width="1.5"/>
+      <line x1="685" y1="91" x2="685" y2="509" stroke="white" stroke-width="1.5"/>
+      <line x1="440" y1="91" x2="440" y2="509" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <line x1="560" y1="91" x2="560" y2="509" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <text x="500" y="572" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">RUGBY UNION</text>`}
+  },
+  {
+    id:'rugby_league', name:'Rugby League', category:'field', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d6a4f" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="7" y1="2" x2="7" y2="28" stroke="white" stroke-width="1"/><line x1="41" y1="2" x2="41" y2="28" stroke="white" stroke-width="1"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#1a3a2a"/>
+      <rect x="70" y="76" width="860" height="448" fill="#2d6a4f"/>
+      <rect x="70" y="76" width="860" height="448" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="130" y1="76" x2="130" y2="524" stroke="white" stroke-width="2.5"/>
+      <line x1="870" y1="76" x2="870" y2="524" stroke="white" stroke-width="2.5"/>
+      <line x1="500" y1="76" x2="500" y2="524" stroke="white" stroke-width="2"/>
+      <line x1="310" y1="76" x2="310" y2="524" stroke="white" stroke-width="1.5"/>
+      <line x1="690" y1="76" x2="690" y2="524" stroke="white" stroke-width="1.5"/>
+      <line x1="430" y1="76" x2="430" y2="524" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <line x1="570" y1="76" x2="570" y2="524" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <text x="500" y="572" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">RUGBY LEAGUE</text>`}
+  },
+  {
+    id:'field_hockey', name:'Field Hockey', category:'field', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d6a4f" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><path d="M2,11 A8,8 0 0,1 10,15 A8,8 0 0,1 2,19" fill="none" stroke="white" stroke-width="1.2"/><path d="M46,11 A8,8 0 0,0 38,15 A8,8 0 0,0 46,19" fill="none" stroke="white" stroke-width="1.2"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#1a3a2a"/>
+      <rect x="101" y="60" width="798" height="480" fill="#2d6a4f"/>
+      <rect x="101" y="60" width="798" height="480" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="60" x2="500" y2="540" stroke="white" stroke-width="2"/>
+      <path d="M101,193 A127,127 0 0,1 228,300 A127,127 0 0,1 101,407" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M899,193 A127,127 0 0,0 772,300 A127,127 0 0,0 899,407" fill="none" stroke="white" stroke-width="2"/>
+      <line x1="228" y1="193" x2="228" y2="407" stroke="white" stroke-width="1.5"/>
+      <line x1="772" y1="193" x2="772" y2="407" stroke="white" stroke-width="1.5"/>
+      <rect x="68" y="271" width="33" height="58" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <rect x="899" y="271" width="33" height="58" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <line x1="101" y1="384" x2="899" y2="384" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-dasharray="6,5"/>
+      <line x1="101" y1="216" x2="899" y2="216" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-dasharray="6,5"/>
+      <text x="500" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">FIELD HOCKEY</text>`}
+  },
+  {
+    id:'gaelic_football', name:'Gaelic Football', category:'field', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d6a4f" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><rect x="2" y="8" width="9" height="14" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1"/><rect x="37" y="8" width="9" height="14" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1"/><line x1="2" y1="8" x2="11" y2="8" stroke="white" stroke-width="1"/><line x1="37" y1="8" x2="46" y2="8" stroke="white" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#1a3a2a"/>
+      <rect x="105" y="60" width="790" height="480" fill="#2d6a4f"/>
+      <rect x="105" y="60" width="790" height="480" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="60" x2="500" y2="540" stroke="white" stroke-width="2"/>
+      <rect x="105" y="195" width="85" height="210" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="810" y="195" width="85" height="210" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="105" y="231" width="40" height="138" fill="rgba(255,255,255,0.08)" stroke="white" stroke-width="1.5"/>
+      <rect x="855" y="231" width="40" height="138" fill="rgba(255,255,255,0.08)" stroke="white" stroke-width="1.5"/>
+      <line x1="105" y1="60" x2="145" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="145" y1="60" x2="145" y2="105" stroke="white" stroke-width="3"/>
+      <line x1="855" y1="60" x2="895" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="855" y1="60" x2="855" y2="105" stroke="white" stroke-width="3"/>
+      <line x1="105" y1="540" x2="145" y2="540" stroke="white" stroke-width="3"/>
+      <line x1="145" y1="540" x2="145" y2="495" stroke="white" stroke-width="3"/>
+      <line x1="855" y1="540" x2="895" y2="540" stroke="white" stroke-width="3"/>
+      <line x1="855" y1="540" x2="855" y2="495" stroke="white" stroke-width="3"/>
+      <line x1="222" y1="60" x2="222" y2="540" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <line x1="778" y1="60" x2="778" y2="540" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <text x="500" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">GAELIC FOOTBALL</text>`}
+  },
+  {
+    id:'hurling', name:'Hurling / Camogie', category:'field', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d6a4f" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><rect x="2" y="8" width="9" height="14" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1"/><rect x="37" y="8" width="9" height="14" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#1a3a2a"/>
+      <rect x="105" y="60" width="790" height="480" fill="#2d6a4f"/>
+      <rect x="105" y="60" width="790" height="480" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="60" x2="500" y2="540" stroke="white" stroke-width="2"/>
+      <rect x="105" y="195" width="85" height="210" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="810" y="195" width="85" height="210" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="105" y="231" width="40" height="138" fill="rgba(255,255,255,0.08)" stroke="white" stroke-width="1.5"/>
+      <rect x="855" y="231" width="40" height="138" fill="rgba(255,255,255,0.08)" stroke="white" stroke-width="1.5"/>
+      <line x1="105" y1="60" x2="145" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="145" y1="60" x2="145" y2="100" stroke="white" stroke-width="3"/>
+      <line x1="855" y1="60" x2="895" y2="60" stroke="white" stroke-width="3"/>
+      <line x1="855" y1="60" x2="855" y2="100" stroke="white" stroke-width="3"/>
+      <line x1="105" y1="540" x2="145" y2="540" stroke="white" stroke-width="3"/>
+      <line x1="145" y1="540" x2="145" y2="500" stroke="white" stroke-width="3"/>
+      <line x1="855" y1="540" x2="895" y2="540" stroke="white" stroke-width="3"/>
+      <line x1="855" y1="540" x2="855" y2="500" stroke="white" stroke-width="3"/>
+      <line x1="222" y1="60" x2="222" y2="540" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <line x1="778" y1="60" x2="778" y2="540" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <text x="500" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">HURLING / CAMOGIE</text>`}
+  },
+  {
+    id:'american_football', name:'American Football', category:'field', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d6a4f" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="7" y1="2" x2="7" y2="28" stroke="white" stroke-width="1"/><line x1="41" y1="2" x2="41" y2="28" stroke="white" stroke-width="1"/><line x1="13" y1="2" x2="13" y2="28" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/><line x1="19" y1="2" x2="19" y2="28" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/><line x1="24" y1="2" x2="24" y2="28" stroke="rgba(255,255,255,0.6)" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#1a3a2a"/>
+      <rect x="70" y="109" width="860" height="382" fill="#2d6a4f"/>
+      <rect x="70" y="109" width="860" height="382" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="148" y1="109" x2="148" y2="491" stroke="white" stroke-width="2.5"/>
+      <line x1="852" y1="109" x2="852" y2="491" stroke="white" stroke-width="2.5"/>
+      ${[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18].map((i,idx)=>{
+        const x = 148 + (idx+1)*(704/19);
+        const isMid = Math.abs(idx+1-9.5)<0.6;
+        return `<line x1="${Math.round(x)}" y1="109" x2="${Math.round(x)}" y2="491" stroke="${isMid?'white':'rgba(255,255,255,0.35)'}" stroke-width="${isMid?2:1}"/>`;
+      }).join('')}
+      <line x1="500" y1="270" x2="500" y2="330" stroke="rgba(255,255,255,0.5)" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="500" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">AMERICAN FOOTBALL</text>`}
+  },
+  {
+    id:'australian_rules', name:'Australian Rules Football', category:'field', free:false,
+    icon:`<svg viewBox="0 0 48 30"><ellipse cx="24" cy="15" rx="22" ry="13" fill="#2d6a4f"/><ellipse cx="24" cy="15" rx="22" ry="13" fill="none" stroke="white" stroke-width="1.5"/><ellipse cx="24" cy="15" rx="11" ry="6" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="2" y1="15" x2="46" y2="15" stroke="rgba(255,255,255,0.4)" stroke-width="1"/><line x1="24" y1="2" x2="24" y2="28" stroke="rgba(255,255,255,0.4)" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#1a3a2a"/>
+      <ellipse cx="500" cy="300" rx="430" ry="240" fill="#2d6a4f"/>
+      <ellipse cx="500" cy="300" rx="430" ry="240" fill="none" stroke="white" stroke-width="3"/>
+      <ellipse cx="500" cy="300" rx="215" ry="120" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-dasharray="8,5"/>
+      <line x1="70" y1="300" x2="930" y2="300" stroke="white" stroke-width="2"/>
+      <line x1="500" y1="60" x2="500" y2="540" stroke="white" stroke-width="2"/>
+      <circle cx="500" cy="300" r="25" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="72" y="267" width="40" height="66" fill="rgba(255,255,255,0.08)" stroke="white" stroke-width="2"/>
+      <rect x="888" y="267" width="40" height="66" fill="rgba(255,255,255,0.08)" stroke="white" stroke-width="2"/>
+      <line x1="72" y1="267" x2="50" y2="267" stroke="white" stroke-width="2"/>
+      <line x1="72" y1="333" x2="50" y2="333" stroke="white" stroke-width="2"/>
+      <line x1="928" y1="267" x2="950" y2="267" stroke="white" stroke-width="2"/>
+      <line x1="928" y1="333" x2="950" y2="333" stroke="white" stroke-width="2"/>
+      <text x="500" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">AUSTRALIAN RULES FOOTBALL</text>`}
+  },
+
+  // ── ICE & ROLLER ──
+  {
+    id:'ice_hockey', name:'Ice Hockey', category:'ice', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#bde8ff" rx="6"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="#1a4a6e" stroke-width="1.5" rx="6"/><line x1="24" y1="2" x2="24" y2="28" stroke="#ef4444" stroke-width="1.5"/><line x1="16" y1="2" x2="16" y2="28" stroke="#1a4a6e" stroke-width="1"/><line x1="32" y1="2" x2="32" y2="28" stroke="#1a4a6e" stroke-width="1"/><circle cx="24" cy="15" r="4" fill="none" stroke="#1a4a6e" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#0a1525"/>
+      <rect x="70" y="85" width="860" height="430" fill="#bde8ff" rx="60"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="#1a4a6e" stroke-width="3" rx="60"/>
+      <line x1="500" y1="85" x2="500" y2="515" stroke="#ef4444" stroke-width="3"/>
+      <line x1="357" y1="85" x2="357" y2="515" stroke="#1a4ad4" stroke-width="2.5"/>
+      <line x1="643" y1="85" x2="643" y2="515" stroke="#1a4ad4" stroke-width="2.5"/>
+      <line x1="214" y1="85" x2="214" y2="515" stroke="#ef4444" stroke-width="2"/>
+      <line x1="786" y1="85" x2="786" y2="515" stroke="#ef4444" stroke-width="2"/>
+      <circle cx="500" cy="300" r="45" fill="none" stroke="#1a4a6e" stroke-width="2"/>
+      <circle cx="500" cy="300" r="6" fill="#1a4a6e"/>
+      <circle cx="214" cy="183" r="32" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+      <circle cx="214" cy="417" r="32" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+      <circle cx="786" cy="183" r="32" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+      <circle cx="786" cy="417" r="32" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+      <circle cx="214" cy="183" r="5" fill="#ef4444"/>
+      <circle cx="214" cy="417" r="5" fill="#ef4444"/>
+      <circle cx="786" cy="183" r="5" fill="#ef4444"/>
+      <circle cx="786" cy="417" r="5" fill="#ef4444"/>
+      <path d="M70,183 A53,53 0 0,1 123,236" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+      <path d="M70,417 A53,53 0 0,0 123,364" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+      <path d="M930,183 A53,53 0 0,0 877,236" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+      <path d="M930,417 A53,53 0 0,1 877,364" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+      <rect x="70" y="262" width="43" height="76" fill="rgba(26,74,110,0.1)" stroke="#1a4a6e" stroke-width="1.5"/>
+      <rect x="887" y="262" width="43" height="76" fill="rgba(26,74,110,0.1)" stroke="#1a4a6e" stroke-width="1.5"/>
+      <circle cx="500" cy="300" r="5" fill="#ef4444"/>
+      <text x="500" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(26,74,110,0.7)" font-weight="600">ICE HOCKEY</text>`}
+  },
+  {
+    id:'roller_hockey', name:'Roller Hockey', category:'ice', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#e0f0ff" rx="6"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="#1a4a6e" stroke-width="1.5" rx="6"/><line x1="24" y1="2" x2="24" y2="28" stroke="#ef4444" stroke-width="1.5"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#0a1525"/>
+      <rect x="70" y="85" width="860" height="430" fill="#d8eeff" rx="50"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="#1a4a6e" stroke-width="3" rx="50"/>
+      <line x1="500" y1="85" x2="500" y2="515" stroke="#ef4444" stroke-width="3"/>
+      <circle cx="500" cy="300" r="45" fill="none" stroke="#1a4a6e" stroke-width="2"/>
+      <path d="M70,217 A83,83 0 0,1 153,300 A83,83 0 0,1 70,383" fill="none" stroke="#1a4a6e" stroke-width="2"/>
+      <path d="M930,217 A83,83 0 0,0 847,300 A83,83 0 0,0 930,383" fill="none" stroke="#1a4a6e" stroke-width="2"/>
+      <rect x="70" y="262" width="40" height="76" fill="rgba(26,74,110,0.1)" stroke="#1a4a6e" stroke-width="1.5"/>
+      <rect x="890" y="262" width="40" height="76" fill="rgba(26,74,110,0.1)" stroke="#1a4a6e" stroke-width="1.5"/>
+      <text x="500" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(26,74,110,0.7)" font-weight="600">ROLLER HOCKEY</text>`}
+  },
+
+  // ── BEACH SPORTS ──
+  {
+    id:'beach_volleyball', name:'Beach Volleyball', category:'beach', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#c2a05a" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.5"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#7a5c2e"/>
+      <rect x="70" y="85" width="860" height="430" fill="#c2a05a"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="85" x2="500" y2="515" stroke="white" stroke-width="4"/>
+      <circle cx="488" cy="300" r="6" fill="white" opacity="0.6"/>
+      <circle cx="512" cy="300" r="6" fill="white" opacity="0.6"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.6)" font-weight="600">BEACH VOLLEYBALL</text>`}
+  },
+  {
+    id:'beach_handball', name:'Beach Handball', category:'beach', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="4" y="2" width="40" height="26" fill="#c2a05a" rx="1"/><rect x="4" y="2" width="40" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><path d="M4,10 A8,8 0 0,1 4,20" fill="none" stroke="white" stroke-width="1"/><path d="M44,10 A8,8 0 0,0 44,20" fill="none" stroke="white" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#7a5c2e"/>
+      <rect x="176" y="85" width="648" height="430" fill="#c2a05a"/>
+      <rect x="176" y="85" width="648" height="430" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="85" x2="500" y2="515" stroke="white" stroke-width="2"/>
+      <path d="M176,182 A118,118 0 0,1 294,300 A118,118 0 0,1 176,418" fill="none" stroke="white" stroke-width="2" stroke-dasharray="6,4"/>
+      <path d="M824,182 A118,118 0 0,0 706,300 A118,118 0 0,0 824,418" fill="none" stroke="white" stroke-width="2" stroke-dasharray="6,4"/>
+      <rect x="143" y="272" width="33" height="56" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.5"/>
+      <rect x="824" y="272" width="33" height="56" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.5"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.6)" font-weight="600">BEACH HANDBALL</text>`}
+  },
+  {
+    id:'beach_soccer', name:'Beach Soccer', category:'beach', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#c2a05a" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><circle cx="24" cy="15" r="4" fill="none" stroke="white" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#7a5c2e"/>
+      <rect x="130" y="76" width="740" height="448" fill="#c2a05a"/>
+      <rect x="130" y="76" width="740" height="448" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="76" x2="500" y2="524" stroke="white" stroke-width="2"/>
+      <circle cx="500" cy="300" r="55" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="130" y="211" width="80" height="178" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="790" y="211" width="80" height="178" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="130" y="255" width="38" height="90" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <rect x="832" y="255" width="38" height="90" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <text x="500" y="566" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.6)" font-weight="600">BEACH SOCCER</text>`}
+  },
+
+  // ── OTHER ──
+  {
+    id:'padbol', name:'Padbol', category:'other', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1a4a6e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="#7dd3fc" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.5"/><circle cx="12" cy="15" r="3" fill="none" stroke="white" stroke-width="1"/><circle cx="36" cy="15" r="3" fill="none" stroke="white" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#0d2233"/>
+      <rect x="70" y="85" width="860" height="430" fill="#1a4a6e"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="#7dd3fc" stroke-width="3"/>
+      <line x1="500" y1="85" x2="500" y2="515" stroke="white" stroke-width="3"/>
+      <line x1="371" y1="85" x2="371" y2="515" stroke="white" stroke-width="2"/>
+      <line x1="629" y1="85" x2="629" y2="515" stroke="white" stroke-width="2"/>
+      <line x1="70" y1="300" x2="371" y2="300" stroke="white" stroke-width="2"/>
+      <line x1="629" y1="300" x2="930" y2="300" stroke="white" stroke-width="2"/>
+      <circle cx="212" cy="300" r="28" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <circle cx="788" cy="300" r="28" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">PADBOL</text>`}
+  },
+  {
+    id:'indoor_hockey', name:'Indoor Hockey', category:'other', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d5a3e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><path d="M2,12 A8,8 0 0,1 10,15 A8,8 0 0,1 2,18" fill="none" stroke="white" stroke-width="1.2"/><path d="M46,12 A8,8 0 0,0 38,15 A8,8 0 0,0 46,18" fill="none" stroke="white" stroke-width="1.2"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#1a3a2a"/>
+      <rect x="130" y="85" width="740" height="430" fill="#2d5a3e"/>
+      <rect x="130" y="85" width="740" height="430" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="85" x2="500" y2="515" stroke="white" stroke-width="2"/>
+      <path d="M130,193 A107,107 0 0,1 237,300 A107,107 0 0,1 130,407" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M870,193 A107,107 0 0,0 763,300 A107,107 0 0,0 870,407" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="97" y="271" width="33" height="58" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <rect x="870" y="271" width="33" height="58" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">INDOOR HOCKEY</text>`}
+  },
+  {
+    id:'lacrosse', name:'Lacrosse', category:'other', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d6a4f" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><path d="M2,11 A9,9 0 0,1 11,15 A9,9 0 0,1 2,19" fill="none" stroke="white" stroke-width="1.2"/><path d="M46,11 A9,9 0 0,0 37,15 A9,9 0 0,0 46,19" fill="none" stroke="white" stroke-width="1.2"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#1a3a2a"/>
+      <rect x="70" y="68" width="860" height="464" fill="#2d6a4f"/>
+      <rect x="70" y="68" width="860" height="464" fill="none" stroke="white" stroke-width="3"/>
+      <line x1="500" y1="68" x2="500" y2="532" stroke="white" stroke-width="2"/>
+      <circle cx="175" cy="300" r="55" fill="none" stroke="white" stroke-width="2"/>
+      <circle cx="825" cy="300" r="55" fill="none" stroke="white" stroke-width="2"/>
+      <rect x="70" y="268" width="25" height="64" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <rect x="905" y="268" width="25" height="64" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <line x1="310" y1="68" x2="310" y2="532" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <line x1="690" y1="68" x2="690" y2="532" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <text x="500" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">LACROSSE</text>`}
+  },
+  {
+    id:'water_polo', name:'Water Polo', category:'other', free:false,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1a4a6e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="#7dd3fc" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><line x1="12" y1="2" x2="12" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="36" y1="2" x2="36" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#0a1830"/>
+      <rect x="140" y="85" width="720" height="430" fill="#1a4a6e"/>
+      <rect x="140" y="85" width="720" height="430" fill="none" stroke="#7dd3fc" stroke-width="3"/>
+      <line x1="500" y1="85" x2="500" y2="515" stroke="white" stroke-width="2.5"/>
+      <line x1="284" y1="85" x2="284" y2="515" stroke="white" stroke-width="1.5" stroke-dasharray="6,4"/>
+      <line x1="716" y1="85" x2="716" y2="515" stroke="white" stroke-width="1.5" stroke-dasharray="6,4"/>
+      <line x1="212" y1="85" x2="212" y2="515" stroke="#ef4444" stroke-width="2"/>
+      <line x1="788" y1="85" x2="788" y2="515" stroke="#ef4444" stroke-width="2"/>
+      <rect x="140" y="243" width="55" height="114" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="2"/>
+      <rect x="805" y="243" width="55" height="114" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="2"/>
+      <text x="140" y="572" text-anchor="start" font-family="system-ui" font-size="10" fill="rgba(255,255,255,0.4)">2m</text>
+      <text x="268" y="572" text-anchor="middle" font-family="system-ui" font-size="10" fill="rgba(255,255,255,0.4)">5m</text>
+      <text x="500" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">WATER POLO</text>`}
+  }
+];
+
+// Category labels
+const CATEGORIES = {
+  racket: 'Racket Sports',
+  indoor: 'Indoor Team Sports',
+  field: 'Field Sports',
+  ice: 'Ice & Roller',
+  beach: 'Beach Sports',
+  other: 'Other'
+};
+
+// ══════════════════════════════════════════════
+// APP STATE
+// ══════════════════════════════════════════════
+const state = {
+  courtId: 'tennis_singles',
+  tool: 'arrow',
+  color: '#ef4444',
+  lineWidth: 3,
+  objects: [],
+  undoStack: [],
+  redoStack: [],
+  isDrawing: false,
+  startNX: 0, startNY: 0,
+  points: [],
+  isPro: false,
+  freeCourt: null,
+  savedTactics: [],
+  theme: 'dark',
+  tokenPositions: [],
+};
+
+const COLORS = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#ffffff','#111827','#a855f7','#f97316'];
+const FREE_SAVES = 3;
+
+// ══════════════════════════════════════════════
+// CANVAS & DRAWING
+// ══════════════════════════════════════════════
+const canvas = document.getElementById('drawing-canvas');
+const ctx = canvas.getContext('2d');
+const courtSvg = document.getElementById('court-svg');
+const container = document.getElementById('court-container');
+
+let canvasW = 0, canvasH = 0;
+let previewObj = null;
+
+function syncCanvas() {
+  const svgRect = courtSvg.getBoundingClientRect();
+  const cRect = container.getBoundingClientRect();
+  canvasW = svgRect.width; canvasH = svgRect.height;
+  canvas.width = canvasW; canvas.height = canvasH;
+  canvas.style.width = svgRect.width + 'px';
+  canvas.style.height = svgRect.height + 'px';
+  canvas.style.left = (svgRect.left - cRect.left) + 'px';
+  canvas.style.top = (svgRect.top - cRect.top) + 'px';
+  redrawAll();
+  repositionTokens();
+}
+
+const resizeObs = new ResizeObserver(() => { setTimeout(syncCanvas, 50); });
+resizeObs.observe(container);
+
+function n2c(nx, ny) {
+  return { x: nx / 1000 * canvasW, y: ny / 600 * canvasH };
+}
+function c2n(cx, cy) {
+  return { nx: cx / canvasW * 1000, ny: cy / canvasH * 600 };
+}
+function getPos(e) {
+  const r = canvas.getBoundingClientRect();
+  const t = e.touches ? e.touches[0] : e;
+  return c2n(
+    (t.clientX - r.left) * (canvas.width / r.width),
+    (t.clientY - r.top) * (canvas.height / r.height)
+  );
+}
+
+function drawObject(ctx, obj, preview) {
+  ctx.save();
+  ctx.strokeStyle = obj.color;
+  ctx.fillStyle = obj.color;
+  ctx.lineWidth = obj.lineWidth * (canvasW / 1000) * 1.5;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (obj.type === 'dashed-arrow') ctx.setLineDash([8,5]);
+  else ctx.setLineDash([]);
+
+  switch(obj.type) {
+    case 'arrow':
+    case 'dashed-arrow': {
+      if (obj.points && obj.points.length > 1) {
+        const pts = obj.points.map(p => n2c(p[0], p[1]));
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        const last = pts[pts.length - 1];
+        const prev = pts[Math.max(0, pts.length - 3)];
+        drawArrowhead(ctx, prev.x, prev.y, last.x, last.y, obj.color, obj.lineWidth);
+      } else if (obj.x1 !== undefined) {
+        const a = n2c(obj.x1, obj.y1), b = n2c(obj.x2, obj.y2);
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        ctx.setLineDash([]);
+        drawArrowhead(ctx, a.x, a.y, b.x, b.y, obj.color, obj.lineWidth);
+      }
+      break;
+    }
+    case 'line': {
+      const a = n2c(obj.x1, obj.y1), b = n2c(obj.x2, obj.y2);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      break;
+    }
+    case 'arc': {
+      const a = n2c(obj.x1, obj.y1), b = n2c(obj.x2, obj.y2);
+      const cp = n2c(obj.cpx, obj.cpy);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y);
+      ctx.quadraticCurveTo(cp.x, cp.y, b.x, b.y);
+      ctx.stroke();
+      const dx = b.x - cp.x, dy = b.y - cp.y;
+      drawArrowhead(ctx, cp.x, cp.y, b.x, b.y, obj.color, obj.lineWidth);
+      break;
+    }
+    case 'circle': {
+      const c = n2c(obj.cx, obj.cy);
+      const r2 = n2c(obj.cx + obj.r, obj.cy);
+      const radius = Math.abs(r2.x - c.x);
+      ctx.globalAlpha = 0.25;
+      ctx.beginPath(); ctx.arc(c.x, c.y, radius, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.beginPath(); ctx.arc(c.x, c.y, radius, 0, Math.PI*2); ctx.stroke();
+      break;
+    }
+    case 'rect': {
+      const a = n2c(obj.x1, obj.y1), b = n2c(obj.x2, obj.y2);
+      const x = Math.min(a.x,b.x), y = Math.min(a.y,b.y);
+      const w = Math.abs(b.x-a.x), h = Math.abs(b.y-a.y);
+      ctx.globalAlpha = 0.2;
+      ctx.fillRect(x,y,w,h);
+      ctx.globalAlpha = 1;
+      ctx.strokeRect(x,y,w,h);
+      break;
+    }
+    case 'text': {
+      const p = n2c(obj.nx, obj.ny);
+      ctx.setLineDash([]);
+      const fs = Math.max(14, obj.lineWidth * 5) * (canvasW / 1000) * 1.4;
+      ctx.font = `700 ${fs}px 'Cabinet Grotesk', system-ui, sans-serif`;
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = obj.color;
+      ctx.fillText(obj.text, p.x, p.y);
+      break;
+    }
+  }
+  ctx.restore();
+}
+
+function drawArrowhead(ctx, x1, y1, x2, y2, color, lw) {
+  const angle = Math.atan2(y2-y1, x2-x1);
+  const len = Math.max(14, lw * 5) * (canvasW / 1000) * 1.5;
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - len*Math.cos(angle-0.42), y2 - len*Math.sin(angle-0.42));
+  ctx.lineTo(x2 - len*Math.cos(angle+0.42), y2 - len*Math.sin(angle+0.42));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function redrawAll() {
+  ctx.clearRect(0, 0, canvasW, canvasH);
+  for (const obj of state.objects) drawObject(ctx, obj);
+  if (previewObj) drawObject(ctx, previewObj);
+}
+
+// ── Canvas events ──
+canvas.addEventListener('pointerdown', onDown, { passive: false });
+canvas.addEventListener('pointermove', onMove, { passive: false });
+canvas.addEventListener('pointerup', onUp);
+canvas.addEventListener('pointercancel', onUp);
+
+function onDown(e) {
+  e.preventDefault();
+  if (state.tool === 'text') { handleTextTool(e); return; }
+  const { nx, ny } = getPos(e);
+  state.isDrawing = true;
+  state.startNX = nx; state.startNY = ny;
+  state.points = [[nx, ny]];
+  canvas.setPointerCapture(e.pointerId);
+}
+
+function onMove(e) {
+  if (!state.isDrawing) return;
+  e.preventDefault();
+  const { nx, ny } = getPos(e);
+  state.points.push([nx, ny]);
+  buildPreview(state.startNX, state.startNY, nx, ny);
+  redrawAll();
+}
+
+function onUp(e) {
+  if (!state.isDrawing) return;
+  state.isDrawing = false;
+  const { nx, ny } = getPos(e);
+  const dx = Math.abs(nx - state.startNX), dy = Math.abs(ny - state.startNY);
+  if (state.tool === 'eraser') { eraseAt(nx, ny); previewObj = null; redrawAll(); return; }
+  if (dx < 3 && dy < 3 && state.tool !== 'eraser') { previewObj = null; return; }
+  const obj = buildObject(state.startNX, state.startNY, nx, ny, state.points);
+  if (obj) { saveUndo(); state.objects.push(obj); }
+  previewObj = null;
+  redrawAll();
+}
+
+function buildPreview(x1, y1, x2, y2, pts) {
+  previewObj = buildObject(x1, y1, x2, y2, pts);
+}
+
+function buildObject(x1, y1, x2, y2, pts) {
+  const base = { color: state.color, lineWidth: state.lineWidth };
+  switch(state.tool) {
+    case 'arrow':
+    case 'dashed-arrow': {
+      const simplified = simplifyPoints(pts, 4);
+      return { ...base, type: state.tool, points: simplified };
+    }
+    case 'line':
+      return { ...base, type:'line', x1, y1, x2, y2 };
+    case 'arc': {
+      const mx = (x1+x2)/2, my = (y1+y2)/2;
+      const len = Math.sqrt((x2-x1)**2+(y2-y1)**2);
+      if (len < 1) return null;
+      const nx2 = -(y2-y1)/len, ny2 = (x2-x1)/len;
+      const offset = 80;
+      return { ...base, type:'arc', x1, y1, x2, y2, cpx: mx+nx2*offset, cpy: my+ny2*offset };
+    }
+    case 'circle': {
+      const r = Math.sqrt((x2-x1)**2+(y2-y1)**2);
+      return { ...base, type:'circle', cx:x1, cy:y1, r };
+    }
+    case 'rect':
+      return { ...base, type:'rect', x1, y1, x2, y2 };
+    default: return null;
+  }
+}
+
+function simplifyPoints(pts, minDist) {
+  if (!pts || pts.length < 2) return pts;
+  const out = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    const prev = out[out.length-1];
+    const d = Math.sqrt((pts[i][0]-prev[0])**2+(pts[i][1]-prev[1])**2);
+    if (d >= minDist) out.push(pts[i]);
+  }
+  if (out[out.length-1] !== pts[pts.length-1]) out.push(pts[pts.length-1]);
+  return out;
+}
+
+function eraseAt(nx, ny) {
+  const radius = 40;
+  state.objects = state.objects.filter(obj => {
+    return !objectNearPoint(obj, nx, ny, radius);
+  });
+  saveUndo(false);
+}
+
+function objectNearPoint(obj, nx, ny, r) {
+  switch(obj.type) {
+    case 'arrow': case 'dashed-arrow':
+      if (obj.points) return obj.points.some(p => dist2(p[0],p[1],nx,ny) < r*r);
+      return dist2(obj.x1,obj.y1,nx,ny)<r*r || dist2(obj.x2,obj.y2,nx,ny)<r*r;
+    case 'line': return distToSeg(nx,ny,obj.x1,obj.y1,obj.x2,obj.y2) < r;
+    case 'circle': return Math.abs(dist2(obj.cx,obj.cy,nx,ny)**0.5 - obj.r) < r;
+    case 'rect': return nx>Math.min(obj.x1,obj.x2)-r && nx<Math.max(obj.x1,obj.x2)+r && ny>Math.min(obj.y1,obj.y2)-r && ny<Math.max(obj.y1,obj.y2)+r;
+    case 'text': return dist2(obj.nx,obj.ny,nx,ny) < r*r*2;
+    case 'arc': return dist2(obj.cpx,obj.cpy,nx,ny)<r*r || dist2(obj.x1,obj.y1,nx,ny)<r*r;
+    default: return false;
+  }
+}
+function dist2(x1,y1,x2,y2){return (x1-x2)**2+(y1-y2)**2}
+function distToSeg(px,py,x1,y1,x2,y2){
+  const dx=x2-x1,dy=y2-y1,len2=dx*dx+dy*dy;
+  if(len2===0) return Math.sqrt(dist2(px,py,x1,y1));
+  let t=((px-x1)*dx+(py-y1)*dy)/len2;
+  t=Math.max(0,Math.min(1,t));
+  return Math.sqrt(dist2(px,py,x1+t*dx,y1+t*dy));
+}
+
+// ── Text tool ──
+function handleTextTool(e) {
+  const { nx, ny } = getPos(e);
+  const p = n2c(nx, ny);
+  const wrap = document.getElementById('text-input-wrap');
+  const field = document.getElementById('text-input-field');
+  const bRect = canvas.getBoundingClientRect();
+  wrap.style.left = (bRect.left + p.x) + 'px';
+  wrap.style.top = (bRect.top + p.y - 10) + 'px';
+  wrap.classList.add('show');
+  field.value = '';
+  field.focus();
+  field.onkeydown = (ev) => {
+    if (ev.key === 'Enter' || ev.key === 'Escape') {
+      if (ev.key === 'Enter' && field.value.trim()) {
+        saveUndo();
+        state.objects.push({ type:'text', color:state.color, lineWidth:state.lineWidth, nx, ny, text:field.value.trim() });
+        redrawAll();
+      }
+      wrap.classList.remove('show');
+    }
+  };
+}
+document.getElementById('text-input-field').addEventListener('blur', () => {
+  setTimeout(() => document.getElementById('text-input-wrap').classList.remove('show'), 200);
+});
+
+// ── Undo / Redo ──
+function saveUndo(push=true) {
+  if (push) {
+    state.undoStack.push(JSON.stringify(state.objects));
+    if (state.undoStack.length > 50) state.undoStack.shift();
+    state.redoStack = [];
+  }
+  updateUndoButtons();
+}
+function undo() {
+  if (!state.undoStack.length) return;
+  state.redoStack.push(JSON.stringify(state.objects));
+  state.objects = JSON.parse(state.undoStack.pop());
+  redrawAll(); updateUndoButtons();
+}
+function redo() {
+  if (!state.redoStack.length) return;
+  state.undoStack.push(JSON.stringify(state.objects));
+  state.objects = JSON.parse(state.redoStack.pop());
+  redrawAll(); updateUndoButtons();
+}
+function updateUndoButtons() {
+  document.getElementById('btn-undo').disabled = !state.undoStack.length;
+  document.getElementById('btn-redo').disabled = !state.redoStack.length;
+}
+
+// ── Clear ──
+function confirmClear() { openModal('modal-confirm'); }
+function clearBoard() { saveUndo(); state.objects = []; redrawAll(); }
+
+// ══════════════════════════════════════════════
+// PLAYER TOKENS
+// ══════════════════════════════════════════════
+const DEFAULT_TOKENS = [
+  { team:'blue', label:'A1', pct:[0.22,0.3] },
+  { team:'blue', label:'A2', pct:[0.22,0.5] },
+  { team:'blue', label:'A3', pct:[0.22,0.7] },
+  { team:'blue', label:'A4', pct:[0.35,0.4] },
+  { team:'red',  label:'B1', pct:[0.78,0.3] },
+  { team:'red',  label:'B2', pct:[0.78,0.5] },
+  { team:'red',  label:'B3', pct:[0.78,0.7] },
+  { team:'red',  label:'B4', pct:[0.65,0.4] },
+];
+
+function buildTokens() {
+  const layer = document.getElementById('token-layer');
+  layer.innerHTML = '';
+  state.tokenPositions = DEFAULT_TOKENS.map(t => ({ ...t }));
+  for (let i = 0; i < state.tokenPositions.length; i++) {
+    createTokenEl(i);
+  }
+}
+
+function createTokenEl(i) {
+  const t = state.tokenPositions[i];
+  const el = document.createElement('div');
+  el.className = `player-token team-${t.team}`;
+  el.textContent = t.label;
+  el.dataset.idx = i;
+  document.getElementById('token-layer').appendChild(el);
+  makeDraggable(el, i);
+  positionToken(el, t.pct[0], t.pct[1]);
+  return el;
+}
+
+function positionToken(el, px, py) {
+  const r = canvas.getBoundingClientRect();
+  const lr = document.getElementById('token-layer').getBoundingClientRect();
+  el.style.left = ((r.left - lr.left) + px * r.width) + 'px';
+  el.style.top = ((r.top - lr.top) + py * r.height) + 'px';
+}
+
+function repositionTokens() {
+  const els = document.getElementById('token-layer').querySelectorAll('.player-token');
+  els.forEach(el => {
+    const i = parseInt(el.dataset.idx);
+    const t = state.tokenPositions[i];
+    if (t) positionToken(el, t.pct[0], t.pct[1]);
+  });
+}
+
+function makeDraggable(el, idx) {
+  let dragging = false, ox, oy, startL, startT;
+  function start(e) {
+    e.preventDefault(); e.stopPropagation();
+    dragging = true;
+    const p = e.touches ? e.touches[0] : e;
+    ox = p.clientX; oy = p.clientY;
+    startL = parseFloat(el.style.left) || 0;
+    startT = parseFloat(el.style.top) || 0;
+    el.style.zIndex = 10;
+    el.style.transition = 'none';
+  }
+  function move(e) {
+    if (!dragging) return;
+    e.preventDefault();
+    const p = e.touches ? e.touches[0] : e;
+    const dx = p.clientX - ox, dy = p.clientY - oy;
+    const layer = document.getElementById('token-layer');
+    const lr = layer.getBoundingClientRect();
+    const newL = Math.max(0, Math.min(lr.width, startL + dx));
+    const newT = Math.max(0, Math.min(lr.height, startT + dy));
+    el.style.left = newL + 'px';
+    el.style.top = newT + 'px';
+    const cr = canvas.getBoundingClientRect();
+    state.tokenPositions[idx].pct = [
+      (newL - (cr.left - lr.left)) / cr.width,
+      (newT - (cr.top - lr.top)) / cr.height
+    ];
+  }
+  function end() {
+    dragging = false;
+    el.style.zIndex = 5;
+    el.style.transition = '';
+  }
+  el.addEventListener('pointerdown', start, { passive: false });
+  window.addEventListener('pointermove', move, { passive: false });
+  window.addEventListener('pointerup', end);
+}
+
+// ══════════════════════════════════════════════
+// TOOL SELECTION
+// ══════════════════════════════════════════════
+function setTool(t) {
+  if ((t === 'ball') && !state.isPro) { openPaywall('Custom ball token is a Pro feature.'); return; }
+  state.tool = t;
+  document.querySelectorAll('.tb-btn[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
+  canvas.style.cursor = t === 'eraser' ? 'cell' : t === 'text' ? 'text' : 'crosshair';
+}
+
+// ══════════════════════════════════════════════
+// COLOR PICKER
+// ══════════════════════════════════════════════
+function buildColors() {
+  const wrap = document.getElementById('color-dots');
+  COLORS.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'color-dot' + (c === state.color ? ' active' : '');
+    d.style.background = c;
+    if (c === '#ffffff') d.style.border = '2.5px solid #64748b';
+    d.onclick = () => {
+      state.color = c;
+      document.querySelectorAll('.color-dot').forEach(x => x.classList.remove('active'));
+      d.classList.add('active');
+    };
+    wrap.appendChild(d);
+  });
+}
+
+// ══════════════════════════════════════════════
+// COURT SWITCHER
+// ══════════════════════════════════════════════
+function openCourtPicker() {
+  document.getElementById('court-search').value = '';
+  renderCourtGrid('');
+  openModal('modal-court-picker');
+}
+
+function renderCourtGrid(filter) {
+  const container = document.getElementById('court-grid-container');
+  container.innerHTML = '';
+  if (!state.isPro && !state.freeCourt) {
+    const banner = document.createElement('div');
+    banner.style.cssText = 'background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:var(--accent);line-height:1.45;';
+    banner.innerHTML = '<strong>Pick your one free court.</strong> It\'s yours forever — unlock all 37+ with Pro.';
+    container.appendChild(banner);
+  }
+  const q = filter.toLowerCase().trim();
+  const grouped = {};
+  for (const c of COURTS) {
+    if (q && !c.name.toLowerCase().includes(q)) continue;
+    if (!grouped[c.category]) grouped[c.category] = [];
+    grouped[c.category].push(c);
+  }
+  const catOrder = ['racket','indoor','field','ice','beach','other'];
+  let total = 0;
+  for (const cat of catOrder) {
+    if (!grouped[cat] || !grouped[cat].length) continue;
+    const section = document.createElement('div');
+    section.className = 'court-category';
+    section.innerHTML = `<div class="cat-label">${CATEGORIES[cat]}</div>`;
+    const grid = document.createElement('div');
+    grid.className = 'court-grid';
+    for (const c of grouped[cat]) {
+      const card = document.createElement('div');
+      const isActive = c.id === state.courtId;
+      const isLocked = !state.isPro && state.freeCourt && c.id !== state.freeCourt;
+      const isFree = c.id === state.freeCourt;
+      card.className = `court-card${isActive?' active':''}${isLocked?' locked':''}`;
+      card.innerHTML = `${c.icon}<div class="court-card-name">${c.name}</div>${isFree?'<span class="free-pill">FREE</span>':''}`;
+      card.onclick = () => switchCourt(c.id, isLocked);
+      grid.appendChild(card);
+      total++;
+    }
+    section.appendChild(grid);
+    container.appendChild(section);
+  }
+  if (total === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="es-icon">🔍</div><h3>No sports found</h3><p>Try a different search term.</p></div>`;
+  }
+}
+
+function filterCourts(q) { renderCourtGrid(q); }
+
+function switchCourt(id, locked) {
+  if (locked) {
+    closeModal('modal-court-picker');
+    const freeName = COURTS.find(c => c.id === state.freeCourt)?.name || 'your free court';
+    openPaywall(`You're on the free plan with ${freeName} as your court. Upgrade to Pro to access all 37+ courts.`);
+    return;
+  }
+  if (!state.isPro && !state.freeCourt) {
+    state.freeCourt = id;
+    saveToStorage();
+  }
+  state.courtId = id;
+  const court = COURTS.find(c => c.id === id);
+  document.getElementById('court-name-chip').textContent = court.name;
+  const svg = document.getElementById('court-svg');
+  svg.classList.add('switching');
+  setTimeout(() => {
+    svg.innerHTML = court.svg();
+    svg.classList.remove('switching');
+    setTimeout(syncCanvas, 80);
+  }, 150);
+  closeModal('modal-court-picker');
+}
+
+// ══════════════════════════════════════════════
+// TACTIC LIBRARY
+// ══════════════════════════════════════════════
+function openLibrary() { renderLibrary(); openModal('modal-library'); }
+
+function renderLibrary() {
+  const body = document.getElementById('library-body');
+  const saves = state.savedTactics;
+  if (!saves.length) {
+    body.innerHTML = `<div class="empty-state"><div class="es-icon">📋</div><h3>No plays saved yet</h3><p>Draw your first play and hit <strong>Save Play</strong> below.</p></div>`;
+    return;
+  }
+  body.innerHTML = '';
+  for (let i = saves.length - 1; i >= 0; i--) {
+    const t = saves[i];
+    const court = COURTS.find(c=>c.id===t.courtId);
+    const row = document.createElement('div');
+    row.className = 'tactic-row';
+    row.innerHTML = `
+      <div class="tactic-info">
+        <div class="tactic-name">${t.name}</div>
+        <div class="tactic-meta">${court ? court.name : t.courtId} · ${new Date(t.ts).toLocaleDateString()}</div>
+      </div>
+      <div class="tactic-actions">
+        <button class="tac-btn load" onclick="loadTactic(${i})">Load</button>
+        <button class="tac-btn del" onclick="deleteTactic(${i})">Del</button>
+      </div>`;
+    body.appendChild(row);
+  }
+}
+
+function openSaveDialog() { renderLibrary(); openModal('modal-library'); document.getElementById('tactic-name-input').focus(); }
+
+function saveTactic() {
+  const name = document.getElementById('tactic-name-input').value.trim();
+  if (!name) { showToast('Give this play a name first.'); return; }
+  if (!state.isPro && state.savedTactics.length >= FREE_SAVES) {
+    closeModal('modal-library');
+    openPaywall(`You've used all ${FREE_SAVES} free saves. Upgrade to Pro for unlimited saves.`);
+    return;
+  }
+  const tactic = {
+    id: Date.now(),
+    name,
+    courtId: state.courtId,
+    objects: JSON.parse(JSON.stringify(state.objects)),
+    tokens: JSON.parse(JSON.stringify(state.tokenPositions)),
+    ts: Date.now()
+  };
+  state.savedTactics.push(tactic);
+  saveToStorage();
+  document.getElementById('tactic-name-input').value = '';
+  renderLibrary();
+  showToast(`"${name}" saved!`);
+}
+
+function loadTactic(i) {
+  const t = state.savedTactics[i];
+  state.objects = JSON.parse(JSON.stringify(t.objects));
+  state.tokenPositions = JSON.parse(JSON.stringify(t.tokens));
+  switchCourt(t.courtId, false);
+  closeModal('modal-library');
+  setTimeout(() => { syncCanvas(); renderTokensFromState(); }, 200);
+  showToast(`"${t.name}" loaded.`);
+}
+
+function renderTokensFromState() {
+  const layer = document.getElementById('token-layer');
+  layer.innerHTML = '';
+  for (let i = 0; i < state.tokenPositions.length; i++) createTokenEl(i);
+}
+
+function deleteTactic(i) {
+  state.savedTactics.splice(i, 1);
+  saveToStorage();
+  renderLibrary();
+  showToast('Play deleted.');
+}
+
+// ══════════════════════════════════════════════
+// PAYWALL
+// ══════════════════════════════════════════════
+function openPaywall(reason) {
+  if (reason) document.getElementById('paywall-reason').textContent = reason;
+  openModal('modal-paywall');
+}
+
+// ══════════════════════════════════════════════
+// EXPORT PNG
+// ══════════════════════════════════════════════
+function exportPNG() {
+  const off = document.createElement('canvas');
+  off.width = 1200; off.height = 720;
+  const oc = off.getContext('2d');
+  const court = COURTS.find(c => c.id === state.courtId);
+  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" width="1200" height="720">${court.svg()}</svg>`;
+  const blob = new Blob([svgStr], {type:'image/svg+xml'});
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  img.onload = () => {
+    oc.drawImage(img, 0, 0, 1200, 720);
+    URL.revokeObjectURL(url);
+    const savedW = canvasW, savedH = canvasH;
+    canvasW = 1200; canvasH = 720;
+    const savedObjs = state.objects;
+    for (const obj of savedObjs) drawObject(oc, obj);
+    for (const t of state.tokenPositions) {
+      const x = t.pct[0] * 1200, y = t.pct[1] * 720;
+      oc.beginPath();
+      oc.arc(x, y, 24, 0, Math.PI*2);
+      oc.fillStyle = t.team === 'red' ? '#dc2626' : '#1d4ed8';
+      oc.fill();
+      oc.strokeStyle = 'rgba(255,255,255,0.8)';
+      oc.lineWidth = 3;
+      oc.stroke();
+      oc.fillStyle = 'white';
+      oc.font = 'bold 18px system-ui';
+      oc.textAlign = 'center';
+      oc.textBaseline = 'middle';
+      oc.fillText(t.label, x, y);
+    }
+    if (!state.isPro) {
+      oc.save();
+      oc.globalAlpha = 0.35;
+      oc.fillStyle = '#ffffff';
+      oc.font = 'bold 20px system-ui';
+      oc.textAlign = 'right';
+      oc.textBaseline = 'bottom';
+      oc.fillText('courtdraw.app', 1190, 710);
+      oc.restore();
+    }
+    canvasW = savedW; canvasH = savedH;
+    const a = document.createElement('a');
+    a.download = `courtdraw-${state.courtId}.png`;
+    a.href = off.toDataURL('image/png');
+    a.click();
+    showToast('Play exported!');
+  };
+  img.src = url;
+}
+
+// ══════════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════════
+function toggleTheme() {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', state.theme);
+  document.getElementById('btn-theme').textContent = state.theme === 'dark' ? '☀' : '🌙';
+  localStorage.setItem('courtdraw_theme', state.theme);
+}
+
+// ══════════════════════════════════════════════
+// MODALS
+// ══════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-backdrop').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ══════════════════════════════════════════════
+// LOCAL STORAGE
+// ══════════════════════════════════════════════
+function saveToStorage() {
+  localStorage.setItem('courtdraw_tactics', JSON.stringify(state.savedTactics));
+  localStorage.setItem('courtdraw_pro', state.isPro ? '1' : '0');
+  localStorage.setItem('courtdraw_free_court', state.freeCourt || '');
+}
+function loadFromStorage() {
+  try {
+    const t = localStorage.getItem('courtdraw_tactics');
+    if (t) state.savedTactics = JSON.parse(t);
+    state.isPro = localStorage.getItem('courtdraw_pro') === '1';
+    state.freeCourt = localStorage.getItem('courtdraw_free_court') || null;
+    const theme = localStorage.getItem('courtdraw_theme');
+    if (theme) { state.theme = theme; document.documentElement.setAttribute('data-theme', theme); }
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+function init() {
+  loadFromStorage();
+  buildColors();
+  // Load first court
+  const court = COURTS[0];
+  document.getElementById('court-svg').innerHTML = court.svg();
+  document.getElementById('court-name-chip').textContent = court.name;
+  updateUndoButtons();
+  // Update Pro badge
+  if (state.isPro) {
+    const badge = document.getElementById('pro-badge');
+    badge.textContent = 'PRO';
+    badge.classList.remove('free-badge');
+  }
+  // Theme button
+  document.getElementById('btn-theme').textContent = state.theme === 'dark' ? '☀' : '🌙';
+  // Build tokens after SVG renders; auto-open court picker for first-time users
+  setTimeout(() => {
+    syncCanvas();
+    buildTokens();
+    if (!state.isPro && !state.freeCourt) openCourtPicker();
+  }, 120);
+  // PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

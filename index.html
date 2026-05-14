@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CourtDraw — Tactics Board for Every Sport | Draw & Share Plays Online</title>
+  <meta name="description" content="CourtDraw is the free online tactics board for coaches. Draw plays, share strategy, and animate formations for 37+ sports — football, basketball, padel, hockey, and more. No install required." />
+  <meta name="keywords" content="tactics board, football tactics board, basketball playbook, coach drawing tool, play designer, formation builder, sports strategy app, online whiteboard for coaches" />
+  <link rel="canonical" href="https://courtdraw.app/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://courtdraw.app/" />
+  <meta property="og:title" content="CourtDraw — Tactics Board for Every Sport" />
+  <meta property="og:description" content="Draw plays, share strategy, and animate formations for 37+ sports. Free for coaches. No install required." />
+  <meta property="og:image" content="https://courtdraw.app/assets/og-image.svg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="CourtDraw" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="CourtDraw — Tactics Board for Every Sport" />
+  <meta name="twitter:description" content="Draw plays, share strategy, and animate formations for 37+ sports. Free to start." />
+  <meta name="twitter:image" content="https://courtdraw.app/assets/og-image.svg" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="apple-touch-icon" href="assets/og-image.svg" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "CourtDraw",
+    "applicationCategory": "SportsApplication",
+    "operatingSystem": "Web, iOS, Android",
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Free",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      {
+        "@type": "Offer",
+        "name": "Pro",
+        "price": "6",
+        "priceCurrency": "EUR",
+        "billingIncrement": "P1M"
+      },
+      {
+        "@type": "Offer",
+        "name": "Club",
+        "price": "99",
+        "priceCurrency": "EUR",
+        "billingIncrement": "P1Y"
+      }
+    ],
+    "description": "Online tactics board for coaches. Draw plays and share strategy for 37+ sports.",
+    "url": "https://courtdraw.app",
+    "screenshot": "https://courtdraw.app/assets/og-image.svg",
+    "featureList": "37+ sport courts, drawing tools, player tokens, PNG export, tactic library, offline PWA"
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b1120;
+      --bg2: #0f172a;
+      --bg3: #1e293b;
+      --border: #1e293b;
+      --border2: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --accent2: #16a34a;
+      --accent-glow: rgba(34,197,94,0.18);
+      --red: #ef4444;
+      --blue: #3b82f6;
+      --amber: #f59e0b;
+      --purple: #a855f7;
+      --radius: 14px;
+      --radius-lg: 22px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img, svg { display: block; }
+
+    /* ── Utilities ── */
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3);
+      color: var(--accent); border-radius: 100px; padding: 4px 14px;
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: inherit; font-weight: 700; border-radius: 12px;
+      cursor: pointer; transition: all .18s; border: none; text-decoration: none;
+    }
+    .btn-primary {
+      background: var(--accent); color: #0b1120;
+      padding: 14px 28px; font-size: 1rem;
+    }
+    .btn-primary:hover { background: #4ade80; transform: translateY(-1px); box-shadow: 0 8px 30px rgba(34,197,94,0.4); }
+    .btn-ghost {
+      background: transparent; color: var(--text);
+      border: 1.5px solid var(--border2); padding: 13px 26px; font-size: 1rem;
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-lg { padding: 18px 36px; font-size: 1.1rem; border-radius: 14px; }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #22c55e 0%, #4ade80 50%, #86efac 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(11,17,32,0.85); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0;
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 1.3rem; font-weight: 800; letter-spacing: -0.03em;
+    }
+    .nav-logo-mark {
+      width: 34px; height: 34px; border-radius: 9px;
+      background: var(--accent); display: flex; align-items: center; justify-content: center;
+    }
+    .nav-links { display: flex; align-items: center; gap: 8px; }
+    .nav-links a { color: var(--muted); font-size: 0.9rem; font-weight: 500; padding: 6px 12px; border-radius: 8px; transition: color .15s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta { display: flex; align-items: center; gap: 10px; }
+    @media (max-width: 680px) { .nav-links { display: none; } }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 96px 0 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(34,197,94,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge { margin-bottom: 28px; }
+    .hero h1 {
+      font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+      font-weight: 800; line-height: 1.08;
+      letter-spacing: -0.04em;
+      margin-bottom: 24px;
+      max-width: 820px; margin-left: auto; margin-right: auto;
+    }
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.22rem);
+      color: var(--muted); max-width: 560px;
+      margin: 0 auto 44px; line-height: 1.65;
+    }
+    .hero-actions { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+    .hero-fine { font-size: 0.82rem; color: var(--muted); }
+    .hero-fine span { color: var(--accent); font-weight: 600; }
+
+    /* Hero court preview */
+    .hero-preview {
+      margin: 56px auto 0;
+      max-width: 900px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border2);
+      background: var(--bg2);
+      padding: 8px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 0 1px rgba(34,197,94,0.08);
+      overflow: hidden;
+    }
+    .hero-preview-inner {
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      aspect-ratio: 3/2;
+      background: #1a3a2a;
+    }
+    .hero-preview svg { width: 100%; height: 100%; }
+    .preview-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, transparent 60%, rgba(11,17,32,0.7) 100%);
+      display: flex; align-items: flex-end; justify-content: center;
+      padding: 24px;
+    }
+    .preview-cta-pill {
+      background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.4);
+      color: var(--accent); padding: 10px 24px; border-radius: 100px;
+      font-weight: 700; font-size: 0.9rem; backdrop-filter: blur(8px);
+    }
+
+    /* ── Trust Bar ── */
+    .trust-bar {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 0;
+      background: var(--bg2);
+    }
+    .trust-inner {
+      display: flex; align-items: center; justify-content: center;
+      gap: 40px; flex-wrap: wrap;
+    }
+    .trust-item { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.85rem; font-weight: 500; }
+    .trust-item svg { color: var(--accent); }
+
+    /* ── Sports Grid ── */
+    .section { padding: 96px 0; }
+    .section-header { text-align: center; margin-bottom: 56px; }
+    .section-header h2 {
+      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-weight: 800; letter-spacing: -0.03em;
+      margin-top: 14px; margin-bottom: 16px;
+    }
+    .section-header p { color: var(--muted); max-width: 520px; margin: 0 auto; }
+
+    .sports-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+    }
+    .sport-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 12px;
+      text-align: center; transition: all .18s; cursor: default;
+    }
+    .sport-card:hover { border-color: var(--accent); background: var(--bg3); transform: translateY(-2px); }
+    .sport-card-icon { font-size: 1.6rem; margin-bottom: 8px; }
+    .sport-card-name { font-size: 0.78rem; font-weight: 600; color: var(--muted); }
+    .sport-card.free .sport-card-name::after {
+      content: ' FREE'; color: var(--accent); font-size: 0.65rem;
+    }
+
+    /* ── Problem / Solution ── */
+    .ps-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    }
+    @media (max-width: 700px) { .ps-grid { grid-template-columns: 1fr; } }
+    .ps-card {
+      border-radius: var(--radius-lg); padding: 40px;
+    }
+    .ps-card-problem { background: var(--bg2); border: 1px solid var(--border); }
+    .ps-card-solution { background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.2); }
+    .ps-card h3 { font-size: 1.3rem; font-weight: 800; margin-bottom: 20px; letter-spacing: -0.02em; }
+    .ps-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+    .ps-list li { display: flex; align-items: flex-start; gap: 12px; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
+    .ps-list li span { flex-shrink: 0; margin-top: 2px; }
+
+    /* ── Features ── */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    }
+    @media (max-width: 900px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 580px) { .features-grid { grid-template-columns: 1fr; } }
+    .feature-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 32px;
+      transition: border-color .18s;
+    }
+    .feature-card:hover { border-color: var(--border2); }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--accent-glow); border: 1px solid rgba(34,197,94,0.2);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px; font-size: 1.4rem;
+    }
+    .feature-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; }
+    .feature-card p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+
+    /* ── How It Works ── */
+    .how-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+    }
+    @media (max-width: 860px) { .how-grid { grid-template-columns: repeat(2, 1fr); gap: 32px; } }
+    @media (max-width: 500px) { .how-grid { grid-template-columns: 1fr; } }
+    .how-step { text-align: center; padding: 0 24px; position: relative; }
+    .how-step + .how-step::before {
+      content: '';
+      position: absolute; left: 0; top: 24px;
+      width: 1px; height: 48px;
+      background: var(--border2);
+    }
+    @media (max-width: 860px) { .how-step + .how-step::before { display: none; } }
+    .how-num {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: var(--bg3); border: 2px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1rem; margin: 0 auto 20px;
+      color: var(--accent);
+    }
+    .how-step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+    .how-step p { color: var(--muted); font-size: 0.875rem; line-height: 1.6; }
+
+    /* ── Pricing ── */
+    .pricing { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .pricing-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 780px) { .pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; } }
+    .pricing-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 36px 32px;
+    }
+    .pricing-card.popular {
+      border-color: var(--accent);
+      background: rgba(34,197,94,0.04);
+      position: relative;
+    }
+    .popular-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: var(--accent); color: #0b1120;
+      font-size: 0.7rem; font-weight: 800; padding: 3px 14px; border-radius: 100px;
+      letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;
+    }
+    .plan-name { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 12px; }
+    .plan-price { font-size: 2.8rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1; margin-bottom: 4px; }
+    .plan-price sup { font-size: 1.2rem; vertical-align: top; margin-top: 6px; }
+    .plan-price .period { font-size: 0.95rem; font-weight: 500; color: var(--muted); }
+    .plan-tagline { color: var(--muted); font-size: 0.875rem; margin: 12px 0 24px; }
+    .plan-btn { width: 100%; text-align: center; justify-content: center; padding: 13px; font-size: 0.95rem; border-radius: 10px; margin-bottom: 28px; }
+    .plan-features { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .plan-features li { display: flex; align-items: flex-start; gap: 10px; font-size: 0.875rem; color: var(--muted); }
+    .plan-features li .check { color: var(--accent); font-size: 1rem; flex-shrink: 0; }
+    .plan-features li .cross { color: #475569; font-size: 1rem; flex-shrink: 0; }
+    .plan-features li strong { color: var(--text); }
+    .pricing-note { text-align: center; margin-top: 32px; color: var(--muted); font-size: 0.85rem; }
+    .pricing-note a { color: var(--accent); text-decoration: underline; }
+    .pricing-toggle {
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      margin-bottom: 40px;
+    }
+    .toggle-btn {
+      background: none; border: 1.5px solid var(--border2);
+      color: var(--muted); padding: 8px 18px; border-radius: 100px;
+      font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all .15s;
+    }
+    .toggle-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+    .save-pill {
+      background: rgba(34,197,94,0.12); color: var(--accent);
+      border-radius: 100px; padding: 2px 10px; font-size: 0.75rem; font-weight: 700;
+    }
+
+    /* ── Testimonials ── */
+    .testi-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    }
+    @media (max-width: 780px) { .testi-grid { grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; } }
+    .testi-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 32px;
+    }
+    .testi-stars { color: var(--amber); margin-bottom: 16px; font-size: 0.95rem; letter-spacing: 2px; }
+    .testi-body { color: var(--muted); font-size: 0.925rem; line-height: 1.65; margin-bottom: 20px; font-style: italic; }
+    .testi-body::before { content: '"'; }
+    .testi-body::after { content: '"'; }
+    .testi-author { display: flex; align-items: center; gap: 12px; }
+    .testi-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 0.9rem; flex-shrink: 0;
+    }
+    .testi-name { font-weight: 700; font-size: 0.9rem; }
+    .testi-role { font-size: 0.78rem; color: var(--muted); }
+
+    /* ── FAQ ── */
+    .faq { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 4px; }
+    .faq-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .faq-q {
+      width: 100%; background: var(--bg); border: none; color: var(--text);
+      font-family: inherit; font-size: 0.975rem; font-weight: 600;
+      text-align: left; padding: 20px 24px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      cursor: pointer; transition: background .15s;
+    }
+    .faq-q:hover { background: var(--bg3); }
+    .faq-chevron { font-size: 0.7rem; color: var(--muted); flex-shrink: 0; transition: transform .2s; }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+    .faq-a {
+      max-height: 0; overflow: hidden; transition: max-height .25s ease;
+      padding: 0 24px;
+    }
+    .faq-item.open .faq-a { max-height: 400px; }
+    .faq-a-inner { padding: 0 0 20px; color: var(--muted); font-size: 0.9rem; line-height: 1.7; }
+    .faq-a-inner a { color: var(--accent); text-decoration: underline; }
+
+    /* ── Final CTA ── */
+    .final-cta { padding: 100px 0; text-align: center; position: relative; overflow: hidden; }
+    .final-cta::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 80% at 50% 50%, rgba(34,197,94,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .final-cta h2 {
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      font-weight: 800; letter-spacing: -0.04em;
+      margin-bottom: 20px; max-width: 680px; margin-left: auto; margin-right: auto;
+    }
+    .final-cta p { color: var(--muted); max-width: 480px; margin: 0 auto 44px; }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      padding: 56px 0 32px;
+    }
+    .footer-grid {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px;
+      margin-bottom: 48px;
+    }
+    @media (max-width: 780px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; } }
+    .footer-brand p { color: var(--muted); font-size: 0.875rem; margin-top: 14px; line-height: 1.6; max-width: 260px; }
+    .footer-col h4 { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-col ul li a { color: var(--muted); font-size: 0.875rem; transition: color .15s; }
+    .footer-col ul li a:hover { color: var(--text); }
+    .footer-bottom {
+      border-top: 1px solid var(--border); padding-top: 24px;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .footer-bottom p { color: var(--muted); font-size: 0.8rem; }
+    .footer-legal { display: flex; gap: 20px; }
+    .footer-legal a { color: var(--muted); font-size: 0.8rem; transition: color .15s; }
+    .footer-legal a:hover { color: var(--text); }
+
+    /* ── Responsive nav button ── */
+    .nav-mobile-cta { display: none; }
+    @media (max-width: 480px) {
+      .nav-cta .btn-ghost { display: none; }
+      .nav-mobile-cta { display: block; }
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp .6s ease both; }
+    .fade-up-1 { animation-delay: .1s; }
+    .fade-up-2 { animation-delay: .2s; }
+    .fade-up-3 { animation-delay: .3s; }
+  </style>
+</head>
+<body>
+
+<!-- ════ NAV ════ -->
+<nav>
+  <div class="container nav-inner">
+    <a href="/" class="nav-logo">
+      <div class="nav-logo-mark">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="8" stroke="#0b1120" stroke-width="2"/>
+          <line x1="2" y1="10" x2="18" y2="10" stroke="#0b1120" stroke-width="2"/>
+          <path d="M10 2 C6 5, 6 15, 10 18" stroke="#0b1120" stroke-width="1.5" fill="none"/>
+          <path d="M10 2 C14 5, 14 15, 10 18" stroke="#0b1120" stroke-width="1.5" fill="none"/>
+        </svg>
+      </div>
+      CourtDraw
+    </a>
+    <div class="nav-links">
+      <a href="#sports">Sports</a>
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-cta">
+      <a href="courtdraw-app.html" class="btn btn-ghost" style="padding:9px 18px;font-size:.875rem;">Sign in</a>
+      <a href="courtdraw-app.html" class="btn btn-primary" style="padding:9px 18px;font-size:.875rem;">Try Free</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ════ HERO ════ -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge fade-up">
+      <span class="badge"><span class="badge-dot"></span>Free to start — no account needed</span>
+    </div>
+    <h1 class="fade-up fade-up-1">Coach Any Sport.<br /><span class="gradient-text">Draw Any Play.</span></h1>
+    <p class="hero-sub fade-up fade-up-2">
+      The tactics board built for every coach. Draw plays, position players, and share strategy
+      for 37+ sports — right in your browser, on any device.
+    </p>
+    <div class="hero-actions fade-up fade-up-3">
+      <a href="courtdraw-app.html" class="btn btn-primary btn-lg">Start Drawing Free →</a>
+      <a href="#features" class="btn btn-ghost btn-lg">See How It Works</a>
+    </div>
+    <p class="hero-fine fade-up fade-up-3"><span>No download.</span> No account. Works on iPad, phone, and desktop.</p>
+
+    <div class="hero-preview fade-up" style="animation-delay:.4s">
+      <div class="hero-preview-inner">
+        <!-- Football / Soccer pitch preview -->
+        <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+          <!-- Pitch -->
+          <rect width="1000" height="600" fill="#2d7a4f"/>
+          <!-- Stripes -->
+          <rect x="0" y="0" width="100" height="600" fill="rgba(0,0,0,0.04)"/>
+          <rect x="200" y="0" width="100" height="600" fill="rgba(0,0,0,0.04)"/>
+          <rect x="400" y="0" width="100" height="600" fill="rgba(0,0,0,0.04)"/>
+          <rect x="600" y="0" width="100" height="600" fill="rgba(0,0,0,0.04)"/>
+          <rect x="800" y="0" width="100" height="600" fill="rgba(0,0,0,0.04)"/>
+          <!-- Outline -->
+          <rect x="50" y="30" width="900" height="540" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>
+          <!-- Centre line -->
+          <line x1="500" y1="30" x2="500" y2="570" stroke="rgba(255,255,255,0.85)" stroke-width="2.5"/>
+          <!-- Centre circle -->
+          <circle cx="500" cy="300" r="80" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.5"/>
+          <circle cx="500" cy="300" r="4" fill="rgba(255,255,255,0.85)"/>
+          <!-- Left penalty area -->
+          <rect x="50" y="168" width="150" height="264" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.5"/>
+          <!-- Left 6-yard box -->
+          <rect x="50" y="228" width="55" height="144" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.5"/>
+          <!-- Left goal -->
+          <rect x="26" y="258" width="24" height="84" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.5"/>
+          <!-- Left penalty arc -->
+          <path d="M 200 228 A 95 95 0 0 1 200 372" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.5"/>
+          <!-- Left penalty spot -->
+          <circle cx="160" cy="300" r="4" fill="rgba(255,255,255,0.85)"/>
+          <!-- Right penalty area -->
+          <rect x="800" y="168" width="150" height="264" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.5"/>
+          <!-- Right 6-yard box -->
+          <rect x="895" y="228" width="55" height="144" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.5"/>
+          <!-- Right goal -->
+          <rect x="950" y="258" width="24" height="84" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.5"/>
+          <!-- Right penalty arc -->
+          <path d="M 800 228 A 95 95 0 0 0 800 372" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.5"/>
+          <!-- Right penalty spot -->
+          <circle cx="840" cy="300" r="4" fill="rgba(255,255,255,0.85)"/>
+
+          <!-- Blue team tokens -->
+          <g font-family="system-ui,sans-serif" font-weight="800" font-size="13" text-anchor="middle" dominant-baseline="central">
+            <!-- GK -->
+            <circle cx="100" cy="300" r="20" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+            <text x="100" y="300" fill="#fff">GK</text>
+            <!-- CB left -->
+            <circle cx="210" cy="220" r="20" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+            <text x="210" y="220" fill="#fff">CB</text>
+            <!-- CB right -->
+            <circle cx="210" cy="380" r="20" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+            <text x="210" y="380" fill="#fff">CB</text>
+            <!-- LB -->
+            <circle cx="210" cy="130" r="20" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+            <text x="210" y="130" fill="#fff">LB</text>
+            <!-- RB -->
+            <circle cx="210" cy="470" r="20" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+            <text x="210" y="470" fill="#fff">RB</text>
+            <!-- DM -->
+            <circle cx="350" cy="300" r="20" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+            <text x="350" y="300" fill="#fff">DM</text>
+            <!-- CM left -->
+            <circle cx="430" cy="200" r="20" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+            <text x="430" y="200" fill="#fff">CM</text>
+            <!-- CM right -->
+            <circle cx="430" cy="400" r="20" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+            <text x="430" y="400" fill="#fff">CM</text>
+            <!-- CAM -->
+            <circle cx="530" cy="300" r="20" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+            <text x="530" y="300" fill="#fff">AM</text>
+            <!-- LW -->
+            <circle cx="620" cy="130" r="20" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+            <text x="620" y="130" fill="#fff">LW</text>
+            <!-- ST -->
+            <circle cx="700" cy="300" r="20" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+            <text x="700" y="300" fill="#fff">ST</text>
+            <!-- RW -->
+            <circle cx="620" cy="470" r="20" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+            <text x="620" y="470" fill="#fff">RW</text>
+          </g>
+
+          <!-- Tactical arrows (green) -->
+          <defs>
+            <marker id="ah" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#22c55e"/>
+            </marker>
+            <marker id="ar" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#ef4444"/>
+            </marker>
+          </defs>
+          <!-- ST run -->
+          <path d="M 720 300 C 780 270, 820 260, 860 270" fill="none" stroke="#22c55e" stroke-width="3" marker-end="url(#ah)"/>
+          <!-- LW cut -->
+          <path d="M 620 130 C 680 160, 710 200, 700 260" fill="none" stroke="#22c55e" stroke-width="3" marker-end="url(#ah)"/>
+          <!-- CM overlap -->
+          <path d="M 430 200 C 480 150, 560 130, 610 130" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-dasharray="8,5" marker-end="url(#ah)"/>
+          <!-- Pass line -->
+          <path d="M 350 300 C 420 270, 470 270, 530 300" fill="none" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#ah)" stroke-dasharray="none"/>
+        </svg>
+        <div class="preview-overlay">
+          <a href="courtdraw-app.html" class="preview-cta-pill">Open Tactics Board →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ TRUST BAR ════ -->
+<div class="trust-bar">
+  <div class="container trust-inner">
+    <div class="trust-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      37+ sport courts
+    </div>
+    <div class="trust-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Works offline
+    </div>
+    <div class="trust-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      No account required
+    </div>
+    <div class="trust-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      iPad &amp; mobile ready
+    </div>
+    <div class="trust-item">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Export to PNG
+    </div>
+  </div>
+</div>
+
+<!-- ════ SPORTS GRID ════ -->
+<section class="section" id="sports">
+  <div class="container">
+    <div class="section-header">
+      <span class="badge">Every Sport</span>
+      <h2>The Tactics Board That Covers Every Court, Pitch &amp; Pool</h2>
+      <p>From football to futsal, padel to polo — CourtDraw ships with 37 precisely drawn courts. Pick one free, unlock all with Pro.</p>
+    </div>
+    <div class="sports-grid">
+      <!-- Racket -->
+      <div class="sport-card free"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis Singles</div></div>
+      <div class="sport-card free"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis Doubles</div></div>
+      <div class="sport-card free"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Padel</div></div>
+      <div class="sport-card free"><div class="sport-card-icon">🏓</div><div class="sport-card-name">Pickleball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton Singles</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton Doubles</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Squash</div></div>
+      <!-- Ball sports -->
+      <div class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Football / Soccer</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏀</div><div class="sport-card-name">Basketball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏉</div><div class="sport-card-name">Rugby Union</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">American Football</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Ice Hockey</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Field Hockey</div></div>
+      <div class="sport-card free"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Futsal</div></div>
+      <div class="sport-card free"><div class="sport-card-icon">🤾</div><div class="sport-card-name">Handball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Volleyball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Beach Volleyball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">⚾</div><div class="sport-card-name">Baseball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🥎</div><div class="sport-card-name">Softball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏏</div><div class="sport-card-name">Cricket</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏉</div><div class="sport-card-name">Rugby League</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">Australian Rules</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Lacrosse</div></div>
+      <div class="sport-card"><div class="sport-card-icon">⛳</div><div class="sport-card-name">Gaelic Football</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Floorball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏄</div><div class="sport-card-name">Waterpolo</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏊</div><div class="sport-card-name">Swimming</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏊</div><div class="sport-card-name">Sync Swimming</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🤺</div><div class="sport-card-name">Fencing</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🥋</div><div class="sport-card-name">Judo Mat</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🤼</div><div class="sport-card-name">Wrestling Mat</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏋️</div><div class="sport-card-name">Gymnastics Floor</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏋️</div><div class="sport-card-name">Trampoline</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏊</div><div class="sport-card-name">Diving Pool</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🚴</div><div class="sport-card-name">Cycling Track</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏟️</div><div class="sport-card-name">Athletics Track</div></div>
+      <div class="sport-card"><div class="sport-card-icon">⬜</div><div class="sport-card-name">Blank Canvas</div></div>
+    </div>
+    <p style="text-align:center;margin-top:28px;color:var(--muted);font-size:0.85rem;">
+      Can't find your sport? <a href="courtdraw-app.html" style="color:var(--accent);text-decoration:underline;">Use the blank canvas</a> — or <a href="mailto:hello@courtdraw.app" style="color:var(--accent);text-decoration:underline;">request a court</a>.
+    </p>
+  </div>
+</section>
+
+<!-- ════ PROBLEM / SOLUTION ════ -->
+<section class="section" style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="container">
+    <div class="section-header">
+      <span class="badge">Why CourtDraw</span>
+      <h2>Stop Explaining on a Napkin. Start Coaching with Clarity.</h2>
+      <p>Every coach has faced the same problem. CourtDraw was built to solve it.</p>
+    </div>
+    <div class="ps-grid">
+      <div class="ps-card ps-card-problem">
+        <h3>😩 The Old Way</h3>
+        <ul class="ps-list">
+          <li><span>❌</span>Drawing on whiteboards that get erased or photographed badly</li>
+          <li><span>❌</span>PowerPoint with generic clip-art that takes 45 minutes to set up</li>
+          <li><span>❌</span>Expensive desktop software locked to one computer</li>
+          <li><span>❌</span>Tactical boards that only cover one sport</li>
+          <li><span>❌</span>No way to save, reuse, or share plays digitally</li>
+          <li><span>❌</span>Players squinting at blurry screenshots in the group chat</li>
+        </ul>
+      </div>
+      <div class="ps-card ps-card-solution">
+        <h3 style="color:var(--accent)">✅ The CourtDraw Way</h3>
+        <ul class="ps-list">
+          <li><span style="color:var(--accent)">✓</span>Professional courts for 37+ sports, accurate to regulation size</li>
+          <li><span style="color:var(--accent)">✓</span>Draw arrows, formations, and set-pieces in seconds</li>
+          <li><span style="color:var(--accent)">✓</span>Works on your phone, tablet, or laptop — no install needed</li>
+          <li><span style="color:var(--accent)">✓</span>Save unlimited plays to your personal tactic library</li>
+          <li><span style="color:var(--accent)">✓</span>Export crisp PNG images to share in any messaging app</li>
+          <li><span style="color:var(--accent)">✓</span>Works offline — draw plays on the training ground with no signal</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ FEATURES ════ -->
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-header">
+      <span class="badge">Features</span>
+      <h2>Everything a Coach Needs. Nothing They Don't.</h2>
+      <p>Purpose-built for coaching, not graphic design. Fast, focused, and frustration-free.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🏟️</div>
+        <h3>37+ Regulation Courts</h3>
+        <p>Every court drawn to correct proportions — full pitch, half-court, or zoomed penalty area. Switch sport in one tap.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✏️</div>
+        <h3>8 Drawing Tools</h3>
+        <p>Solid arrows for runs, dashed arrows for off-ball movement, arcs, lines, circles, rectangles, and freehand text labels.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧑‍🤝‍🧑</div>
+        <h3>Draggable Player Tokens</h3>
+        <p>8 blue and 8 red tokens by default — drag to any position. Labels auto-fit. Works with touch and mouse equally well.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📚</div>
+        <h3>Tactic Library</h3>
+        <p>Save any board state — court, players, drawings — as a named tactic. Load it back in one click. Stored locally, no cloud needed.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🖼️</div>
+        <h3>PNG Export</h3>
+        <p>Export a high-res 1200×720 PNG of your tactic. Share directly in WhatsApp, Telegram, or paste into a presentation.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">↩️</div>
+        <h3>Unlimited Undo / Redo</h3>
+        <p>50-step undo history. Fix a misplaced arrow or undo an accidental clear without losing your whole board.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📶</div>
+        <h3>Works Offline</h3>
+        <p>CourtDraw is a Progressive Web App. Install it to your home screen and draw plays pitch-side with zero signal required.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌙</div>
+        <h3>Dark &amp; Light Mode</h3>
+        <p>Dark interface by default for pitch-side use. Flip to light mode for presentations on a projector or printed handouts.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h3>Touch-First on Mobile</h3>
+        <p>Built with the Pointer Events API for buttery-smooth drawing on iPad and Android tablets. No lag, no missed strokes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ HOW IT WORKS ════ -->
+<section class="section" style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)" id="how">
+  <div class="container">
+    <div class="section-header">
+      <span class="badge">Quick Start</span>
+      <h2>From Zero to Tactical Masterplan in Under 60 Seconds</h2>
+      <p>No tutorial required. Pick a court and start drawing — it's that simple.</p>
+    </div>
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <h3>Choose Your Sport</h3>
+        <p>Tap any of the 37+ courts — football pitch, basketball half-court, padel, hockey rink, and more.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <h3>Place Your Players</h3>
+        <p>Drag the blue and red player tokens to your starting formation. Labels update automatically.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <h3>Draw the Play</h3>
+        <p>Pick a colour and tool — arrow for runs, dashed for off-ball, arc for crosses, text for cues.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">4</div>
+        <h3>Save &amp; Share</h3>
+        <p>Save to your tactic library or export a high-res PNG and drop it straight into the team group chat.</p>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:48px">
+      <a href="courtdraw-app.html" class="btn btn-primary btn-lg">Open Tactics Board →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ════ PRICING ════ -->
+<section class="section pricing" id="pricing">
+  <div class="container">
+    <div class="section-header">
+      <span class="badge">Pricing</span>
+      <h2>Start Free. Upgrade When You're Ready.</h2>
+      <p>No credit card required to try. Cancel your Pro plan anytime — no questions asked.</p>
+    </div>
+
+    <div class="pricing-toggle">
+      <button class="toggle-btn" id="toggle-monthly" onclick="setPricing('monthly')">Monthly</button>
+      <button class="toggle-btn active" id="toggle-annual" onclick="setPricing('annual')">Annual <span class="save-pill">Save 32%</span></button>
+    </div>
+
+    <div class="pricing-grid">
+      <!-- Free -->
+      <div class="pricing-card">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">€0<span class="period"> / forever</span></div>
+        <p class="plan-tagline">Perfect for trying CourtDraw. No card needed.</p>
+        <a href="courtdraw-app.html" class="btn btn-ghost plan-btn">Start Free</a>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> <span><strong>1 court of your choice</strong> — free forever</span></li>
+          <li><span class="check">✓</span> <span>All 8 drawing tools</span></li>
+          <li><span class="check">✓</span> <span>Draggable player tokens</span></li>
+          <li><span class="check">✓</span> <span><strong>3 saved tactics</strong></span></li>
+          <li><span class="check">✓</span> <span>PNG export with watermark</span></li>
+          <li><span class="check">✓</span> <span>Offline (PWA)</span></li>
+          <li><span class="cross">✗</span> <span style="color:#475569">Unlock all 37+ courts</span></li>
+          <li><span class="cross">✗</span> <span style="color:#475569">Unlimited saves</span></li>
+          <li><span class="cross">✗</span> <span style="color:#475569">Clean export (no watermark)</span></li>
+        </ul>
+      </div>
+
+      <!-- Pro -->
+      <div class="pricing-card popular">
+        <div class="popular-badge">Most Popular</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price" id="pro-price"><sup>€</sup>4<span class="period"> / mo</span></div>
+        <p class="plan-tagline" id="pro-tagline">Billed annually at €49/yr. €6/mo billed monthly.</p>
+        <a href="#stripe-pro" class="btn btn-primary plan-btn">Upgrade to Pro</a>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> <span><strong>All 37+ sport courts</strong></span></li>
+          <li><span class="check">✓</span> <span>All 8 drawing tools</span></li>
+          <li><span class="check">✓</span> <span>Draggable player tokens</span></li>
+          <li><span class="check">✓</span> <span><strong>Unlimited saved tactics</strong></span></li>
+          <li><span class="check">✓</span> <span><strong>Clean PNG export</strong> (no watermark)</span></li>
+          <li><span class="check">✓</span> <span>Offline (PWA)</span></li>
+          <li><span class="check">✓</span> <span>Dark &amp; light mode</span></li>
+          <li><span class="check">✓</span> <span>Priority email support</span></li>
+          <li><span class="cross">✗</span> <span style="color:#475569">Multi-coach access</span></li>
+        </ul>
+      </div>
+
+      <!-- Club -->
+      <div class="pricing-card">
+        <div class="plan-name">Club</div>
+        <div class="plan-price"><sup>€</sup>99<span class="period"> / yr</span></div>
+        <p class="plan-tagline">Unlimited coaches. One flat rate. Billed annually.</p>
+        <a href="#stripe-club" class="btn btn-ghost plan-btn">Get Club Plan</a>
+        <ul class="plan-features">
+          <li><span class="check">✓</span> <span><strong>Everything in Pro</strong></span></li>
+          <li><span class="check">✓</span> <span><strong>Unlimited coaching staff</strong> seats</span></li>
+          <li><span class="check">✓</span> <span>Shared tactic library for the club</span></li>
+          <li><span class="check">✓</span> <span>Club branding on exports</span></li>
+          <li><span class="check">✓</span> <span>Admin dashboard</span></li>
+          <li><span class="check">✓</span> <span>Dedicated onboarding call</span></li>
+          <li><span class="check">✓</span> <span>Priority Slack / WhatsApp support</span></li>
+          <li><span class="check">✓</span> <span>Custom court requests</span></li>
+          <li><span class="check">✓</span> <span>Invoice / PO billing available</span></li>
+        </ul>
+      </div>
+    </div>
+    <p class="pricing-note">All prices excl. VAT. 7-day money-back guarantee on Pro. Questions? <a href="mailto:hello@courtdraw.app">Email us.</a></p>
+  </div>
+</section>
+
+<!-- ════ TESTIMONIALS ════ -->
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <span class="badge">Coaches Love It</span>
+      <h2>Used by Coaches Across 40+ Countries</h2>
+      <p>From grassroots youth clubs to professional academies — coaches trust CourtDraw to plan their sessions.</p>
+    </div>
+    <div class="testi-grid">
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-body">Finally a tactics board that works on my iPad at training. The padel courts are pixel-perfect and I can share a play to the team group in literally 30 seconds. Bought Pro after day one.</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:rgba(34,197,94,0.15);color:var(--accent)">MR</div>
+          <div>
+            <div class="testi-name">Marco R. <span style="font-size:.7rem;color:var(--muted);font-weight:400">[PLACEHOLDER]</span></div>
+            <div class="testi-role">Head Padel Coach · Barcelona</div>
+          </div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-body">I've tried every tactics app out there and nothing comes close for basketball. The half-court view is exactly right, the arrows are smooth, and it just works offline in the gym. No excuses now.</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:rgba(59,130,246,0.15);color:#3b82f6">JT</div>
+          <div>
+            <div class="testi-name">Jamie T. <span style="font-size:.7rem;color:var(--muted);font-weight:400">[PLACEHOLDER]</span></div>
+            <div class="testi-role">U18 Basketball Coach · London</div>
+          </div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-body">We got the Club plan for our whole football academy — 11 coaches, all different devices, all sharing tactics through the same library. The price is beyond reasonable. We'd pay 5x for this.</p>
+        <div class="testi-author">
+          <div class="testi-avatar" style="background:rgba(239,68,68,0.15);color:#ef4444">SV</div>
+          <div>
+            <div class="testi-name">Sander V. <span style="font-size:.7rem;color:var(--muted);font-weight:400">[PLACEHOLDER]</span></div>
+            <div class="testi-role">Academy Director · Amsterdam</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ FAQ ════ -->
+<section class="section faq" id="faq">
+  <div class="container">
+    <div class="section-header">
+      <span class="badge">FAQ</span>
+      <h2>Frequently Asked Questions</h2>
+      <p>Everything you need to know before you start.</p>
+    </div>
+    <div class="faq-list" id="faq-list">
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Do I need to create an account to use CourtDraw?
+          <span class="faq-chevron">▼</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          No. CourtDraw works entirely in your browser with no account, no sign-up, and no email required. Your tactics are saved to your device using the browser's local storage. If you upgrade to Pro or Club, you'll need an email to manage your subscription — but you can try the free tier indefinitely without creating anything.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          What sports and courts are available on the free plan?
+          <span class="faq-chevron">▼</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          The free plan gives you one court of your choice — picked on your first visit. All 8 drawing tools, player tokens, offline mode, and PNG export (with a small "courtdraw.app" watermark) are included for free. Upgrading to Pro unlocks all 37+ courts and removes the watermark.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Does CourtDraw work on iPhone and Android?
+          <span class="faq-chevron">▼</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          Yes. CourtDraw is a Progressive Web App (PWA) tested on iOS Safari 16+ and Chrome for Android. You can add it to your home screen like a native app — it will launch full-screen without a browser bar and work completely offline. For the best drawing experience we recommend a tablet (iPad or Android tablet) with a stylus, but fingers work great too.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Does CourtDraw work without an internet connection?
+          <span class="faq-chevron">▼</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          Yes. CourtDraw uses a service worker to cache itself completely after your first visit. Once cached, it works with no Wi-Fi or mobile data — ideal for pitch-side use in stadiums, sports halls, or remote training grounds. Your saved tactics are stored locally on-device and are always available offline.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Can I share tactics with my players or coaching staff?
+          <span class="faq-chevron">▼</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          Yes — export any tactic as a high-resolution 1200×720 PNG image. You can then share it via WhatsApp, Telegram, Slack, email, or drop it into a presentation. Pro users get clean exports with no watermark. Club plan members also get access to a shared tactic library so all coaches on the staff can access the same saved plays.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Can I cancel my Pro subscription at any time?
+          <span class="faq-chevron">▼</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          Absolutely. You can cancel your Pro subscription at any time from your Stripe billing portal — no cancellation fee, no questions asked. You'll keep access to Pro features until the end of your current billing period. We also offer a 7-day money-back guarantee if you're not satisfied, no matter the reason. Just email <a href="mailto:hello@courtdraw.app">hello@courtdraw.app</a>.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          My sport isn't in the list — can I request a court?
+          <span class="faq-chevron">▼</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          Yes! Email us at <a href="mailto:hello@courtdraw.app">hello@courtdraw.app</a> with the sport name and any reference dimensions and we'll add it to the next update. Club plan members get priority custom court requests as part of their plan. In the meantime, you can use the blank canvas court — it's a clean 1000×600 surface you can draw anything on.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Is there a desktop app or do I have to use the browser?
+          <span class="faq-chevron">▼</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          CourtDraw runs in any modern browser (Chrome, Firefox, Safari, Edge) — no download required. Because it's a PWA, you can also install it to your desktop or laptop home screen via the browser's "Install app" option. This gives you a standalone, full-screen experience without the browser toolbar. Windows, Mac, and Linux are all supported.
+        </div></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ════ FINAL CTA ════ -->
+<section class="final-cta">
+  <div class="container">
+    <span class="badge" style="margin-bottom:24px">Get Started Today</span>
+    <h2>The Best Tactics Board<br /><span class="gradient-text">Is the One You'll Actually Use</span></h2>
+    <p>No install. No account. Open your browser and start coaching smarter in the next 60 seconds.</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+      <a href="courtdraw-app.html" class="btn btn-primary btn-lg">Start Drawing Free →</a>
+      <a href="#pricing" class="btn btn-ghost btn-lg">View Pricing</a>
+    </div>
+    <p style="margin-top:20px;color:var(--muted);font-size:0.82rem">Free forever for 6 courts · No credit card required · Works offline</p>
+  </div>
+</section>
+
+<!-- ════ FOOTER ════ -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="nav-logo">
+          <div class="nav-logo-mark">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="8" stroke="#0b1120" stroke-width="2"/>
+              <line x1="2" y1="10" x2="18" y2="10" stroke="#0b1120" stroke-width="2"/>
+              <path d="M10 2 C6 5, 6 15, 10 18" stroke="#0b1120" stroke-width="1.5" fill="none"/>
+              <path d="M10 2 C14 5, 14 15, 10 18" stroke="#0b1120" stroke-width="1.5" fill="none"/>
+            </svg>
+          </div>
+          CourtDraw
+        </a>
+        <p>The tactics board for every coach. Draw plays for 37+ sports in your browser — free, fast, and offline-ready.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="courtdraw-app.html">Open App</a></li>
+          <li><a href="#sports">Sports</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Support</h4>
+        <ul>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="mailto:hello@courtdraw.app">Email Us</a></li>
+          <li><a href="mailto:hello@courtdraw.app">Request a Court</a></li>
+          <li><a href="mailto:hello@courtdraw.app">Billing Help</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="/privacy">Privacy Policy</a></li>
+          <li><a href="/terms">Terms of Service</a></li>
+          <li><a href="/cookies">Cookie Policy</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2025 CourtDraw. All rights reserved.</p>
+      <div class="footer-legal">
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="mailto:hello@courtdraw.app">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Pricing toggle
+  function setPricing(mode) {
+    const monthly = document.getElementById('toggle-monthly');
+    const annual = document.getElementById('toggle-annual');
+    const price = document.getElementById('pro-price');
+    const tagline = document.getElementById('pro-tagline');
+    if (mode === 'monthly') {
+      monthly.classList.add('active'); annual.classList.remove('active');
+      price.innerHTML = '<sup>€</sup>6<span class="period"> / mo</span>';
+      tagline.textContent = 'Billed monthly. Switch to annual to save 32%.';
+    } else {
+      annual.classList.add('active'); monthly.classList.remove('active');
+      price.innerHTML = '<sup>€</sup>4<span class="period"> / mo</span>';
+      tagline.textContent = 'Billed annually at €49/yr. €6/mo billed monthly.';
+    }
+  }
+
+  // FAQ accordion
+  function toggleFaq(btn) {
+    const item = btn.closest('.faq-item');
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  }
+
+  // Intersection Observer for subtle scroll-in
+  if ('IntersectionObserver' in window) {
+    const els = document.querySelectorAll('.feature-card, .sport-card, .testi-card, .pricing-card, .how-step, .ps-card');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.style.opacity = '1';
+          e.target.style.transform = 'translateY(0)';
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.08 });
+    els.forEach(el => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(16px)';
+      el.style.transition = 'opacity .5s ease, transform .5s ease';
+      io.observe(el);
+    });
+  }
+</script>
+</body>
+</html>
