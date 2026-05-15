@@ -1,10 +1,17 @@
 [build]
   publish = "."
+  functions = "netlify/functions"
 
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+
+[[redirects]]
+  from = "https://www.courtdraw.app/*"
+  to = "https://courtdraw.app/:splat"
+  status = 301
+  force = true
 
 [[headers]]
   for = "/*"
@@ -12,3 +19,4 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"

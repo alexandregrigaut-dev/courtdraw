@@ -25,7 +25,10 @@
   <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0f172a" />
-  <link rel="apple-touch-icon" href="assets/og-image.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CourtDraw">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-192.png" />
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -708,7 +711,7 @@
       <div class="sport-card"><div class="sport-card-icon">⬜</div><div class="sport-card-name">Blank Canvas</div></div>
     </div>
     <p style="text-align:center;margin-top:28px;color:var(--muted);font-size:0.85rem;">
-      Can't find your sport? <a href="courtdraw-app.html" style="color:var(--accent);text-decoration:underline;">Use the blank canvas</a> — or <a href="mailto:hello@courtdraw.app" style="color:var(--accent);text-decoration:underline;">request a court</a>.
+      Can't find your sport? <a href="courtdraw-app.html" style="color:var(--accent);text-decoration:underline;">Use the blank canvas</a> — or <a href="mailto:Courtdraw.info@gmail.com" style="color:var(--accent);text-decoration:underline;">request a court</a>.
     </p>
   </div>
 </section>
@@ -915,7 +918,7 @@
         </ul>
       </div>
     </div>
-    <p class="pricing-note">All prices excl. VAT. 7-day money-back guarantee on Pro. Questions? <a href="mailto:hello@courtdraw.app">Email us.</a></p>
+    <p class="pricing-note">All prices excl. VAT. 7-day money-back guarantee on Pro. Questions? <a href="mailto:Courtdraw.info@gmail.com">Email us.</a></p>
   </div>
 </section>
 
@@ -1031,7 +1034,7 @@
           <span class="faq-chevron">▼</span>
         </button>
         <div class="faq-a"><div class="faq-a-inner">
-          Absolutely. You can cancel your Pro subscription at any time from your Stripe billing portal — no cancellation fee, no questions asked. You'll keep access to Pro features until the end of your current billing period. We also offer a 7-day money-back guarantee if you're not satisfied, no matter the reason. Just email <a href="mailto:hello@courtdraw.app">hello@courtdraw.app</a>.
+          Absolutely. You can cancel your Pro subscription at any time from your Stripe billing portal — no cancellation fee, no questions asked. You'll keep access to Pro features until the end of your current billing period. We also offer a 7-day money-back guarantee if you're not satisfied, no matter the reason. Just email <a href="mailto:Courtdraw.info@gmail.com">Courtdraw.info@gmail.com</a>.
         </div></div>
       </div>
 
@@ -1041,7 +1044,7 @@
           <span class="faq-chevron">▼</span>
         </button>
         <div class="faq-a"><div class="faq-a-inner">
-          Yes! Email us at <a href="mailto:hello@courtdraw.app">hello@courtdraw.app</a> with the sport name and any reference dimensions and we'll add it to the next update. Club plan members get priority custom court requests as part of their plan. In the meantime, you can use the blank canvas court — it's a clean 1000×600 surface you can draw anything on.
+          Yes! Email us at <a href="mailto:Courtdraw.info@gmail.com">Courtdraw.info@gmail.com</a> with the sport name and any reference dimensions and we'll add it to the next update. Club plan members get priority custom court requests as part of their plan. In the meantime, you can use the blank canvas court — it's a clean 1000×600 surface you can draw anything on.
         </div></div>
       </div>
 
@@ -1104,9 +1107,9 @@
         <h4>Support</h4>
         <ul>
           <li><a href="#faq">FAQ</a></li>
-          <li><a href="mailto:hello@courtdraw.app">Email Us</a></li>
-          <li><a href="mailto:hello@courtdraw.app">Request a Court</a></li>
-          <li><a href="mailto:hello@courtdraw.app">Billing Help</a></li>
+          <li><a href="mailto:Courtdraw.info@gmail.com">Email Us</a></li>
+          <li><a href="mailto:Courtdraw.info@gmail.com">Request a Court</a></li>
+          <li><a href="mailto:Courtdraw.info@gmail.com">Billing Help</a></li>
         </ul>
       </div>
       <div class="footer-col">
@@ -1119,11 +1122,11 @@
       </div>
     </div>
     <div class="footer-bottom">
-      <p>© 2025 CourtDraw. All rights reserved.</p>
+      <p>© 2026 CourtDraw. All rights reserved.</p>
       <div class="footer-legal">
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms</a>
-        <a href="mailto:hello@courtdraw.app">Contact</a>
+        <a href="mailto:Courtdraw.info@gmail.com">Contact</a>
       </div>
     </div>
   </div>
@@ -1173,6 +1176,12 @@
       el.style.transition = 'opacity .5s ease, transform .5s ease';
       io.observe(el);
     });
+  }
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(console.error);
   }
 </script>
 </body>

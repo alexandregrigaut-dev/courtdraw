@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#0f172a"/>
+
+  <!-- Decorative court lines (right side) -->
+  <g opacity="0.12" stroke="#22c55e" stroke-width="2" fill="none">
+    <!-- Court outline -->
+    <rect x="700" y="80" width="430" height="470" rx="4"/>
+    <!-- Centre line -->
+    <line x1="914" y1="80" x2="914" y2="550"/>
+    <!-- Centre circle -->
+    <circle cx="914" cy="315" r="80"/>
+    <!-- Left penalty area -->
+    <rect x="700" y="185" width="130" height="260"/>
+    <!-- Right penalty area -->
+    <rect x="1000" y="185" width="130" height="260"/>
+  </g>
+
+  <!-- Tactical arrows -->
+  <g opacity="0.25">
+    <defs>
+      <marker id="ah" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#22c55e"/>
+      </marker>
+    </defs>
+    <path d="M 780 315 C 840 280, 870 270, 910 275" fill="none" stroke="#22c55e" stroke-width="3" marker-end="url(#ah)"/>
+    <path d="M 850 220 C 890 200, 930 195, 960 210" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-dasharray="8,5" marker-end="url(#ah)"/>
+  </g>
+
+  <!-- Player tokens -->
+  <g opacity="0.3">
+    <circle cx="770" cy="315" r="18" fill="#3b82f6" stroke="white" stroke-width="2"/>
+    <circle cx="850" cy="240" r="18" fill="#3b82f6" stroke="white" stroke-width="2"/>
+    <circle cx="850" cy="390" r="18" fill="#3b82f6" stroke="white" stroke-width="2"/>
+    <circle cx="960" cy="315" r="18" fill="#ef4444" stroke="white" stroke-width="2"/>
+  </g>
+
+  <!-- Logo mark -->
+  <g transform="translate(90, 225)">
+    <rect width="64" height="64" rx="16" fill="#22c55e"/>
+    <circle cx="32" cy="32" r="22" stroke="#0f172a" stroke-width="3" fill="none"/>
+    <line x1="10" y1="32" x2="54" y2="32" stroke="#0f172a" stroke-width="3"/>
+    <path d="M32 10 C22 16, 22 48, 32 54" stroke="#0f172a" stroke-width="2.5" fill="none"/>
+    <path d="M32 10 C42 16, 42 48, 32 54" stroke="#0f172a" stroke-width="2.5" fill="none"/>
+  </g>
+
+  <!-- Main heading -->
+  <text x="90" y="350" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="96" fill="white" letter-spacing="-4">CourtDraw</text>
+
+  <!-- Tagline -->
+  <text x="94" y="410" font-family="system-ui, -apple-system, sans-serif" font-weight="500" font-size="36" fill="#94a3b8">Draw plays. Coach smarter.</text>
+
+  <!-- URL -->
+  <text x="94" y="490" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="22" fill="#22c55e">courtdraw.app</text>
+</svg>
