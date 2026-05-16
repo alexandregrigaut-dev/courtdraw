@@ -35,7 +35,8 @@ exports.handler = async (event) => {
     return { statusCode: 401, body: 'Invalid token' };
   }
 
-  const { priceId } = JSON.parse(event.body);
+  let priceId;
+  try { ({ priceId } = JSON.parse(event.body || '{}')); } catch { return { statusCode: 400, body: 'Bad JSON' }; }
   if (!priceId) return { statusCode: 400, body: 'Missing priceId' };
 
   const session = await stripe.checkout.sessions.create({
