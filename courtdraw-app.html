@@ -17,7 +17,7 @@
   --border: rgba(255,255,255,0.15); --text: #ffffff; --text2: rgba(255,255,255,0.6);
   --accent: #93c5fd; --accent-dim: rgba(147,197,253,0.18);
   --red: #ef4444; --blue: #3b82f6;
-  --header-h: 56px; --toolbar-h: 68px;
+  --header-h: 56px; --toolbar-h: 68px; --phase-bar-h: 36px;
   --radius: 10px; --transition: 0.18s ease;
 }
 [data-theme="light"] {
@@ -84,9 +84,11 @@ button {
   letter-spacing: 0.05em; cursor: pointer;
 }
 #pro-badge.free-badge {
-  background: rgba(148,163,184,0.1); border-color: var(--border);
-  color: var(--text2);
+  background: var(--accent); color: #1e3a8a;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(147,197,253,0.35);
 }
+[data-theme="light"] #pro-badge.free-badge { color: white; }
 /* ── Board area ── */
 #board-area {
   flex: 1; overflow: hidden; position: relative;
@@ -280,7 +282,7 @@ button {
 .btn-cancel { flex: 1; padding: 12px; border-radius: 10px; background: var(--surface2); color: var(--text); border: 1px solid var(--border); font-weight: 600; font-size: 14px; cursor: pointer; }
 /* Toast */
 #toast {
-  position: fixed; bottom: calc(var(--toolbar-h) + 12px); left: 50%;
+  position: fixed; bottom: calc(var(--toolbar-h) + var(--phase-bar-h) + 12px); left: 50%;
   transform: translateX(-50%) translateY(8px);
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 20px; padding: 8px 16px; font-size: 13px; font-weight: 500;
@@ -290,6 +292,45 @@ button {
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 /* Pro-lock glow on hover */
 .pro-gate { position: relative; }
+/* Phase bar */
+#phase-bar {
+  height: var(--phase-bar-h); min-height: var(--phase-bar-h);
+  background: var(--surface); border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; padding: 0 12px; z-index: 10; flex-shrink: 0;
+}
+.phase-nav {
+  width: 26px; height: 26px; border-radius: 6px; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text2); flex-shrink: 0;
+}
+.phase-nav:hover:not(:disabled) { background: var(--surface2); color: var(--text); }
+.phase-nav:disabled { opacity: 0.25; cursor: not-allowed; }
+.phase-dots { display: flex; gap: 5px; align-items: center; }
+.phase-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--border); cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+  flex-shrink: 0;
+}
+.phase-dot.active { background: var(--accent); transform: scale(1.3); }
+.phase-dot:hover:not(.active) { background: var(--text2); }
+#phase-label { font-size: 10px; font-weight: 600; color: var(--text2); min-width: 60px; text-align: center; }
+#btn-add-phase {
+  font-size: 10px; font-weight: 700; color: var(--accent);
+  padding: 2px 7px; border-radius: 5px;
+  background: var(--accent-dim); border: 1px solid var(--accent);
+}
+#btn-add-phase:hover { filter: brightness(1.1); }
+/* Token rename input */
+.token-rename-input {
+  position: fixed; border: 2px solid var(--accent); border-radius: 6px;
+  background: var(--surface); color: var(--text);
+  font-size: 13px; font-family: inherit; font-weight: 700;
+  padding: 4px 6px; text-align: center; outline: none;
+  width: 64px; z-index: 300;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
 /* Responsive */
 @media (max-width: 480px) {
   .app-title { display: none; }
@@ -316,7 +357,7 @@ button {
     <button class="hdr-btn" id="btn-undo" title="Undo" onclick="undo()">↩</button>
     <button class="hdr-btn" id="btn-redo" title="Redo" onclick="redo()">↪</button>
     <button class="hdr-btn" id="btn-theme" title="Toggle theme" onclick="toggleTheme()">☀</button>
-    <button id="pro-badge" class="free-badge" onclick="openPaywall()">FREE</button>
+    <button id="pro-badge" class="free-badge" onclick="openPaywall()">Upgrade ✦</button>
   </div>
 </header>
 
@@ -328,6 +369,15 @@ button {
     <div id="token-layer"></div>
   </div>
 </main>
+
+<!-- Phase bar -->
+<div id="phase-bar">
+  <button class="phase-nav" id="btn-phase-prev" title="Previous phase" onclick="prevPhase()" disabled>◀</button>
+  <div class="phase-dots" id="phase-dots"></div>
+  <span id="phase-label">Phase 1 / 1</span>
+  <button class="phase-nav" id="btn-phase-next" title="Next phase" onclick="nextPhase()" disabled>▶</button>
+  <button id="btn-add-phase" title="Add new phase" onclick="addPhase()">+ Phase</button>
+</div>
 
 <!-- Toolbar -->
 <div id="toolbar">
@@ -374,7 +424,13 @@ button {
     <span class="icon">📚</span><span>Library</span>
   </button>
   <button class="tb-btn" title="Export PNG" onclick="exportPNG()">
-    <span class="icon">⬇</span><span>Export</span>
+    <span class="icon">🖼</span><span>PNG</span>
+  </button>
+  <button class="tb-btn" title="Print / Export PDF" onclick="exportPDF()">
+    <span class="icon">🖨</span><span>Print</span>
+  </button>
+  <button class="tb-btn" title="Copy share link" onclick="shareBoard()">
+    <span class="icon">🔗</span><span>Share</span>
   </button>
 </div>
 
@@ -425,11 +481,10 @@ button {
       <ul class="pw-features">
         <li>All 37+ sport courts unlocked</li>
         <li>Unlimited tactic saves</li>
-        <li>PDF playbook export (no watermark)</li>
-        <li>Custom player names &amp; numbers</li>
-        <li>Step-through animation mode</li>
-        <li>Team sharing link</li>
+        <li>PNG &amp; PDF export — no watermark</li>
+        <li>Priority support</li>
       </ul>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5;">✓ Player renaming, phase animation &amp; share links are free for everyone.</p>
       <div class="pw-plans">
         <button class="pw-plan featured" onclick="closeModal('modal-paywall'); startCheckout('proMonthly')">
           <div>
@@ -1158,6 +1213,8 @@ const state = {
   savedTactics: [],
   theme: 'dark',
   tokenPositions: [],
+  phases: null,       // array of {objects, tokens}
+  currentPhase: 0,
 };
 
 const COLORS = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#ffffff','#111827','#a855f7','#f97316'];
@@ -1176,7 +1233,7 @@ window.__updatePro = function(isPro) {
   localStorage.setItem('courtdraw_pro', isPro ? '1' : '0');
   const badge = document.getElementById('pro-badge');
   if (!badge) return;
-  badge.textContent = isPro ? 'PRO' : 'FREE';
+  badge.textContent = isPro ? 'PRO ✦' : 'Upgrade ✦';
   badge.classList.toggle('free-badge', !isPro);
 };
 window.__currentUser = null;
@@ -1386,7 +1443,7 @@ function onUp(e) {
   if (state.tool === 'eraser') { eraseAt(nx, ny); previewObj = null; redrawAll(); return; }
   if (dx < 3 && dy < 3 && state.tool !== 'eraser') { previewObj = null; return; }
   const obj = buildObject(state.startNX, state.startNY, nx, ny, state.points);
-  if (obj) { saveUndo(); state.objects.push(obj); }
+  if (obj) { saveUndo(); state.objects.push(obj); saveCurrentPhase(); }
   previewObj = null;
   redrawAll();
 }
@@ -1520,7 +1577,15 @@ function updateUndoButtons() {
 
 // ── Clear ──
 function confirmClear() { openModal('modal-confirm'); }
-function clearBoard() { saveUndo(); state.objects = []; redrawAll(); }
+function clearBoard() {
+  saveUndo();
+  state.objects = [];
+  // Reset all phases to empty, stay on phase 0
+  state.phases = [{ objects: [], tokens: JSON.parse(JSON.stringify(state.tokenPositions)) }];
+  state.currentPhase = 0;
+  updatePhaseUI();
+  redrawAll();
+}
 
 // ══════════════════════════════════════════════
 // PLAYER TOKENS
@@ -1542,6 +1607,11 @@ function buildTokens() {
   state.tokenPositions = DEFAULT_TOKENS.map(t => ({ ...t }));
   for (let i = 0; i < state.tokenPositions.length; i++) {
     createTokenEl(i);
+  }
+  if (!state.phases) {
+    state.phases = [{ objects: [], tokens: JSON.parse(JSON.stringify(state.tokenPositions)) }];
+    state.currentPhase = 0;
+    updatePhaseUI();
   }
 }
 
@@ -1574,10 +1644,10 @@ function repositionTokens() {
 }
 
 function makeDraggable(el, idx) {
-  let dragging = false, ox, oy, startL, startT;
+  let dragging = false, hasMoved = false, ox, oy, startL, startT;
   function start(e) {
     e.preventDefault(); e.stopPropagation();
-    dragging = true;
+    dragging = true; hasMoved = false;
     const p = e.touches ? e.touches[0] : e;
     ox = p.clientX; oy = p.clientY;
     startL = parseFloat(el.style.left) || 0;
@@ -1589,6 +1659,7 @@ function makeDraggable(el, idx) {
     if (!dragging) return;
     e.preventDefault();
     const p = e.touches ? e.touches[0] : e;
+    if (Math.abs(p.clientX - ox) > 5 || Math.abs(p.clientY - oy) > 5) hasMoved = true;
     const dx = p.clientX - ox, dy = p.clientY - oy;
     const layer = document.getElementById('token-layer');
     const lr = layer.getBoundingClientRect();
@@ -1603,6 +1674,7 @@ function makeDraggable(el, idx) {
     ];
   }
   function end() {
+    if (!hasMoved) renameToken(idx, el);
     dragging = false;
     el.style.zIndex = 5;
     el.style.transition = '';
@@ -1610,6 +1682,30 @@ function makeDraggable(el, idx) {
   el.addEventListener('pointerdown', start, { passive: false });
   window.addEventListener('pointermove', move, { passive: false });
   window.addEventListener('pointerup', end);
+}
+
+function renameToken(idx, el) {
+  const t = state.tokenPositions[idx];
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.maxLength = 4;
+  inp.value = t.label;
+  inp.className = 'token-rename-input';
+  const rect = el.getBoundingClientRect();
+  inp.style.left = Math.max(4, rect.left + rect.width / 2 - 32) + 'px';
+  inp.style.top = (rect.bottom + 6) + 'px';
+  document.body.appendChild(inp);
+  inp.focus(); inp.select();
+  function commit() {
+    const v = inp.value.trim().slice(0, 4);
+    if (v) { t.label = v; el.textContent = v; }
+    inp.remove();
+  }
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { inp.blur(); }
+    if (e.key === 'Escape') { inp.remove(); }
+  });
 }
 
 // ══════════════════════════════════════════════
@@ -1761,12 +1857,15 @@ function saveTactic() {
     openPaywall(`You've used all ${FREE_SAVES} free saves. Upgrade to Pro for unlimited saves.`);
     return;
   }
+  saveCurrentPhase();
   const tactic = {
     id: Date.now(),
     name,
     courtId: state.courtId,
     objects: JSON.parse(JSON.stringify(state.objects)),
     tokens: JSON.parse(JSON.stringify(state.tokenPositions)),
+    phases: JSON.parse(JSON.stringify(state.phases)),
+    currentPhase: state.currentPhase,
     ts: Date.now()
   };
   state.savedTactics.push(tactic);
@@ -1780,9 +1879,12 @@ function loadTactic(i) {
   const t = state.savedTactics[i];
   state.objects = JSON.parse(JSON.stringify(t.objects));
   state.tokenPositions = JSON.parse(JSON.stringify(t.tokens));
+  state.phases = t.phases ? JSON.parse(JSON.stringify(t.phases))
+    : [{ objects: JSON.parse(JSON.stringify(t.objects)), tokens: JSON.parse(JSON.stringify(t.tokens)) }];
+  state.currentPhase = t.currentPhase || 0;
   switchCourt(t.courtId, false);
   closeModal('modal-library');
-  setTimeout(() => { syncCanvas(); renderTokensFromState(); }, 200);
+  setTimeout(() => { syncCanvas(); renderTokensFromState(); updatePhaseUI(); }, 200);
   showToast(`"${t.name}" loaded.`);
 }
 
@@ -1855,7 +1957,7 @@ function exportPNG() {
       const x = t.pct[0] * 1200, y = t.pct[1] * 720;
       oc.beginPath();
       oc.arc(x, y, 24, 0, Math.PI*2);
-      oc.fillStyle = t.team === 'red' ? '#dc2626' : '#1d4ed8';
+      oc.fillStyle = t.team === 'red' ? '#dc2626' : '#60a5fa';
       oc.fill();
       oc.strokeStyle = 'rgba(255,255,255,0.8)';
       oc.lineWidth = 3;
@@ -1884,6 +1986,145 @@ function exportPNG() {
     showToast('Play exported!');
   };
   img.src = url;
+}
+
+// ══════════════════════════════════════════════
+// PDF EXPORT
+// ══════════════════════════════════════════════
+function exportPDF() {
+  const W = 2400, H = 1440;
+  const off = document.createElement('canvas');
+  off.width = W; off.height = H;
+  const oc = off.getContext('2d');
+  const court = COURTS.find(c => c.id === state.courtId);
+  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" width="${W}" height="${H}">${court.svg()}</svg>`;
+  const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  img.onload = () => {
+    oc.drawImage(img, 0, 0, W, H);
+    URL.revokeObjectURL(url);
+    const savedW = canvasW, savedH = canvasH;
+    canvasW = W; canvasH = H;
+    for (const obj of state.objects) drawObject(oc, obj);
+    for (const t of state.tokenPositions) {
+      const x = t.pct[0] * W, y = t.pct[1] * H;
+      oc.beginPath(); oc.arc(x, y, 28, 0, Math.PI * 2);
+      oc.fillStyle = t.team === 'red' ? '#dc2626' : '#60a5fa';
+      oc.fill();
+      oc.strokeStyle = 'rgba(255,255,255,0.8)'; oc.lineWidth = 4; oc.stroke();
+      oc.fillStyle = 'white';
+      oc.font = 'bold 22px system-ui'; oc.textAlign = 'center'; oc.textBaseline = 'middle';
+      oc.fillText(t.label, x, y);
+    }
+    oc.save(); oc.globalAlpha = 0.25; oc.fillStyle = '#ffffff';
+    oc.font = 'bold 24px system-ui'; oc.textAlign = 'right'; oc.textBaseline = 'bottom';
+    oc.fillText('courtdraw.app', W - 20, H - 16);
+    oc.restore();
+    canvasW = savedW; canvasH = savedH;
+    const dataUrl = off.toDataURL('image/png');
+    const win = window.open('', '_blank');
+    if (!win) { showToast('Allow pop-ups to use Print / PDF'); return; }
+    win.document.write(`<!DOCTYPE html><html><head><title>CourtDraw — ${court.name}</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}
+img{max-width:100%;height:auto;display:block}
+@media print{body{margin:0}img{width:100%;height:auto}@page{margin:0;size:landscape}}</style>
+</head><body><img src="${dataUrl}"></body></html>`);
+    win.document.close();
+    win.addEventListener('load', () => { win.focus(); win.print(); });
+    showToast('Print dialog opened.');
+  };
+  img.src = url;
+}
+
+// ══════════════════════════════════════════════
+// SHARE BOARD
+// ══════════════════════════════════════════════
+function shareBoard() {
+  saveCurrentPhase();
+  const payload = {
+    courtId: state.courtId,
+    objects: state.objects,
+    tokens: state.tokenPositions,
+    phases: state.phases,
+    currentPhase: state.currentPhase,
+  };
+  try {
+    const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
+    const url = location.origin + location.pathname + '#s=' + encoded;
+    if (url.length > 30000) { showToast('Board too complex to share via link — save it instead.'); return; }
+    navigator.clipboard.writeText(url)
+      .then(() => showToast('Share link copied to clipboard!'))
+      .catch(() => { location.hash = '#s=' + encoded; showToast('Link set — copy from address bar.'); });
+  } catch { showToast('Could not generate share link.'); }
+}
+
+function loadFromHash() {
+  const hash = location.hash;
+  if (!hash.startsWith('#s=')) return false;
+  try {
+    const payload = JSON.parse(decodeURIComponent(atob(hash.slice(3))));
+    if (payload.courtId) state.courtId = payload.courtId;
+    if (payload.objects) state.objects = payload.objects;
+    if (payload.tokens) state.tokenPositions = payload.tokens;
+    if (payload.phases) { state.phases = payload.phases; state.currentPhase = payload.currentPhase || 0; }
+    location.hash = '';
+    return true;
+  } catch { return false; }
+}
+
+// ══════════════════════════════════════════════
+// PHASE ANIMATION
+// ══════════════════════════════════════════════
+function saveCurrentPhase() {
+  if (!state.phases) return;
+  state.phases[state.currentPhase] = {
+    objects: JSON.parse(JSON.stringify(state.objects)),
+    tokens: JSON.parse(JSON.stringify(state.tokenPositions)),
+  };
+}
+
+function loadPhase(idx) {
+  saveCurrentPhase();
+  state.currentPhase = idx;
+  const ph = state.phases[idx];
+  state.objects = JSON.parse(JSON.stringify(ph.objects));
+  state.tokenPositions = JSON.parse(JSON.stringify(ph.tokens));
+  redrawAll();
+  renderTokensFromState();
+  updatePhaseUI();
+}
+
+function addPhase() {
+  saveCurrentPhase();
+  const newPhase = {
+    objects: [],
+    tokens: JSON.parse(JSON.stringify(state.tokenPositions)),
+  };
+  state.phases.push(newPhase);
+  loadPhase(state.phases.length - 1);
+  showToast(`Phase ${state.phases.length} added.`);
+}
+
+function prevPhase() { if (state.currentPhase > 0) loadPhase(state.currentPhase - 1); }
+function nextPhase() { if (state.currentPhase < state.phases.length - 1) loadPhase(state.currentPhase + 1); }
+
+function updatePhaseUI() {
+  if (!state.phases) return;
+  const total = state.phases.length;
+  const cur = state.currentPhase;
+  document.getElementById('phase-label').textContent = `Phase ${cur + 1} / ${total}`;
+  document.getElementById('btn-phase-prev').disabled = cur === 0;
+  document.getElementById('btn-phase-next').disabled = cur === total - 1;
+  const dotsEl = document.getElementById('phase-dots');
+  dotsEl.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'phase-dot' + (i === cur ? ' active' : '');
+    d.title = `Phase ${i + 1}`;
+    d.onclick = () => loadPhase(i);
+    dotsEl.appendChild(d);
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -1941,25 +2182,37 @@ function loadFromStorage() {
 // ══════════════════════════════════════════════
 function init() {
   loadFromStorage();
+  const sharedBoard = loadFromHash();
   buildColors();
-  // Load first court
-  const court = COURTS[0];
+  // Load court (from share link or default)
+  const startCourtId = sharedBoard ? state.courtId : 'tennis_singles';
+  const court = COURTS.find(c => c.id === startCourtId) || COURTS[0];
+  state.courtId = court.id;
   document.getElementById('court-svg').innerHTML = court.svg();
   document.getElementById('court-name-chip').textContent = court.name;
   updateUndoButtons();
   // Update Pro badge
   if (state.isPro) {
     const badge = document.getElementById('pro-badge');
-    badge.textContent = 'PRO';
+    badge.textContent = 'PRO ✦';
     badge.classList.remove('free-badge');
   }
   // Theme button
   document.getElementById('btn-theme').textContent = state.theme === 'dark' ? '☀' : '🌙';
-  // Build tokens after SVG renders; auto-open court picker for first-time users
+  // Build tokens, phases, then optionally open court picker
   setTimeout(() => {
     syncCanvas();
-    buildTokens();
-    if (!state.isPro && !state.freeCourt) openCourtPicker();
+    if (sharedBoard && state.tokenPositions.length) {
+      renderTokensFromState();
+      if (!state.phases) {
+        state.phases = [{ objects: JSON.parse(JSON.stringify(state.objects)), tokens: JSON.parse(JSON.stringify(state.tokenPositions)) }];
+        state.currentPhase = 0;
+      }
+      updatePhaseUI();
+    } else {
+      buildTokens();
+    }
+    if (!sharedBoard && !state.isPro && !state.freeCourt) openCourtPicker();
   }, 120);
   // PWA
   if ('serviceWorker' in navigator) {
