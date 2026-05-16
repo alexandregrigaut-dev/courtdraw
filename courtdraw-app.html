@@ -485,7 +485,7 @@ button {
 <div class="modal-backdrop" id="modal-paywall">
   <div class="modal-sheet">
     <div class="modal-header">
-      <span class="modal-title">Upgrade to Pro</span>
+      <span class="modal-title">Upgrade Your Plan</span>
       <button class="modal-close" onclick="closeModal('modal-paywall')">✕</button>
     </div>
     <div class="modal-body">
@@ -1265,6 +1265,13 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner) {
     // free-badge style = pulsing CTA; only show for users who have neither Pro nor Club
     badge.classList.toggle('free-badge', !isPro && !isClub);
   }
+  if (badge) {
+    // Pro/Club users: badge click opens billing portal; free users: opens paywall
+    badge.onclick = (isPro || isClub) ? () => openBillingPortal() : () => openPaywall();
+  }
+  // Phase button: show lock hint for non-Pro users
+  const phaseBtn = document.getElementById('btn-add-phase');
+  if (phaseBtn) phaseBtn.textContent = isPro ? '+ Phase' : '+ Phase 🔒';
   if (isClub) updateClubUI();
 };
 window.__currentUser = null;
@@ -1973,6 +1980,24 @@ async function startCheckout(planKey) {
   }
 }
 
+async function openBillingPortal() {
+  const user = window.__currentUser;
+  if (!user) { openPaywall(); return; }
+  try {
+    showToast('Opening billing portal…');
+    const token = await user.getIdToken();
+    const res = await fetch('/api/create-portal-session', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) throw new Error('server error');
+    const { url } = await res.json();
+    window.location.href = url;
+  } catch {
+    showToast('Could not open billing portal — please try again.');
+  }
+}
+
 // ══════════════════════════════════════════════
 // EXPORT PNG
 // ══════════════════════════════════════════════
@@ -2007,8 +2032,10 @@ function exportPNG() {
       oc.textBaseline = 'middle';
       oc.fillText(t.label, x, y);
     }
-    // Watermark: free users get "courtdraw.app", Club users get their club name, Pro gets none
-    const watermark = !state.isPro ? 'courtdraw.app' : (state.isClub && state.clubName ? state.clubName : null);
+    // Watermark priority: 1) Club branding, 2) No mark for Pro/Club, 3) courtdraw.app for free
+    const watermark = (state.isClub && state.clubName)
+      ? state.clubName
+      : (state.isPro || state.isClub) ? null : 'courtdraw.app';
     if (watermark) {
       oc.save(); oc.globalAlpha = 0.35; oc.fillStyle = '#ffffff';
       oc.font = 'bold 20px system-ui'; oc.textAlign = 'right'; oc.textBaseline = 'bottom';
@@ -2054,7 +2081,9 @@ function exportPDF() {
       oc.font = 'bold 22px system-ui'; oc.textAlign = 'center'; oc.textBaseline = 'middle';
       oc.fillText(t.label, x, y);
     }
-    const pdfWatermark = !state.isPro ? 'courtdraw.app' : (state.isClub && state.clubName ? state.clubName : null);
+    const pdfWatermark = (state.isClub && state.clubName)
+      ? state.clubName
+      : (state.isPro || state.isClub) ? null : 'courtdraw.app';
     if (pdfWatermark) {
       oc.save(); oc.globalAlpha = 0.25; oc.fillStyle = '#ffffff';
       oc.font = 'bold 24px system-ui'; oc.textAlign = 'right'; oc.textBaseline = 'bottom';
@@ -2187,6 +2216,7 @@ function loadClubTactic(t) {
 }
 
 async function deleteClubTactic(firestoreId) {
+  if (!confirm('Remove this tactic from the club library? All coaches will lose access to it.')) return;
   const user = window.__currentUser;
   if (!user) return;
   try {
@@ -2352,7 +2382,7 @@ function init() {
   const sharedBoard = loadFromHash();
   buildColors();
   // Load court (from share link or default)
-  const startCourtId = sharedBoard ? state.courtId : 'tennis_singles';
+  const startCourtId = sharedBoard ? state.courtId : (state.freeCourt || 'tennis_singles');
   const court = COURTS.find(c => c.id === startCourtId) || COURTS[0];
   state.courtId = court.id;
   document.getElementById('court-svg').innerHTML = court.svg();

@@ -46,8 +46,8 @@
 <body>
   <div class="card">
     <div class="icon">🎉</div>
-    <h1 id="success-title">Welcome to CourtDraw Pro!</h1>
-    <p id="success-body">Your subscription is active. All 37+ courts, unlimited saves, clean PNG exports, and more are now unlocked.</p>
+    <h1 id="success-title">You're all set!</h1>
+    <p id="success-body">Your subscription is now active.</p>
     <a class="btn" href="/courtdraw-app.html">Open the app →</a>
   </div>
   <script>
@@ -60,6 +60,9 @@
     if (plan === 'club') {
       document.getElementById('success-title').textContent = 'Welcome to CourtDraw Club!';
       document.getElementById('success-body').textContent = 'Your Club plan is active. All Pro features are unlocked plus your shared team library, club branding on exports, and the admin dashboard.';
+    } else {
+      document.getElementById('success-title').textContent = 'Welcome to CourtDraw Pro!';
+      document.getElementById('success-body').textContent = 'Your subscription is active. All 37+ courts, unlimited saves, clean PNG exports, and more are now unlocked.';
     }
   </script>
 </body>

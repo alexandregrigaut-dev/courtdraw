@@ -23,7 +23,14 @@ exports.handler = async (event) => {
   if (!hasClubAccess || !userData.clubId)
     return { statusCode: 403, body: 'Club access required' };
   const clubId = userData.clubId;
-  const body = JSON.parse(event.body);
+  let body;
+  try { body = JSON.parse(event.body); } catch { return { statusCode: 400, body: 'Bad JSON' }; }
+  if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0 || body.name.length > 100) {
+    return { statusCode: 400, body: 'Invalid tactic name' };
+  }
+  if (!Array.isArray(body.objects) || !Array.isArray(body.tokens)) {
+    return { statusCode: 400, body: 'Invalid tactic data' };
+  }
   const tacticId = (body.id || Date.now()).toString();
   await db.collection('clubs').doc(clubId).collection('tactics').doc(tacticId).set({
     id: body.id, name: body.name, courtId: body.courtId,

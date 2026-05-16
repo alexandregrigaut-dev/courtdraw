@@ -141,6 +141,12 @@ header {
           const userData = userSnap.exists() ? userSnap.data() : {};
           if (userData.clubId === clubId) {
             show('success-card');
+          } else {
+            // User is signed in but not yet a member — update button to reflect state
+            const btn = document.getElementById('join-btn');
+            if (btn) btn.innerHTML = 'Join Club Library';
+            const emailLink = document.getElementById('email-signin-link');
+            if (emailLink) emailLink.style.display = 'none';
           }
         }
       } catch(e) {

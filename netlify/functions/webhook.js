@@ -43,8 +43,13 @@ exports.handler = async (event) => {
 
   if (stripeEvent.type === 'checkout.session.completed') {
     const session = stripeEvent.data.object;
-    const plan = PLAN_BY_PRICE[session.metadata.priceId] || 'pro';
+    const plan = PLAN_BY_PRICE[session.metadata.priceId];
     const userId = session.metadata.userId;
+    // Reject unknown price IDs rather than silently granting 'pro'
+    if (!plan || !userId) {
+      console.error('Webhook: unknown priceId or missing userId', session.metadata);
+      return { statusCode: 200, body: JSON.stringify({ received: true }) };
+    }
     const update = { plan, stripeCustomerId: session.customer, subscribedAt: new Date().toISOString() };
     // Club plan: create the club document and assign a stable clubId
     if (plan === 'club') {

@@ -57,7 +57,9 @@ exports.handler = async (event) => {
   }
 
   // Link user to club (member role — keeps whatever plan they have, adds clubId)
+  const resolvedClubName = clubSnap.data().clubName || clubSnap.data().name || '';
   const update = { clubId };
+  if (resolvedClubName) update.clubName = resolvedClubName; // denormalize so app can show club name
   if (!userData.plan || userData.plan === 'free') {
     // Grant club-member access (read/write to shared library) without full club plan billing
     update.clubMember = true;
@@ -77,7 +79,7 @@ exports.handler = async (event) => {
       ok: true,
       role: 'member',
       clubId,
-      clubName: clubData.name || ''
+      clubName: clubData.clubName || clubData.name || ''
     })
   };
 };
