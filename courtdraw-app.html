@@ -1267,10 +1267,17 @@ function drawObject(ctx, obj, preview) {
     case 'arc': {
       const a = n2c(obj.x1, obj.y1), b = n2c(obj.x2, obj.y2);
       const cp = n2c(obj.cpx, obj.cpy);
+      // Trim the curve endpoint back by arrowhead length along the cp→b direction
+      // so the stem stops cleanly at the arrowhead base.
+      const ah  = arrowheadLen(obj.lineWidth);
+      const dx  = b.x - cp.x, dy = b.y - cp.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      const trimX = b.x - (dx / dist) * ah;
+      const trimY = b.y - (dy / dist) * ah;
       ctx.beginPath(); ctx.moveTo(a.x, a.y);
-      ctx.quadraticCurveTo(cp.x, cp.y, b.x, b.y);
+      ctx.quadraticCurveTo(cp.x, cp.y, trimX, trimY);
       ctx.stroke();
-      const dx = b.x - cp.x, dy = b.y - cp.y;
+      ctx.setLineDash([]);
       drawArrowhead(ctx, cp.x, cp.y, b.x, b.y, obj.color, obj.lineWidth);
       break;
     }
