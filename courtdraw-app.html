@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1d4ed8">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CourtDraw">
 <link rel="preconnect" href="https://fonts.bunny.net">
 <link href="https://fonts.bunny.net/css?family=cabinet-grotesk:700,900|satoshi:400,500,700" rel="stylesheet">
@@ -54,6 +54,10 @@ button {
   background: linear-gradient(135deg, #93c5fd 0%, #bfdbfe 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+[data-theme="light"] .app-title {
+  background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+  -webkit-background-clip: text; background-clip: text;
 }
 #court-name-chip {
   background: var(--surface2); border: 1px solid var(--border);
@@ -116,7 +120,7 @@ button {
   text-shadow: 0 1px 2px rgba(0,0,0,0.8);
 }
 .player-token.team-red { background: #dc2626; }
-.player-token.team-blue { background: #1d4ed8; }
+.player-token.team-blue { background: #60a5fa; }
 .player-token:active { cursor: grabbing; transform: translate(-50%,-50%) scale(1.15); box-shadow: 0 4px 16px rgba(0,0,0,0.6); }
 .ball-token { background: #f8fafc; border-color: #334155; color: #0f172a; }
 /* ── Toolbar ── */
@@ -147,7 +151,7 @@ button {
   transition: transform 0.12s, border-color 0.12s;
 }
 .color-dot:hover { transform: scale(1.15); }
-.color-dot.active { border-color: white; transform: scale(1.1); }
+.color-dot.active { border-color: var(--text); transform: scale(1.1); box-shadow: 0 0 0 1px var(--surface); }
 #lw-slider { width: 60px; flex-shrink: 0; accent-color: var(--accent); }
 /* ── Modals ── */
 .modal-backdrop {
@@ -228,10 +232,11 @@ button {
 .save-bar input:focus { border-color: var(--accent); }
 .btn-accent {
   padding: 10px 20px; border-radius: 10px;
-  background: var(--accent); color: #0f172a;
+  background: var(--accent); color: white;
   font-weight: 700; font-size: 14px; cursor: pointer;
   transition: var(--transition); border: none;
 }
+[data-theme="dark"] .btn-accent { color: #1e3a8a; }
 .btn-accent:hover { filter: brightness(1.1); }
 /* Paywall */
 #modal-paywall .modal-sheet { max-width: 480px; }
