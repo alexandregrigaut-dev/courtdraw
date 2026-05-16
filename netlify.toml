@@ -25,7 +25,7 @@
 
 [[redirects]]
   from = "/cookies"
-  to   = "/#faq"
+  to   = "/privacy.html"
   status = 301
 
 [[headers]]

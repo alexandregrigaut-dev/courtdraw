@@ -356,7 +356,7 @@ button {
   <div class="header-right">
     <button class="hdr-btn" id="btn-undo" title="Undo" onclick="undo()">↩</button>
     <button class="hdr-btn" id="btn-redo" title="Redo" onclick="redo()">↪</button>
-    <button class="hdr-btn" id="btn-theme" title="Toggle theme" onclick="toggleTheme()">☀</button>
+    <button class="hdr-btn" id="btn-theme" title="Toggle theme" onclick="toggleTheme()">☀️</button>
     <button id="pro-badge" class="free-badge" onclick="openPaywall()">Upgrade ✦</button>
   </div>
 </header>
@@ -1228,6 +1228,7 @@ const state = {
   points: [],
   isPro: false,
   isClub: false,
+  isClubOwner: false,
   clubId: null,
   clubName: '',
   freeCourt: null,
@@ -1249,9 +1250,10 @@ const STRIPE_PRICES = {
 };
 
 // Called by the Firebase module script once auth state resolves
-window.__updatePro = function(isPro, isClub, clubId, clubName) {
+window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner) {
   state.isPro = isPro;
   state.isClub = isClub || false;
+  state.isClubOwner = isClubOwner || false;
   state.clubId = clubId || null;
   state.clubName = clubName || localStorage.getItem('courtdraw_club_name') || '';
   localStorage.setItem('courtdraw_pro', isPro ? '1' : '0');
@@ -2068,6 +2070,7 @@ img{max-width:100%;height:auto;display:block}
 // SHARE BOARD
 // ══════════════════════════════════════════════
 function shareBoard() {
+  if (!state.isPro) { openPaywall('Shareable board links are a Pro feature.'); return; }
   saveCurrentPhase();
   const payload = {
     courtId: state.courtId,
@@ -2105,7 +2108,9 @@ function loadFromHash() {
 // ══════════════════════════════════════════════
 function updateClubUI() {
   document.getElementById('club-library-wrap').style.display = 'block';
-  document.getElementById('club-name-wrap').style.display = 'block';
+  // Club name editing only available to owners
+  const nameWrap = document.getElementById('club-name-wrap');
+  nameWrap.style.display = state.isClubOwner ? 'block' : 'none';
   const inp = document.getElementById('club-name-input');
   if (inp && state.clubName) inp.value = state.clubName;
   loadClubLibrary();
@@ -2128,19 +2133,29 @@ async function loadClubLibrary() {
       return;
     }
     body.innerHTML = '';
+    // Store tactics in a map keyed by firestoreId for safe retrieval
+    window.__clubTactics = {};
     for (const t of tactics) {
+      window.__clubTactics[t._firestoreId] = t;
       const row = document.createElement('div');
       row.className = 'tactic-row';
       const court = COURTS.find(c => c.id === t.courtId);
+      const safeName = t.name.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const courtName = court ? court.name : (t.courtId || '—');
+      const authorName = (t.authorName || 'Coach').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const sharedDate = new Date(t.sharedAt).toLocaleDateString();
       row.innerHTML = `
         <div class="tactic-info">
-          <div class="tactic-name">${t.name} <span style="font-size:10px;background:rgba(59,130,246,0.15);color:var(--accent);border-radius:4px;padding:1px 5px;font-weight:700;">Club</span></div>
-          <div class="tactic-meta">${court ? court.name : t.courtId} · ${t.authorName || 'Coach'} · ${new Date(t.sharedAt).toLocaleDateString()}</div>
+          <div class="tactic-name">${safeName} <span style="font-size:10px;background:rgba(59,130,246,0.15);color:var(--accent);border-radius:4px;padding:1px 5px;font-weight:700;">Club</span></div>
+          <div class="tactic-meta">${courtName} · ${authorName} · ${sharedDate}</div>
         </div>
         <div class="tactic-actions">
-          <button class="tac-btn load" onclick='loadClubTactic(${JSON.stringify(t)})'>Load</button>
-          <button class="tac-btn del" onclick="deleteClubTactic('${t._firestoreId}')">Del</button>
+          <button class="tac-btn load" data-club-id="${t._firestoreId}">Load</button>
+          ${state.isClubOwner ? `<button class="tac-btn del" data-del-club-id="${t._firestoreId}">Del</button>` : ''}
         </div>`;
+      row.querySelector('[data-club-id]').addEventListener('click', () => loadClubTactic(window.__clubTactics[t._firestoreId]));
+      const delBtn = row.querySelector('[data-del-club-id]');
+      if (delBtn) delBtn.addEventListener('click', () => deleteClubTactic(t._firestoreId));
       body.appendChild(row);
     }
   } catch {
@@ -2236,6 +2251,7 @@ function loadPhase(idx) {
 }
 
 function addPhase() {
+  if (!state.isPro) { openPaywall('Phase-by-phase animation is a Pro feature.'); return; }
   saveCurrentPhase();
   const newPhase = {
     objects: [],
@@ -2273,7 +2289,7 @@ function updatePhaseUI() {
 function toggleTheme() {
   state.theme = state.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', state.theme);
-  document.getElementById('btn-theme').textContent = state.theme === 'dark' ? '☀' : '🌙';
+  document.getElementById('btn-theme').textContent = state.theme === 'dark' ? '☀️' : '🌙';
   localStorage.setItem('courtdraw_theme', state.theme);
 }
 
@@ -2339,7 +2355,7 @@ function init() {
     badge.classList.remove('free-badge');
   }
   // Theme button
-  document.getElementById('btn-theme').textContent = state.theme === 'dark' ? '☀' : '🌙';
+  document.getElementById('btn-theme').textContent = state.theme === 'dark' ? '☀️' : '🌙';
   // Build tokens, phases, then optionally open court picker
   setTimeout(() => {
     syncCanvas();
@@ -2386,9 +2402,11 @@ document.addEventListener('DOMContentLoaded', init);
       const data = snap.exists() ? snap.data() : {};
       const plan = data.plan || 'free';
       const isPro = plan === 'pro' || plan === 'club';
-      const isClub = plan === 'club';
+      const isClubOwner = plan === 'club';
+      // isClub is true for club owners AND for invited coaches with clubMember:true
+      const isClub = isClubOwner || (data.clubMember === true && !!data.clubId);
       if (typeof window.__updatePro === 'function')
-        window.__updatePro(isPro, isClub, data.clubId || null, data.clubName || '');
+        window.__updatePro(isPro, isClub, data.clubId || null, data.clubName || '', isClubOwner);
     } catch {
       // Firestore unavailable — keep localStorage state as fallback
     }
