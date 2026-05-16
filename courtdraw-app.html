@@ -201,15 +201,15 @@ button {
 .cat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text2); margin-bottom: 8px; }
 .court-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
 .court-card {
-  background: rgba(10,20,50,0.55); border: 1.5px solid var(--border);
+  background: #0a1628; border: 1.5px solid var(--border);
   border-radius: 10px; padding: 10px 8px; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   transition: var(--transition); text-align: center;
 }
 [data-theme="light"] .court-card { background: #f0f5ff; }
-.court-card:hover { border-color: var(--accent); background: rgba(10,20,50,0.75); }
+.court-card:hover { border-color: var(--accent); background: #112244; }
 [data-theme="light"] .court-card:hover { background: var(--accent-dim); }
-.court-card.active { border-color: var(--accent); background: rgba(10,20,50,0.75); }
+.court-card.active { border-color: var(--accent); background: #112244; }
 [data-theme="light"] .court-card.active { background: var(--accent-dim); }
 .court-card.locked { opacity: 0.55; }
 .court-card svg { width: 48px; height: 30px; }
@@ -586,7 +586,7 @@ const COURTS = [
     id:'tennis_singles', name:'Tennis (Singles)', category:'racket', free:true,
     icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1d4ed8" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/></svg>`,
     svg(){return `
-      <rect width="1000" height="600" fill="#3b82f6"/>
+      <rect width="1000" height="600" fill="#0f2040"/>
       <rect x="70" y="151" width="860" height="298" fill="#1d4ed8"/>
       <rect x="70" y="151" width="860" height="298" fill="none" stroke="white" stroke-width="3"/>
       <line x1="500" y1="151" x2="500" y2="449" stroke="white" stroke-width="6"/>
@@ -603,7 +603,7 @@ const COURTS = [
     id:'tennis_doubles', name:'Tennis (Doubles)', category:'racket', free:true,
     icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1d4ed8" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/><line x1="5" y1="2" x2="5" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="43" y1="2" x2="43" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
     svg(){return `
-      <rect width="1000" height="600" fill="#3b82f6"/>
+      <rect width="1000" height="600" fill="#0f2040"/>
       <rect x="70" y="102" width="860" height="396" fill="#1d4ed8"/>
       <rect x="70" y="102" width="860" height="396" fill="none" stroke="white" stroke-width="3"/>
       <line x1="120" y1="102" x2="120" y2="498" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="4,3"/>
@@ -1486,6 +1486,8 @@ function onDown(e) {
   state.isDrawing = true;
   state.startNX = nx; state.startNY = ny;
   state.points = [[nx, ny]];
+  // Save undo snapshot before the first erase so the whole drag gesture is one undo unit
+  if (state.tool === 'eraser') { saveUndo(); eraseAt(nx, ny); redrawAll(); }
   canvas.setPointerCapture(e.pointerId);
 }
 
@@ -1494,6 +1496,8 @@ function onMove(e) {
   e.preventDefault();
   const { nx, ny } = getPos(e);
   state.points.push([nx, ny]);
+  // Continuous erase during drag — no preview needed
+  if (state.tool === 'eraser') { eraseAt(nx, ny); redrawAll(); return; }
   buildPreview(state.startNX, state.startNY, nx, ny, state.points);
   redrawAll();
 }
@@ -1503,8 +1507,9 @@ function onUp(e) {
   state.isDrawing = false;
   const { nx, ny } = getPos(e);
   const dx = Math.abs(nx - state.startNX), dy = Math.abs(ny - state.startNY);
-  if (state.tool === 'eraser') { saveUndo(); eraseAt(nx, ny); previewObj = null; redrawAll(); return; }
-  if (dx < 3 && dy < 3 && state.tool !== 'eraser') { previewObj = null; return; }
+  // Eraser: saveUndo already called in onDown; erase at final position too
+  if (state.tool === 'eraser') { eraseAt(nx, ny); previewObj = null; redrawAll(); return; }
+  if (dx < 3 && dy < 3) { previewObj = null; return; }
   const obj = buildObject(state.startNX, state.startNY, nx, ny, state.points);
   if (obj) { saveUndo(); state.objects.push(obj); saveCurrentPhase(); }
   previewObj = null;
@@ -2041,7 +2046,7 @@ function exportPNG() {
   const off = document.createElement('canvas');
   off.width = 1200; off.height = 720;
   const oc = off.getContext('2d');
-  const court = COURTS.find(c => c.id === state.courtId);
+  const court = COURTS.find(c => c.id === state.courtId) || COURTS[0];
   const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" width="1200" height="720">${court.svg()}</svg>`;
   const blob = new Blob([svgStr], {type:'image/svg+xml'});
   const url = URL.createObjectURL(blob);
@@ -2096,7 +2101,7 @@ function exportPDF() {
   const off = document.createElement('canvas');
   off.width = W; off.height = H;
   const oc = off.getContext('2d');
-  const court = COURTS.find(c => c.id === state.courtId);
+  const court = COURTS.find(c => c.id === state.courtId) || COURTS[0];
   const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" width="${W}" height="${H}">${court.svg()}</svg>`;
   const blob = new Blob([svgStr], { type: 'image/svg+xml' });
   const url = URL.createObjectURL(blob);
