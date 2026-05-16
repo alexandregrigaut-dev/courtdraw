@@ -344,12 +344,16 @@ button {
 <!-- Header -->
 <header id="app-header">
   <div id="logo-wrap">
-    <svg id="logo-svg" viewBox="0 0 28 28" fill="none">
-      <rect x="1" y="1" width="26" height="26" rx="5" stroke="#93c5fd" stroke-width="2"/>
-      <line x1="14" y1="1" x2="14" y2="27" stroke="#93c5fd" stroke-width="1.5"/>
-      <line x1="1" y1="14" x2="27" y2="14" stroke="#93c5fd" stroke-width="1.5"/>
-      <rect x="5" y="5" width="7" height="7" rx="1" fill="none" stroke="#93c5fd" stroke-width="1" opacity="0.5"/>
-      <rect x="16" y="16" width="7" height="7" rx="1" fill="none" stroke="#93c5fd" stroke-width="1" opacity="0.5"/>
+    <svg id="logo-svg" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="6" fill="#3b82f6"/>
+      <rect x="3" y="9" width="22" height="11" rx="1" fill="#1d4ed8"/>
+      <rect x="3" y="9" width="22" height="11" rx="1" stroke="white" stroke-width="0.9"/>
+      <line x1="14" y1="9" x2="14" y2="20" stroke="rgba(255,255,255,0.45)" stroke-width="1.4" stroke-dasharray="2,1.5"/>
+      <line x1="10" y1="9" x2="10" y2="20" stroke="white" stroke-width="0.75"/>
+      <line x1="18" y1="9" x2="18" y2="20" stroke="white" stroke-width="0.75"/>
+      <line x1="10" y1="14.5" x2="18" y2="14.5" stroke="white" stroke-width="0.75"/>
+      <line x1="3" y1="14.5" x2="5.5" y2="14.5" stroke="white" stroke-width="0.75"/>
+      <line x1="25" y1="14.5" x2="22.5" y2="14.5" stroke="white" stroke-width="0.75"/>
     </svg>
     <span class="app-title">CourtDraw</span>
   </div>
@@ -505,21 +509,21 @@ button {
         <li>Club branding on exports (Club plan)</li>
       </ul>
       <div class="pw-plans">
-        <button class="pw-plan featured" onclick="closeModal('modal-paywall'); startCheckout('proMonthly')">
+        <button class="pw-plan featured" onclick="startCheckout('proMonthly')">
           <div>
             <div class="pw-plan-name">Pro Monthly</div>
             <div class="pw-plan-sub">Everything unlocked</div>
           </div>
           <div class="pw-plan-price">€6<small>/mo</small></div>
         </button>
-        <button class="pw-plan" onclick="closeModal('modal-paywall'); startCheckout('proYearly')">
+        <button class="pw-plan" onclick="startCheckout('proYearly')">
           <div>
             <div class="pw-plan-name">Pro Yearly</div>
             <div class="pw-plan-sub">Save 32%</div>
           </div>
           <div class="pw-plan-price">€49<small>/yr</small></div>
         </button>
-        <button class="pw-plan" onclick="closeModal('modal-paywall'); startCheckout('club')">
+        <button class="pw-plan" onclick="startCheckout('club')">
           <div>
             <div class="pw-plan-name">Club License</div>
             <div class="pw-plan-sub">Unlimited coaches · shared library · club branding</div>
@@ -567,10 +571,10 @@ const COURTS = [
   // ── RACKET SPORTS ──
   {
     id:'tennis_singles', name:'Tennis (Singles)', category:'racket', free:true,
-    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1d4ed8" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/></svg>`,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1e40af" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/></svg>`,
     svg(){return `
-      <rect width="1000" height="600" fill="#3b82f6"/>
-      <rect x="70" y="151" width="860" height="298" fill="#1d4ed8"/>
+      <rect width="1000" height="600" fill="#2563eb"/>
+      <rect x="70" y="151" width="860" height="298" fill="#1e40af"/>
       <rect x="70" y="151" width="860" height="298" fill="none" stroke="white" stroke-width="3"/>
       <line x1="500" y1="151" x2="500" y2="449" stroke="rgba(255,255,255,0.5)" stroke-width="6" stroke-dasharray="8,5"/>
       <line x1="268" y1="151" x2="268" y2="449" stroke="white" stroke-width="2"/>
@@ -583,10 +587,10 @@ const COURTS = [
   },
   {
     id:'tennis_doubles', name:'Tennis (Doubles)', category:'racket', free:true,
-    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1d4ed8" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/><line x1="5" y1="2" x2="5" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="43" y1="2" x2="43" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1e40af" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/><line x1="5" y1="2" x2="5" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="43" y1="2" x2="43" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
     svg(){return `
-      <rect width="1000" height="600" fill="#3b82f6"/>
-      <rect x="70" y="102" width="860" height="396" fill="#1d4ed8"/>
+      <rect width="1000" height="600" fill="#2563eb"/>
+      <rect x="70" y="102" width="860" height="396" fill="#1e40af"/>
       <rect x="70" y="102" width="860" height="396" fill="none" stroke="white" stroke-width="3"/>
       <line x1="120" y1="102" x2="120" y2="498" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="4,3"/>
       <line x1="880" y1="102" x2="880" y2="498" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="4,3"/>
@@ -1331,12 +1335,18 @@ function drawObject(ctx, obj, preview) {
       if (obj.points && obj.points.length > 1) {
         const pts  = obj.points.map(p => n2c(p[0], p[1]));
         const last = pts[pts.length - 1];
-        const prev = pts[Math.max(0, pts.length - 3)];
-        // Trim the final segment so the stem ends at the arrowhead base.
-        const ah    = arrowheadLen(obj.lineWidth);
-        const ang   = Math.atan2(last.y - prev.y, last.x - prev.x);
+        // Find stable direction: look back until we find a point far enough away
+        const minDist = canvasW * 0.03;
+        let prev = pts[Math.max(0, pts.length - 2)];
+        for (let i = pts.length - 2; i >= 0; i--) {
+          const dx = last.x - pts[i].x, dy = last.y - pts[i].y;
+          if (dx * dx + dy * dy >= minDist * minDist) { prev = pts[i]; break; }
+        }
+        const ah  = arrowheadLen(obj.lineWidth);
+        const ang = Math.atan2(last.y - prev.y, last.x - prev.x);
         const trimX = last.x - ah * Math.cos(ang);
         const trimY = last.y - ah * Math.sin(ang);
+        ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(pts[0].x, pts[0].y);
         for (let i = 1; i < pts.length - 1; i++) ctx.lineTo(pts[i].x, pts[i].y);
@@ -1348,6 +1358,7 @@ function drawObject(ctx, obj, preview) {
         const a   = n2c(obj.x1, obj.y1), b = n2c(obj.x2, obj.y2);
         const ah  = arrowheadLen(obj.lineWidth);
         const ang = Math.atan2(b.y - a.y, b.x - a.x);
+        ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x - ah * Math.cos(ang), b.y - ah * Math.sin(ang));
@@ -1415,22 +1426,24 @@ function drawObject(ctx, obj, preview) {
 
 // Returns the length of the arrowhead for a given line-width, used to trim stems.
 function arrowheadLen(lw) {
-  return Math.max(10, lw * 3.5) * (canvasW / 1000);
+  return Math.max(14, lw * 4.5) * (canvasW / 1000);
 }
 
-// Draws a filled triangle arrowhead — explicit perpendicular geometry, same
-// proportions as the app icon (halfWidth = len × 7/16 ≈ 0.4375).
-// The tip lands exactly at (x2, y2); the filled triangle always renders on top
-// of the stem so the tip is never obscured.
+// Draws a sharp filled triangle arrowhead.
+// Tip lands exactly at (x2, y2). The stem is trimmed so it stops at the base,
+// and the opaque fill guarantees the tip is never obscured by the stem.
 function drawArrowhead(ctx, x1, y1, x2, y2, color, lw) {
   const angle = Math.atan2(y2 - y1, x2 - x1);
   const len   = arrowheadLen(lw);
-  const halfW = len * 0.4375;                          // 7/16 — matches icon proportions
+  const halfW = len * 0.30;                            // narrower = sharper, more arrow-like
   const bx    = x2 - len * Math.cos(angle);            // base centre x
   const by    = y2 - len * Math.sin(angle);            // base centre y
   ctx.save();
   ctx.fillStyle = color;
+  ctx.strokeStyle = color;
   ctx.setLineDash([]);
+  ctx.lineJoin = 'miter';
+  ctx.miterLimit = 10;
   ctx.beginPath();
   ctx.moveTo(x2, y2);                                                     // tip
   ctx.lineTo(bx - halfW * Math.sin(angle), by + halfW * Math.cos(angle)); // base left
@@ -1957,9 +1970,12 @@ function openPaywall(reason) {
 async function startCheckout(planKey) {
   const user = window.__currentUser;
   if (!user) {
-    window.location.href = '/login.html';
+    closeModal('modal-paywall');
+    showToast('Please sign in to upgrade — redirecting…');
+    setTimeout(() => { window.location.href = '/login.html?next=' + encodeURIComponent(location.pathname); }, 1400);
     return;
   }
+  closeModal('modal-paywall');
   try {
     showToast('Redirecting to checkout…');
     const token = await user.getIdToken();
