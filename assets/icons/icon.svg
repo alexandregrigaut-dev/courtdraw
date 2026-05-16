@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 
   <!-- Background — lighter blue (outside the court) -->
-  <rect width="512" height="512" rx="112" fill="#2563eb"/>
+  <rect width="512" height="512" rx="112" fill="#3b82f6"/>
 
   <!-- App name -->
   <text x="256" y="120"
@@ -12,8 +12,8 @@
         fill="#ffffff"
         text-anchor="middle">CourtDraw</text>
 
-  <!-- Court interior — darker blue for the playing surface -->
-  <rect x="36" y="154" width="440" height="204" rx="2" fill="#1e40af"/>
+  <!-- Court interior — same darker blue as V6 background -->
+  <rect x="36" y="154" width="440" height="204" rx="2" fill="#1d4ed8"/>
 
   <!-- ITF tennis court lines — white -->
   <rect x="36" y="154" width="440" height="204" rx="2"

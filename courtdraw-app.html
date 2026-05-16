@@ -158,7 +158,7 @@ button {
 #lw-slider { width: 60px; flex-shrink: 0; accent-color: var(--accent); }
 /* ── Modals ── */
 .modal-backdrop {
-  position: fixed; inset: 0; z-index: 100;
+  position: fixed; inset: 0; z-index: 400;
   background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
   display: none; align-items: flex-end; justify-content: center;
 }
@@ -199,13 +199,16 @@ button {
 .cat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text2); margin-bottom: 8px; }
 .court-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
 .court-card {
-  background: var(--surface2); border: 1.5px solid var(--border);
+  background: rgba(10,20,50,0.55); border: 1.5px solid var(--border);
   border-radius: 10px; padding: 10px 8px; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   transition: var(--transition); text-align: center;
 }
-.court-card:hover { border-color: var(--accent); background: var(--accent-dim); }
-.court-card.active { border-color: var(--accent); background: var(--accent-dim); }
+[data-theme="light"] .court-card { background: #f0f5ff; }
+.court-card:hover { border-color: var(--accent); background: rgba(10,20,50,0.75); }
+[data-theme="light"] .court-card:hover { background: var(--accent-dim); }
+.court-card.active { border-color: var(--accent); background: rgba(10,20,50,0.75); }
+[data-theme="light"] .court-card.active { background: var(--accent-dim); }
 .court-card.locked { opacity: 0.55; }
 .court-card svg { width: 48px; height: 30px; }
 .court-card-name { font-size: 11px; font-weight: 500; line-height: 1.2; color: var(--text); }
@@ -345,15 +348,23 @@ button {
 <header id="app-header">
   <div id="logo-wrap">
     <svg id="logo-svg" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- courtdraw-icon-v7 proportions, 28×28 -->
       <rect width="28" height="28" rx="6" fill="#3b82f6"/>
-      <rect x="3" y="9" width="22" height="11" rx="1" fill="#1d4ed8"/>
-      <rect x="3" y="9" width="22" height="11" rx="1" stroke="white" stroke-width="0.9"/>
-      <line x1="14" y1="9" x2="14" y2="20" stroke="rgba(255,255,255,0.45)" stroke-width="1.4" stroke-dasharray="2,1.5"/>
-      <line x1="10" y1="9" x2="10" y2="20" stroke="white" stroke-width="0.75"/>
-      <line x1="18" y1="9" x2="18" y2="20" stroke="white" stroke-width="0.75"/>
-      <line x1="10" y1="14.5" x2="18" y2="14.5" stroke="white" stroke-width="0.75"/>
-      <line x1="3" y1="14.5" x2="5.5" y2="14.5" stroke="white" stroke-width="0.75"/>
-      <line x1="25" y1="14.5" x2="22.5" y2="14.5" stroke="white" stroke-width="0.75"/>
+      <rect x="2" y="8.5" width="24" height="11" rx="1" fill="#1d4ed8"/>
+      <rect x="2" y="8.5" width="24" height="11" rx="1" stroke="white" stroke-width="0.9"/>
+      <!-- net (centre, dashed) -->
+      <line x1="14" y1="8.5" x2="14" y2="19.5" stroke="white" stroke-width="0.9"/>
+      <!-- service lines (v7 at ~36% and ~73% from left) -->
+      <line x1="10.7" y1="9.8" x2="10.7" y2="18.2" stroke="white" stroke-width="0.75"/>
+      <line x1="20.6" y1="9.8" x2="20.6" y2="18.2" stroke="white" stroke-width="0.75"/>
+      <!-- top + bottom service rows -->
+      <line x1="2" y1="10.9" x2="26" y2="10.9" stroke="white" stroke-width="0.75"/>
+      <line x1="2" y1="18.1" x2="26" y2="18.1" stroke="white" stroke-width="0.75"/>
+      <!-- centre T-line (between service lines) -->
+      <line x1="10.7" y1="14" x2="20.6" y2="14" stroke="white" stroke-width="0.75"/>
+      <!-- centre marks -->
+      <line x1="2" y1="14" x2="3.8" y2="14" stroke="white" stroke-width="0.75"/>
+      <line x1="26" y1="14" x2="24.2" y2="14" stroke="white" stroke-width="0.75"/>
     </svg>
     <span class="app-title">CourtDraw</span>
   </div>
@@ -571,26 +582,27 @@ const COURTS = [
   // ── RACKET SPORTS ──
   {
     id:'tennis_singles', name:'Tennis (Singles)', category:'racket', free:true,
-    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1e40af" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/></svg>`,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1d4ed8" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/></svg>`,
     svg(){return `
-      <rect width="1000" height="600" fill="#2563eb"/>
-      <rect x="70" y="151" width="860" height="298" fill="#1e40af"/>
+      <rect width="1000" height="600" fill="#3b82f6"/>
+      <rect x="70" y="151" width="860" height="298" fill="#1d4ed8"/>
       <rect x="70" y="151" width="860" height="298" fill="none" stroke="white" stroke-width="3"/>
-      <line x1="500" y1="151" x2="500" y2="449" stroke="rgba(255,255,255,0.5)" stroke-width="6" stroke-dasharray="8,5"/>
-      <line x1="268" y1="151" x2="268" y2="449" stroke="white" stroke-width="2"/>
-      <line x1="732" y1="151" x2="732" y2="449" stroke="white" stroke-width="2"/>
-      <line x1="268" y1="300" x2="500" y2="300" stroke="white" stroke-width="2"/>
-      <line x1="500" y1="300" x2="732" y2="300" stroke="white" stroke-width="2"/>
+      <line x1="500" y1="151" x2="500" y2="449" stroke="white" stroke-width="6"/>
+      <line x1="70" y1="192" x2="930" y2="192" stroke="white" stroke-width="2"/>
+      <line x1="70" y1="408" x2="930" y2="408" stroke="white" stroke-width="2"/>
+      <line x1="268" y1="192" x2="268" y2="408" stroke="white" stroke-width="2"/>
+      <line x1="732" y1="192" x2="732" y2="408" stroke="white" stroke-width="2"/>
+      <line x1="268" y1="300" x2="732" y2="300" stroke="white" stroke-width="2"/>
       <line x1="70" y1="295" x2="70" y2="305" stroke="white" stroke-width="3"/>
       <line x1="930" y1="295" x2="930" y2="305" stroke="white" stroke-width="3"/>
       <text x="500" y="548" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">TENNIS — SINGLES</text>`}
   },
   {
     id:'tennis_doubles', name:'Tennis (Doubles)', category:'racket', free:true,
-    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1e40af" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/><line x1="5" y1="2" x2="5" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="43" y1="2" x2="43" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1d4ed8" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/><line x1="5" y1="2" x2="5" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="43" y1="2" x2="43" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
     svg(){return `
-      <rect width="1000" height="600" fill="#2563eb"/>
-      <rect x="70" y="102" width="860" height="396" fill="#1e40af"/>
+      <rect width="1000" height="600" fill="#3b82f6"/>
+      <rect x="70" y="102" width="860" height="396" fill="#1d4ed8"/>
       <rect x="70" y="102" width="860" height="396" fill="none" stroke="white" stroke-width="3"/>
       <line x1="120" y1="102" x2="120" y2="498" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="4,3"/>
       <line x1="880" y1="102" x2="880" y2="498" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="4,3"/>
@@ -2357,7 +2369,11 @@ function toggleTheme() {
 // ══════════════════════════════════════════════
 // MODALS
 // ══════════════════════════════════════════════
-function openModal(id) { document.getElementById(id).classList.add('open'); }
+function openModal(id) {
+  // Dismiss any active token-rename input so it can't bleed above the modal
+  document.querySelectorAll('.token-rename-input').forEach(el => el.remove());
+  document.getElementById(id).classList.add('open');
+}
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-backdrop').forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
