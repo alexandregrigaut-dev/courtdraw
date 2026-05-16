@@ -6,6 +6,8 @@
 <title>CourtDraw — Tactics Board</title>
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
 <meta name="theme-color" content="#1d4ed8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -155,7 +157,7 @@ button {
 }
 .color-dot:hover { transform: scale(1.15); }
 .color-dot.active { border-color: var(--text); transform: scale(1.1); box-shadow: 0 0 0 1px var(--surface); }
-#lw-slider { width: 60px; flex-shrink: 0; accent-color: var(--accent); }
+/* #lw-slider reserved for future line-width control */
 /* ── Modals ── */
 .modal-backdrop {
   position: fixed; inset: 0; z-index: 400;
@@ -1492,7 +1494,7 @@ function onMove(e) {
   e.preventDefault();
   const { nx, ny } = getPos(e);
   state.points.push([nx, ny]);
-  buildPreview(state.startNX, state.startNY, nx, ny);
+  buildPreview(state.startNX, state.startNY, nx, ny, state.points);
   redrawAll();
 }
 
@@ -1501,7 +1503,7 @@ function onUp(e) {
   state.isDrawing = false;
   const { nx, ny } = getPos(e);
   const dx = Math.abs(nx - state.startNX), dy = Math.abs(ny - state.startNY);
-  if (state.tool === 'eraser') { eraseAt(nx, ny); previewObj = null; redrawAll(); return; }
+  if (state.tool === 'eraser') { saveUndo(); eraseAt(nx, ny); previewObj = null; redrawAll(); return; }
   if (dx < 3 && dy < 3 && state.tool !== 'eraser') { previewObj = null; return; }
   const obj = buildObject(state.startNX, state.startNY, nx, ny, state.points);
   if (obj) { saveUndo(); state.objects.push(obj); saveCurrentPhase(); }
@@ -1528,7 +1530,7 @@ function buildObject(x1, y1, x2, y2, pts) {
       const len = Math.sqrt((x2-x1)**2+(y2-y1)**2);
       if (len < 1) return null;
       const nx2 = -(y2-y1)/len, ny2 = (x2-x1)/len;
-      const offset = 80;
+      const offset = Math.max(30, len * 0.28);
       return { ...base, type:'arc', x1, y1, x2, y2, cpx: mx+nx2*offset, cpy: my+ny2*offset };
     }
     case 'circle': {
@@ -1555,10 +1557,7 @@ function simplifyPoints(pts, minDist) {
 
 function eraseAt(nx, ny) {
   const radius = 40;
-  state.objects = state.objects.filter(obj => {
-    return !objectNearPoint(obj, nx, ny, radius);
-  });
-  saveUndo(false);
+  state.objects = state.objects.filter(obj => !objectNearPoint(obj, nx, ny, radius));
 }
 
 function objectNearPoint(obj, nx, ny, r) {
@@ -1600,6 +1599,7 @@ function handleTextTool(e) {
       if (ev.key === 'Enter' && field.value.trim()) {
         saveUndo();
         state.objects.push({ type:'text', color:state.color, lineWidth:state.lineWidth, nx, ny, text:field.value.trim() });
+        saveCurrentPhase();
         redrawAll();
       }
       wrap.classList.remove('show');
@@ -1757,15 +1757,18 @@ function renameToken(idx, el) {
   inp.style.top = (rect.bottom + 6) + 'px';
   document.body.appendChild(inp);
   inp.focus(); inp.select();
+  let committed = false;
   function commit() {
+    if (committed) return;
+    committed = true;
     const v = inp.value.trim().slice(0, 4);
     if (v) { t.label = v; el.textContent = v; }
     inp.remove();
   }
   inp.addEventListener('blur', commit);
   inp.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { inp.blur(); }
-    if (e.key === 'Escape') { inp.remove(); }
+    if (e.key === 'Enter') { commit(); }
+    if (e.key === 'Escape') { committed = true; inp.remove(); }
   });
 }
 
@@ -1788,7 +1791,7 @@ function buildColors() {
     const d = document.createElement('div');
     d.className = 'color-dot' + (c === state.color ? ' active' : '');
     d.style.background = c;
-    if (c === '#ffffff') d.style.border = '2.5px solid #64748b';
+    if (c === '#ffffff' || c === '#111827') d.style.border = '2.5px solid #64748b';
     d.onclick = () => {
       state.color = c;
       document.querySelectorAll('.color-dot').forEach(x => x.classList.remove('active'));
@@ -1835,7 +1838,7 @@ function renderCourtGrid(filter) {
     for (const c of grouped[cat]) {
       const card = document.createElement('div');
       const isActive = c.id === state.courtId;
-      const isLocked = !state.isPro && state.freeCourt && c.id !== state.freeCourt;
+      const isLocked = !state.isPro && !c.free && state.freeCourt && c.id !== state.freeCourt;
       const isFree = c.id === state.freeCourt;
       card.className = `court-card${isActive?' active':''}${isLocked?' locked':''}`;
       card.innerHTML = `${c.icon}<div class="court-card-name">${c.name}</div>${isFree?'<span class="free-pill">FREE</span>':''}`;
@@ -1866,6 +1869,7 @@ function switchCourt(id, locked) {
   }
   state.courtId = id;
   const court = COURTS.find(c => c.id === id);
+  if (!court) return;
   document.getElementById('court-name-chip').textContent = court.name;
   const svg = document.getElementById('court-svg');
   svg.classList.add('switching');
@@ -2012,7 +2016,7 @@ async function openBillingPortal() {
   if (!user) { openPaywall(); return; }
   // Club members (invited coaches) don't have their own subscription
   if (state.isClub && !state.isClubOwner) {
-    showToast('You’re a club member — billing is managed by your club owner.');
+    showToast(‘You\’re a club member — billing is managed by your club owner.’);
     return;
   }
   try {
@@ -2087,7 +2091,7 @@ function exportPNG() {
 // PDF EXPORT
 // ══════════════════════════════════════════════
 function exportPDF() {
-  if (!state.isPro) { openPaywall('Print / PDF export is a Pro feature. Upgrade to unlock clean PDF exports.'); return; }
+  if (!state.isPro && !state.isClub) { openPaywall('Print / PDF export is a Pro feature. Upgrade to unlock clean PDF exports.'); return; }
   const W = 2400, H = 1440;
   const off = document.createElement('canvas');
   off.width = W; off.height = H;
@@ -2153,7 +2157,7 @@ function shareBoard() {
   try {
     const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
     const url = location.origin + location.pathname + '#s=' + encoded;
-    if (url.length > 30000) { showToast('Board too complex to share via link — save it instead.'); return; }
+    if (url.length > 4000) { showToast('Board too complex to share via link — save it to your library instead.'); return; }
     navigator.clipboard.writeText(url)
       .then(() => showToast('Share link copied to clipboard!'))
       .catch(() => { location.hash = '#s=' + encoded; showToast('Link set — copy from address bar.'); });
@@ -2169,7 +2173,7 @@ function loadFromHash() {
     if (payload.objects) state.objects = payload.objects;
     if (payload.tokens) state.tokenPositions = payload.tokens;
     if (payload.phases) { state.phases = payload.phases; state.currentPhase = payload.currentPhase || 0; }
-    location.hash = '';
+    history.replaceState(null, '', location.pathname + location.search);
     return true;
   } catch { return false; }
 }
@@ -2316,6 +2320,7 @@ function loadPhase(idx) {
   saveCurrentPhase();
   state.currentPhase = idx;
   const ph = state.phases[idx];
+  if (!ph) return;
   state.objects = JSON.parse(JSON.stringify(ph.objects));
   state.tokenPositions = JSON.parse(JSON.stringify(ph.tokens));
   redrawAll();
@@ -2364,6 +2369,9 @@ function toggleTheme() {
   document.documentElement.setAttribute('data-theme', state.theme);
   document.getElementById('btn-theme').textContent = state.theme === 'dark' ? '☀️' : '🌙';
   localStorage.setItem('courtdraw_theme', state.theme);
+  // Re-render court SVG so hardcoded fill colours re-apply under the new theme context
+  const court = COURTS.find(c => c.id === state.courtId);
+  if (court) document.getElementById('court-svg').innerHTML = court.svg();
 }
 
 // ══════════════════════════════════════════════
