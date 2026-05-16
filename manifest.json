@@ -4,8 +4,8 @@
   "description": "Draw and share tactical plays for 37+ sports. Free for coaches.",
   "start_url": "/courtdraw-app.html",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#1d4ed8",
+  "theme_color": "#1d4ed8",
   "orientation": "any",
   "icons": [
     {

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>CourtDraw — Tactics Board</title>
+<meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1d4ed8">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -521,7 +522,7 @@ button {
         <button class="pw-plan" onclick="closeModal('modal-paywall'); startCheckout('club')">
           <div>
             <div class="pw-plan-name">Club License</div>
-            <div class="pw-plan-sub">10 coaches · shared library · white-label</div>
+            <div class="pw-plan-sub">Unlimited coaches · shared library · club branding</div>
           </div>
           <div class="pw-plan-price">€99<small>/yr</small></div>
         </button>
@@ -1261,7 +1262,8 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner) {
   const badge = document.getElementById('pro-badge');
   if (badge) {
     badge.textContent = isClub ? 'CLUB ✦' : isPro ? 'PRO ✦' : 'Upgrade ✦';
-    badge.classList.toggle('free-badge', !isPro);
+    // free-badge style = pulsing CTA; only show for users who have neither Pro nor Club
+    badge.classList.toggle('free-badge', !isPro && !isClub);
   }
   if (isClub) updateClubUI();
 };
@@ -1863,16 +1865,23 @@ function renderLibrary() {
     const court = COURTS.find(c=>c.id===t.courtId);
     const row = document.createElement('div');
     row.className = 'tactic-row';
+    // Escape user-supplied tactic name to prevent XSS
+    const safeName = (t.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const courtName = court ? court.name : (t.courtId || '—');
+    const dateStr = new Date(t.ts).toLocaleDateString();
     row.innerHTML = `
       <div class="tactic-info">
-        <div class="tactic-name">${t.name}</div>
-        <div class="tactic-meta">${court ? court.name : t.courtId} · ${new Date(t.ts).toLocaleDateString()}</div>
+        <div class="tactic-name">${safeName}</div>
+        <div class="tactic-meta">${courtName} · ${dateStr}</div>
       </div>
       <div class="tactic-actions">
-        <button class="tac-btn load" onclick="loadTactic(${i})">Load</button>
-        ${state.isClub ? `<button class="tac-btn" onclick="shareToClub(${i})" style="background:rgba(59,130,246,0.1);color:var(--accent);border:1px solid var(--accent);">↑ Club</button>` : ''}
-        <button class="tac-btn del" onclick="deleteTactic(${i})">Del</button>
+        <button class="tac-btn load" data-idx="${i}">Load</button>
+        ${state.isClub ? `<button class="tac-btn club-share" data-idx="${i}" style="background:rgba(59,130,246,0.1);color:var(--accent);border:1px solid var(--accent);">↑ Club</button>` : ''}
+        <button class="tac-btn del" data-idx="${i}">Del</button>
       </div>`;
+    row.querySelector('.tac-btn.load').addEventListener('click', () => loadTactic(i));
+    if (state.isClub) row.querySelector('.tac-btn.club-share').addEventListener('click', () => shareToClub(i));
+    row.querySelector('.tac-btn.del').addEventListener('click', () => deleteTactic(i));
     body.appendChild(row);
   }
 }

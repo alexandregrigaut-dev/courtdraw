@@ -1,4 +1,4 @@
-const CACHE_NAME = 'courtdraw-v1';
+const CACHE_NAME = 'courtdraw-v2';
 const STATIC_ASSETS = [
   '/',
   '/courtdraw-app.html',

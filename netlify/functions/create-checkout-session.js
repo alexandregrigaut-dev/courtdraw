@@ -11,6 +11,13 @@ if (!admin.apps.length) {
   });
 }
 
+// Map price IDs to plan names (mirrors webhook.js)
+const PLAN_BY_PRICE = {
+  [process.env.STRIPE_PRICE_ID_PRO_MONTHLY]: 'pro',
+  [process.env.STRIPE_PRICE_ID_PRO_YEARLY]:  'pro',
+  [process.env.STRIPE_PRICE_ID_CLUB]:        'club'
+};
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -36,7 +43,7 @@ exports.handler = async (event) => {
     mode: 'subscription',
     customer_email: decoded.email,
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${process.env.PUBLIC_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`,
+    success_url: `${process.env.PUBLIC_URL}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${PLAN_BY_PRICE[priceId] || 'pro'}`,
     cancel_url:  `${process.env.PUBLIC_URL}/#pricing`,
     metadata: { userId: decoded.uid, priceId }
   });

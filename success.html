@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to CourtDraw Pro</title>
+  <meta name="robots" content="noindex">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1d4ed8">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -45,8 +46,8 @@
 <body>
   <div class="card">
     <div class="icon">🎉</div>
-    <h1>You're now CourtDraw Pro</h1>
-    <p>Your account has been upgraded. All Pro features are now unlocked — all 37+ courts, unlimited saves, and clean PNG exports.</p>
+    <h1 id="success-title">Welcome to CourtDraw Pro!</h1>
+    <p id="success-body">Your subscription is active. All 37+ courts, unlimited saves, clean PNG exports, and more are now unlocked.</p>
     <a class="btn" href="/courtdraw-app.html">Open the app →</a>
   </div>
   <script>
@@ -54,6 +55,12 @@
     if (!params.get('session_id')) window.location.href = '/';
     // Optimistic update — shows Pro immediately while webhook processes in the background
     localStorage.setItem('courtdraw_pro', '1');
+    // Detect plan type from URL param (Stripe passes metadata back via session)
+    const plan = params.get('plan');
+    if (plan === 'club') {
+      document.getElementById('success-title').textContent = 'Welcome to CourtDraw Club!';
+      document.getElementById('success-body').textContent = 'Your Club plan is active. All Pro features are unlocked plus your shared team library, club branding on exports, and the admin dashboard.';
+    }
   </script>
 </body>
 </html>

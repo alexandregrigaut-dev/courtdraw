@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CourtDraw — Join Club</title>
+<meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="preconnect" href="https://fonts.bunny.net">
@@ -42,8 +43,7 @@ header {
   margin-bottom: 24px; color: var(--accent);
 }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 20px; border-radius: 10px; font-family: inherit; font-weight: 700; font-size: 15px; cursor: pointer; border: none; text-decoration: none; transition: filter 0.15s; }
-.btn-accent { background: var(--accent); color: #1e3a8a; }
-[data-theme="light"] .btn-accent { color: white; }
+.btn-accent { background: var(--accent); color: white; }
 .btn-accent:hover { filter: brightness(1.1); }
 .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); margin-top: 10px; }
 .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
@@ -79,7 +79,8 @@ header {
   <div class="card-title">You've been invited!</div>
   <div class="card-sub">You're joining a shared club tactic library. Sign in to accept the invite.</div>
   <div class="club-name-display" id="club-name-display">Loading club…</div>
-  <button class="btn btn-accent" id="join-btn" onclick="handleJoin()">Join Club Library</button>
+  <button class="btn btn-accent" id="join-btn" onclick="handleJoin()">Join with Google</button>
+  <a id="email-signin-link" href="" class="btn btn-ghost" style="margin-top:8px;font-size:13px;opacity:0.8;">Sign in with email instead</a>
   <div class="divider">or</div>
   <a href="courtdraw-app.html" class="btn btn-ghost">Maybe Later</a>
   <div class="status" id="join-status"></div>
@@ -113,6 +114,12 @@ header {
     ['loading-card','invalid-card','join-card','success-card'].forEach(c => {
       document.getElementById(c).style.display = c === id ? 'block' : 'none';
     });
+  }
+
+  // Wire up the email sign-in link to include the return URL with club ID
+  const emailLink = document.getElementById('email-signin-link');
+  if (emailLink && clubId) {
+    emailLink.href = `/login.html?next=${encodeURIComponent(location.href)}`;
   }
 
   if (!clubId || !clubId.startsWith('club_')) {
