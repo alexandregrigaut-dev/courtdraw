@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CourtDraw — Join Club</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1d4ed8">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css?family=cabinet-grotesk:700,900|satoshi:400,500,700" rel="stylesheet">
+<style>
+:root {
+  --bg: #1d4ed8; --surface: #2563eb; --surface2: #3b82f6;
+  --border: rgba(255,255,255,0.15); --text: #ffffff; --text2: rgba(255,255,255,0.6);
+  --accent: #93c5fd; --accent-dim: rgba(147,197,253,0.18);
+  --red: #ef4444; --radius: 12px;
+}
+[data-theme="light"] {
+  --bg: #eff6ff; --surface: #ffffff; --surface2: #dbeafe;
+  --border: #bfdbfe; --text: #1e3a8a; --text2: #3b82f6;
+  --accent: #1d4ed8; --accent-dim: rgba(29,78,216,0.12);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Satoshi', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; -webkit-font-smoothing: antialiased; padding: 24px; }
+header {
+  position: fixed; top: 0; left: 0; right: 0;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 24px; height: 56px; display: flex; align-items: center;
+}
+.logo { font-family: 'Cabinet Grotesk', system-ui, sans-serif; font-weight: 900; font-size: 18px; color: var(--text); text-decoration: none; }
+.card {
+  background: var(--surface); border-radius: 20px; padding: 40px 36px;
+  border: 1px solid var(--border); max-width: 420px; width: 100%;
+  text-align: center; margin-top: 56px;
+}
+.club-icon { font-size: 48px; margin-bottom: 16px; }
+.card-title { font-family: 'Cabinet Grotesk', system-ui, sans-serif; font-size: 24px; font-weight: 900; margin-bottom: 8px; }
+.card-sub { color: var(--text2); font-size: 14px; line-height: 1.6; margin-bottom: 28px; }
+.club-name-display {
+  background: var(--accent-dim); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 16px; font-weight: 700; font-size: 15px;
+  margin-bottom: 24px; color: var(--accent);
+}
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 20px; border-radius: 10px; font-family: inherit; font-weight: 700; font-size: 15px; cursor: pointer; border: none; text-decoration: none; transition: filter 0.15s; }
+.btn-accent { background: var(--accent); color: #1e3a8a; }
+[data-theme="light"] .btn-accent { color: white; }
+.btn-accent:hover { filter: brightness(1.1); }
+.btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); margin-top: 10px; }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.status { margin-top: 16px; font-size: 13px; color: var(--text2); min-height: 20px; }
+.status.error { color: #ef4444; }
+.status.success { color: #4ade80; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.divider { margin: 20px 0; font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 10px; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+</style>
+</head>
+<body>
+<header>
+  <a href="courtdraw-app.html" class="logo">CourtDraw</a>
+</header>
+
+<div class="card" id="loading-card">
+  <div class="club-icon">⏳</div>
+  <div class="card-title">Loading…</div>
+  <div class="card-sub">Checking your invite link.</div>
+</div>
+
+<div class="card" id="invalid-card" style="display:none">
+  <div class="club-icon">❌</div>
+  <div class="card-title">Invalid Invite</div>
+  <div class="card-sub">This invite link is invalid or has expired. Ask your club admin for a new one.</div>
+  <a href="courtdraw-app.html" class="btn btn-ghost">Go to App</a>
+</div>
+
+<div class="card" id="join-card" style="display:none">
+  <div class="club-icon">🏟</div>
+  <div class="card-title">You've been invited!</div>
+  <div class="card-sub">You're joining a shared club tactic library. Sign in to accept the invite.</div>
+  <div class="club-name-display" id="club-name-display">Loading club…</div>
+  <button class="btn btn-accent" id="join-btn" onclick="handleJoin()">Join Club Library</button>
+  <div class="divider">or</div>
+  <a href="courtdraw-app.html" class="btn btn-ghost">Maybe Later</a>
+  <div class="status" id="join-status"></div>
+</div>
+
+<div class="card" id="success-card" style="display:none">
+  <div class="club-icon">✅</div>
+  <div class="card-title">You're in!</div>
+  <div class="card-sub">You now have access to your club's shared tactic library. Open the app to start browsing and saving plays.</div>
+  <a href="courtdraw-app.html" class="btn btn-accent">Open CourtDraw</a>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app":       "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth":      "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+  }
+}
+</script>
+<script type="module">
+  import { auth, db } from '/src/firebase.js';
+  import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+  import { doc, getDoc } from 'firebase/firestore';
+
+  const params = new URLSearchParams(location.search);
+  const clubId = params.get('c');
+
+  function show(id) {
+    ['loading-card','invalid-card','join-card','success-card'].forEach(c => {
+      document.getElementById(c).style.display = c === id ? 'block' : 'none';
+    });
+  }
+
+  if (!clubId || !clubId.startsWith('club_')) {
+    show('invalid-card');
+  } else {
+    // Fetch club name from Firestore
+    onAuthStateChanged(auth, async user => {
+      try {
+        const clubSnap = await getDoc(doc(db, 'clubs', clubId));
+        if (!clubSnap.exists()) { show('invalid-card'); return; }
+        const clubData = clubSnap.data();
+        const displayName = clubData.name || 'Club Library';
+        document.getElementById('club-name-display').textContent = displayName;
+        show('join-card');
+
+        if (user) {
+          // Already signed in — check if already a member
+          const userSnap = await getDoc(doc(db, 'users', user.uid));
+          const userData = userSnap.exists() ? userSnap.data() : {};
+          if (userData.clubId === clubId) {
+            show('success-card');
+          }
+        }
+      } catch(e) {
+        show('invalid-card');
+      }
+    });
+  }
+
+  window.handleJoin = async () => {
+    const btn = document.getElementById('join-btn');
+    const status = document.getElementById('join-status');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Joining…';
+
+    try {
+      let user = auth.currentUser;
+      if (!user) {
+        // Sign in first
+        status.textContent = 'Opening sign-in…';
+        status.className = 'status';
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        user = result.user;
+      }
+
+      const token = await user.getIdToken();
+      const res = await fetch('/.netlify/functions/join-club', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clubId })
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Failed to join club');
+      }
+
+      show('success-card');
+    } catch(e) {
+      btn.disabled = false;
+      btn.textContent = 'Join Club Library';
+      status.textContent = e.message || 'Something went wrong. Please try again.';
+      status.className = 'status error';
+    }
+  };
+</script>
+</body>
+</html>

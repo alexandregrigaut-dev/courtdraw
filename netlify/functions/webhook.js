@@ -44,11 +44,18 @@ exports.handler = async (event) => {
   if (stripeEvent.type === 'checkout.session.completed') {
     const session = stripeEvent.data.object;
     const plan = PLAN_BY_PRICE[session.metadata.priceId] || 'pro';
-    await db.collection('users').doc(session.metadata.userId).update({
-      plan,
-      stripeCustomerId: session.customer,
-      subscribedAt: new Date().toISOString()
-    });
+    const userId = session.metadata.userId;
+    const update = { plan, stripeCustomerId: session.customer, subscribedAt: new Date().toISOString() };
+    // Club plan: create the club document and assign a stable clubId
+    if (plan === 'club') {
+      const clubId = 'club_' + userId;
+      update.clubId = clubId;
+      await db.collection('clubs').doc(clubId).set({
+        ownerId: userId,
+        createdAt: new Date().toISOString()
+      }, { merge: true });
+    }
+    await db.collection('users').doc(userId).update(update);
     await sendEmail('paymentConfirmed', session.customer_email);
   }
 

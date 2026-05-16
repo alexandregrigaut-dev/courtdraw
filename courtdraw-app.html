@@ -456,6 +456,21 @@ button {
       <button class="modal-close" onclick="closeModal('modal-library')">✕</button>
     </div>
     <div class="modal-body" id="library-body"></div>
+    <div id="club-library-wrap" style="display:none;border-top:1px solid var(--border);padding:12px 20px 4px;flex-shrink:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <span class="cat-label">Club Library</span>
+        <button onclick="loadClubLibrary()" style="font-size:11px;color:var(--accent);font-weight:700;padding:2px 8px;border-radius:5px;background:var(--accent-dim);border:1px solid var(--accent);">↻ Refresh</button>
+      </div>
+      <div id="club-library-body"><p style="font-size:12px;color:var(--text2);padding:8px 0;">Loading club tactics…</p></div>
+    </div>
+    <div id="club-name-wrap" style="display:none;border-top:1px solid var(--border);padding:10px 20px;flex-shrink:0;">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="club-name-input" placeholder="Club name (on exports)…" maxlength="50"
+          style="flex:1;padding:7px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;outline:none;">
+        <button onclick="saveClubName()" style="padding:7px 12px;border-radius:8px;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);font-size:12px;font-weight:700;">Save</button>
+      </div>
+      <p style="font-size:11px;color:var(--text2);margin-top:4px;">Replaces the watermark on exports.</p>
+    </div>
     <div class="modal-footer">
       <div class="save-bar">
         <input type="text" id="tactic-name-input" placeholder="Name this play…" maxlength="40">
@@ -482,9 +497,12 @@ button {
         <li>All 37+ sport courts unlocked</li>
         <li>Unlimited tactic saves</li>
         <li>PNG &amp; PDF export — no watermark</li>
-        <li>Priority support</li>
+        <li>Custom player names &amp; numbers</li>
+        <li>Phase-by-phase animation</li>
+        <li>Shareable board links</li>
+        <li>Club shared library (Club plan)</li>
+        <li>Club branding on exports (Club plan)</li>
       </ul>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5;">✓ Player renaming, phase animation &amp; share links are free for everyone.</p>
       <div class="pw-plans">
         <button class="pw-plan featured" onclick="closeModal('modal-paywall'); startCheckout('proMonthly')">
           <div>
@@ -1209,6 +1227,9 @@ const state = {
   startNX: 0, startNY: 0,
   points: [],
   isPro: false,
+  isClub: false,
+  clubId: null,
+  clubName: '',
   freeCourt: null,
   savedTactics: [],
   theme: 'dark',
@@ -1228,13 +1249,19 @@ const STRIPE_PRICES = {
 };
 
 // Called by the Firebase module script once auth state resolves
-window.__updatePro = function(isPro) {
+window.__updatePro = function(isPro, isClub, clubId, clubName) {
   state.isPro = isPro;
+  state.isClub = isClub || false;
+  state.clubId = clubId || null;
+  state.clubName = clubName || localStorage.getItem('courtdraw_club_name') || '';
   localStorage.setItem('courtdraw_pro', isPro ? '1' : '0');
+  if (state.clubName) localStorage.setItem('courtdraw_club_name', state.clubName);
   const badge = document.getElementById('pro-badge');
-  if (!badge) return;
-  badge.textContent = isPro ? 'PRO ✦' : 'Upgrade ✦';
-  badge.classList.toggle('free-badge', !isPro);
+  if (badge) {
+    badge.textContent = isClub ? 'CLUB ✦' : isPro ? 'PRO ✦' : 'Upgrade ✦';
+    badge.classList.toggle('free-badge', !isPro);
+  }
+  if (isClub) updateClubUI();
 };
 window.__currentUser = null;
 
@@ -1841,6 +1868,7 @@ function renderLibrary() {
       </div>
       <div class="tactic-actions">
         <button class="tac-btn load" onclick="loadTactic(${i})">Load</button>
+        ${state.isClub ? `<button class="tac-btn" onclick="shareToClub(${i})" style="background:rgba(59,130,246,0.1);color:var(--accent);border:1px solid var(--accent);">↑ Club</button>` : ''}
         <button class="tac-btn del" onclick="deleteTactic(${i})">Del</button>
       </div>`;
     body.appendChild(row);
@@ -1968,15 +1996,12 @@ function exportPNG() {
       oc.textBaseline = 'middle';
       oc.fillText(t.label, x, y);
     }
-    if (!state.isPro) {
-      oc.save();
-      oc.globalAlpha = 0.35;
-      oc.fillStyle = '#ffffff';
-      oc.font = 'bold 20px system-ui';
-      oc.textAlign = 'right';
-      oc.textBaseline = 'bottom';
-      oc.fillText('courtdraw.app', 1190, 710);
-      oc.restore();
+    // Watermark: free users get "courtdraw.app", Club users get their club name, Pro gets none
+    const watermark = !state.isPro ? 'courtdraw.app' : (state.isClub && state.clubName ? state.clubName : null);
+    if (watermark) {
+      oc.save(); oc.globalAlpha = 0.35; oc.fillStyle = '#ffffff';
+      oc.font = 'bold 20px system-ui'; oc.textAlign = 'right'; oc.textBaseline = 'bottom';
+      oc.fillText(watermark, 1190, 710); oc.restore();
     }
     canvasW = savedW; canvasH = savedH;
     const a = document.createElement('a');
@@ -2017,10 +2042,12 @@ function exportPDF() {
       oc.font = 'bold 22px system-ui'; oc.textAlign = 'center'; oc.textBaseline = 'middle';
       oc.fillText(t.label, x, y);
     }
-    oc.save(); oc.globalAlpha = 0.25; oc.fillStyle = '#ffffff';
-    oc.font = 'bold 24px system-ui'; oc.textAlign = 'right'; oc.textBaseline = 'bottom';
-    oc.fillText('courtdraw.app', W - 20, H - 16);
-    oc.restore();
+    const pdfWatermark = !state.isPro ? 'courtdraw.app' : (state.isClub && state.clubName ? state.clubName : null);
+    if (pdfWatermark) {
+      oc.save(); oc.globalAlpha = 0.25; oc.fillStyle = '#ffffff';
+      oc.font = 'bold 24px system-ui'; oc.textAlign = 'right'; oc.textBaseline = 'bottom';
+      oc.fillText(pdfWatermark, W - 20, H - 16); oc.restore();
+    }
     canvasW = savedW; canvasH = savedH;
     const dataUrl = off.toDataURL('image/png');
     const win = window.open('', '_blank');
@@ -2071,6 +2098,119 @@ function loadFromHash() {
     location.hash = '';
     return true;
   } catch { return false; }
+}
+
+// ══════════════════════════════════════════════
+// CLUB FEATURES
+// ══════════════════════════════════════════════
+function updateClubUI() {
+  document.getElementById('club-library-wrap').style.display = 'block';
+  document.getElementById('club-name-wrap').style.display = 'block';
+  const inp = document.getElementById('club-name-input');
+  if (inp && state.clubName) inp.value = state.clubName;
+  loadClubLibrary();
+}
+
+async function loadClubLibrary() {
+  const user = window.__currentUser;
+  if (!user || !state.isClub) return;
+  const body = document.getElementById('club-library-body');
+  body.innerHTML = '<p style="font-size:12px;color:var(--text2);padding:8px 0;">Loading…</p>';
+  try {
+    const token = await user.getIdToken();
+    const res = await fetch('/.netlify/functions/get-club-tactics', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) throw new Error('server error');
+    const { tactics } = await res.json();
+    if (!tactics.length) {
+      body.innerHTML = '<p style="font-size:12px;color:var(--text2);padding:8px 0;">No tactics shared yet — save one and share it to the club.</p>';
+      return;
+    }
+    body.innerHTML = '';
+    for (const t of tactics) {
+      const row = document.createElement('div');
+      row.className = 'tactic-row';
+      const court = COURTS.find(c => c.id === t.courtId);
+      row.innerHTML = `
+        <div class="tactic-info">
+          <div class="tactic-name">${t.name} <span style="font-size:10px;background:rgba(59,130,246,0.15);color:var(--accent);border-radius:4px;padding:1px 5px;font-weight:700;">Club</span></div>
+          <div class="tactic-meta">${court ? court.name : t.courtId} · ${t.authorName || 'Coach'} · ${new Date(t.sharedAt).toLocaleDateString()}</div>
+        </div>
+        <div class="tactic-actions">
+          <button class="tac-btn load" onclick='loadClubTactic(${JSON.stringify(t)})'>Load</button>
+          <button class="tac-btn del" onclick="deleteClubTactic('${t._firestoreId}')">Del</button>
+        </div>`;
+      body.appendChild(row);
+    }
+  } catch {
+    body.innerHTML = '<p style="font-size:12px;color:var(--text2);padding:8px 0;">Could not load club tactics. Check your connection.</p>';
+  }
+}
+
+function loadClubTactic(t) {
+  state.objects = JSON.parse(JSON.stringify(t.objects || []));
+  state.tokenPositions = JSON.parse(JSON.stringify(t.tokens || []));
+  state.phases = t.phases && t.phases.length
+    ? JSON.parse(JSON.stringify(t.phases))
+    : [{ objects: JSON.parse(JSON.stringify(t.objects || [])), tokens: JSON.parse(JSON.stringify(t.tokens || [])) }];
+  state.currentPhase = t.currentPhase || 0;
+  switchCourt(t.courtId, false);
+  closeModal('modal-library');
+  setTimeout(() => { syncCanvas(); renderTokensFromState(); updatePhaseUI(); }, 200);
+  showToast(`"${t.name}" loaded from club.`);
+}
+
+async function deleteClubTactic(firestoreId) {
+  const user = window.__currentUser;
+  if (!user) return;
+  try {
+    const token = await user.getIdToken();
+    await fetch('/.netlify/functions/delete-club-tactic', {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tacticId: firestoreId })
+    });
+    loadClubLibrary();
+    showToast('Removed from club library.');
+  } catch { showToast('Could not delete — try again.'); }
+}
+
+async function shareToClub(tacticIdx) {
+  const user = window.__currentUser;
+  if (!user || !state.isClub) { showToast('Club plan required to share tactics.'); return; }
+  const t = state.savedTactics[tacticIdx];
+  if (!t) return;
+  try {
+    const token = await user.getIdToken();
+    const res = await fetch('/.netlify/functions/save-club-tactic', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...t, authorName: user.displayName || user.email || 'Coach' })
+    });
+    if (!res.ok) throw new Error('server error');
+    loadClubLibrary();
+    showToast(`"${t.name}" shared to club library!`);
+  } catch { showToast('Could not share — try again.'); }
+}
+
+async function saveClubName() {
+  const name = document.getElementById('club-name-input').value.trim();
+  if (!name) return;
+  state.clubName = name;
+  localStorage.setItem('courtdraw_club_name', name);
+  const user = window.__currentUser;
+  if (user) {
+    try {
+      const token = await user.getIdToken();
+      await fetch('/.netlify/functions/update-club-name', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clubName: name })
+      });
+    } catch {}
+  }
+  showToast(`Club name set to "${name}".`);
 }
 
 // ══════════════════════════════════════════════
@@ -2172,6 +2312,7 @@ function loadFromStorage() {
     if (t) state.savedTactics = JSON.parse(t);
     state.isPro = localStorage.getItem('courtdraw_pro') === '1';
     state.freeCourt = localStorage.getItem('courtdraw_free_court') || null;
+    state.clubName = localStorage.getItem('courtdraw_club_name') || '';
     const theme = localStorage.getItem('courtdraw_theme');
     if (theme) { state.theme = theme; document.documentElement.setAttribute('data-theme', theme); }
   } catch(e) {}
@@ -2242,9 +2383,12 @@ document.addEventListener('DOMContentLoaded', init);
     if (!user) return;
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
-      const plan = snap.exists() ? snap.data().plan : 'free';
+      const data = snap.exists() ? snap.data() : {};
+      const plan = data.plan || 'free';
       const isPro = plan === 'pro' || plan === 'club';
-      if (typeof window.__updatePro === 'function') window.__updatePro(isPro);
+      const isClub = plan === 'club';
+      if (typeof window.__updatePro === 'function')
+        window.__updatePro(isPro, isClub, data.clubId || null, data.clubName || '');
     } catch {
       // Firestore unavailable — keep localStorage state as fallback
     }
