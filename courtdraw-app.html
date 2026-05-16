@@ -490,7 +490,7 @@ const COURTS = [
     id:'tennis_singles', name:'Tennis (Singles)', category:'racket', free:true,
     icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1d4ed8" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/></svg>`,
     svg(){return `
-      <rect width="1000" height="600" fill="#1e3a8a"/>
+      <rect width="1000" height="600" fill="#3b82f6"/>
       <rect x="70" y="151" width="860" height="298" fill="#1d4ed8"/>
       <rect x="70" y="151" width="860" height="298" fill="none" stroke="white" stroke-width="3"/>
       <line x1="500" y1="151" x2="500" y2="449" stroke="rgba(255,255,255,0.5)" stroke-width="6" stroke-dasharray="8,5"/>
@@ -506,7 +506,7 @@ const COURTS = [
     id:'tennis_doubles', name:'Tennis (Doubles)', category:'racket', free:true,
     icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1d4ed8" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/><line x1="5" y1="2" x2="5" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="43" y1="2" x2="43" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
     svg(){return `
-      <rect width="1000" height="600" fill="#1e3a8a"/>
+      <rect width="1000" height="600" fill="#3b82f6"/>
       <rect x="70" y="102" width="860" height="396" fill="#1d4ed8"/>
       <rect x="70" y="102" width="860" height="396" fill="none" stroke="white" stroke-width="3"/>
       <line x1="120" y1="102" x2="120" y2="498" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="4,3"/>
@@ -1222,7 +1222,7 @@ function drawObject(ctx, obj, preview) {
   ctx.save();
   ctx.strokeStyle = obj.color;
   ctx.fillStyle = obj.color;
-  ctx.lineWidth = obj.lineWidth * (canvasW / 1000) * 1.5;
+  ctx.lineWidth = obj.lineWidth * (canvasW / 1000);
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   if (obj.type === 'dashed-arrow') ctx.setLineDash([8,5]);
   else ctx.setLineDash([]);
@@ -1310,7 +1310,7 @@ function drawObject(ctx, obj, preview) {
 
 // Returns the length of the arrowhead for a given line-width, used to trim stems.
 function arrowheadLen(lw) {
-  return Math.max(16, lw * 5) * (canvasW / 1000) * 1.5;
+  return Math.max(10, lw * 3.5) * (canvasW / 1000);
 }
 
 // Draws a filled triangle arrowhead — explicit perpendicular geometry, same
