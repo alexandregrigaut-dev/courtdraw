@@ -1,13 +1,19 @@
 {
   "name": "CourtDraw",
   "short_name": "CourtDraw",
-  "description": "Draw and share court diagrams for sports coaching.",
+  "description": "Draw and share tactical plays for 37+ sports. Free for coaches.",
   "start_url": "/courtdraw-app.html",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "orientation": "any",
   "icons": [
+    {
+      "src": "/assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/assets/icons/icon-192.png",
       "sizes": "192x192",

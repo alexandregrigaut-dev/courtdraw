@@ -52,6 +52,8 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     if (!params.get('session_id')) window.location.href = '/';
+    // Optimistic update — shows Pro immediately while webhook processes in the background
+    localStorage.setItem('courtdraw_pro', '1');
   </script>
 </body>
 </html>

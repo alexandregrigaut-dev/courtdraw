@@ -218,6 +218,15 @@
     <a href="/courtdraw-app.html" class="btn-guest">Continue without account</a>
   </div>
 
+  <script type="importmap">
+  {
+    "imports": {
+      "firebase/app":       "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+      "firebase/auth":      "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+      "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+    }
+  }
+  </script>
   <script type="module">
     import { loginUser, registerUser, resetPassword } from '/src/auth.js';
     import { auth } from '/src/firebase.js';

@@ -246,6 +246,7 @@ button {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--border);
   cursor: pointer; transition: var(--transition); text-decoration: none; color: inherit;
+  width: 100%; background: none; font-family: inherit; text-align: left;
 }
 .pw-plan:hover { border-color: var(--accent); background: var(--accent-dim); }
 .pw-plan.featured { border-color: var(--accent); background: var(--accent-dim); }
@@ -424,30 +425,27 @@ button {
         <li>Team sharing link</li>
       </ul>
       <div class="pw-plans">
-        <a href="#stripe-pro" class="pw-plan featured" onclick="closeModal('modal-paywall')">
-          <!-- REPLACE href="#stripe-pro" with your Stripe Payment Link before launch -->
+        <button class="pw-plan featured" onclick="closeModal('modal-paywall'); startCheckout('proMonthly')">
           <div>
             <div class="pw-plan-name">Pro Monthly</div>
             <div class="pw-plan-sub">Everything unlocked</div>
           </div>
           <div class="pw-plan-price">€6<small>/mo</small></div>
-        </a>
-        <a href="#stripe-pro-yearly" class="pw-plan" onclick="closeModal('modal-paywall')">
-          <!-- REPLACE href="#stripe-pro-yearly" with your Stripe yearly Payment Link -->
+        </button>
+        <button class="pw-plan" onclick="closeModal('modal-paywall'); startCheckout('proYearly')">
           <div>
             <div class="pw-plan-name">Pro Yearly</div>
             <div class="pw-plan-sub">Save 32%</div>
           </div>
           <div class="pw-plan-price">€49<small>/yr</small></div>
-        </a>
-        <a href="#stripe-club" class="pw-plan" onclick="closeModal('modal-paywall')">
-          <!-- REPLACE href="#stripe-club" with your Stripe Club Payment Link -->
+        </button>
+        <button class="pw-plan" onclick="closeModal('modal-paywall'); startCheckout('club')">
           <div>
             <div class="pw-plan-name">Club License</div>
             <div class="pw-plan-sub">10 coaches · shared library · white-label</div>
           </div>
           <div class="pw-plan-price">€99<small>/yr</small></div>
-        </a>
+        </button>
       </div>
     </div>
   </div>
@@ -1159,6 +1157,24 @@ const state = {
 const COLORS = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#ffffff','#111827','#a855f7','#f97316'];
 const FREE_SAVES = 3;
 
+// ── Stripe price IDs — paste values from Stripe Dashboard → Products ──
+const STRIPE_PRICES = {
+  proMonthly: 'PASTE_STRIPE_PRICE_ID_PRO_MONTHLY',
+  proYearly:  'PASTE_STRIPE_PRICE_ID_PRO_YEARLY',
+  club:       'PASTE_STRIPE_PRICE_ID_CLUB'
+};
+
+// Called by the Firebase module script once auth state resolves
+window.__updatePro = function(isPro) {
+  state.isPro = isPro;
+  localStorage.setItem('courtdraw_pro', isPro ? '1' : '0');
+  const badge = document.getElementById('pro-badge');
+  if (!badge) return;
+  badge.textContent = isPro ? 'PRO' : 'FREE';
+  badge.classList.toggle('free-badge', !isPro);
+};
+window.__currentUser = null;
+
 // ══════════════════════════════════════════════
 // CANVAS & DRAWING
 // ══════════════════════════════════════════════
@@ -1748,11 +1764,36 @@ function deleteTactic(i) {
 }
 
 // ══════════════════════════════════════════════
-// PAYWALL
+// PAYWALL & CHECKOUT
 // ══════════════════════════════════════════════
 function openPaywall(reason) {
   if (reason) document.getElementById('paywall-reason').textContent = reason;
   openModal('modal-paywall');
+}
+
+async function startCheckout(planKey) {
+  const user = window.__currentUser;
+  if (!user) {
+    window.location.href = '/login.html';
+    return;
+  }
+  try {
+    showToast('Redirecting to checkout…');
+    const token = await user.getIdToken();
+    const res = await fetch('/api/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({ priceId: STRIPE_PRICES[planKey] })
+    });
+    if (!res.ok) throw new Error('server error');
+    const { url } = await res.json();
+    window.location.href = url;
+  } catch {
+    showToast('Could not start checkout — please try again.');
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -1891,6 +1932,34 @@ function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+</script>
+
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app":       "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth":      "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+  }
+}
+</script>
+<script type="module">
+  import { auth, db } from '/src/firebase.js';
+  import { onAuthStateChanged } from 'firebase/auth';
+  import { doc, getDoc } from 'firebase/firestore';
+
+  onAuthStateChanged(auth, async user => {
+    window.__currentUser = user;
+    if (!user) return;
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      const plan = snap.exists() ? snap.data().plan : 'free';
+      const isPro = plan === 'pro' || plan === 'club';
+      if (typeof window.__updatePro === 'function') window.__updatePro(isPro);
+    } catch {
+      // Firestore unavailable — keep localStorage state as fallback
+    }
+  });
 </script>
 </body>
 </html>
