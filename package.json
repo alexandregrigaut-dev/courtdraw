@@ -1,0 +1,11 @@
+{
+  "name": "courtdraw",
+  "version": "1.0.0",
+  "description": "CourtDraw — tactics board for sports coaches",
+  "private": true,
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "resend": "^3.0.0",
+    "stripe": "^14.0.0"
+  }
+}
