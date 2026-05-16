@@ -2225,11 +2225,12 @@ async function deleteClubTactic(firestoreId) {
   if (!user) return;
   try {
     const token = await user.getIdToken();
-    await fetch('/.netlify/functions/delete-club-tactic', {
+    const res = await fetch('/.netlify/functions/delete-club-tactic', {
       method: 'DELETE',
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify({ tacticId: firestoreId })
     });
+    if (!res.ok) throw new Error('server error');
     loadClubLibrary();
     showToast('Removed from club library.');
   } catch { showToast('Could not delete — try again.'); }
