@@ -1,17 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Background -->
-  <rect width="512" height="512" rx="112" fill="#0f172a"/>
-  <!-- Court outline -->
-  <rect x="64" y="156" width="384" height="200" rx="6" fill="none" stroke="#22c55e" stroke-width="18"/>
-  <!-- Centre line -->
-  <line x1="256" y1="156" x2="256" y2="356" stroke="#22c55e" stroke-width="14"/>
-  <!-- Centre circle -->
-  <circle cx="256" cy="256" r="52" fill="none" stroke="#22c55e" stroke-width="10"/>
-  <!-- Left penalty area -->
-  <rect x="64" y="206" width="88" height="100" fill="none" stroke="#22c55e" stroke-width="10"/>
-  <!-- Right penalty area -->
-  <rect x="360" y="206" width="88" height="100" fill="none" stroke="#22c55e" stroke-width="10"/>
-  <!-- Tactical arrow -->
-  <path d="M180 310 C220 290, 240 260, 300 230" fill="none" stroke="#22c55e" stroke-width="14" stroke-linecap="round"/>
-  <polygon points="300,218 322,238 294,244" fill="#22c55e"/>
+
+  <!-- Background — lighter blue (outside the court) -->
+  <rect width="512" height="512" rx="112" fill="#3b82f6"/>
+
+  <!-- App name -->
+  <text x="256" y="120"
+        font-family="'SF Pro Display','Helvetica Neue','Segoe UI',Arial,sans-serif"
+        font-size="56"
+        font-weight="700"
+        letter-spacing="1"
+        fill="#ffffff"
+        text-anchor="middle">CourtDraw</text>
+
+  <!-- Court interior — same darker blue as V6 background -->
+  <rect x="36" y="154" width="440" height="204" rx="2" fill="#1d4ed8"/>
+
+  <!-- ITF tennis court lines — white -->
+  <rect x="36" y="154" width="440" height="204" rx="2"
+        fill="none" stroke="#ffffff" stroke-width="7"/>
+  <line x1="256" y1="154" x2="256" y2="358" stroke="#ffffff" stroke-width="7"/>
+  <line x1="36"  y1="180" x2="476" y2="180" stroke="#ffffff" stroke-width="5"/>
+  <line x1="36"  y1="332" x2="476" y2="332" stroke="#ffffff" stroke-width="5"/>
+  <line x1="138" y1="180" x2="138" y2="332" stroke="#ffffff" stroke-width="5"/>
+  <line x1="375" y1="180" x2="375" y2="332" stroke="#ffffff" stroke-width="5"/>
+  <line x1="138" y1="256" x2="375" y2="256" stroke="#ffffff" stroke-width="5"/>
+  <line x1="36"  y1="256" x2="50"  y2="256" stroke="#ffffff" stroke-width="5"/>
+  <line x1="476" y1="256" x2="462" y2="256" stroke="#ffffff" stroke-width="5"/>
+
 </svg>

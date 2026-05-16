@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>CourtDraw — Tactics Board</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f172a">
+<meta name="theme-color" content="#1d4ed8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="CourtDraw">
@@ -13,16 +13,17 @@
 <link href="https://fonts.bunny.net/css?family=cabinet-grotesk:700,900|satoshi:400,500,700" rel="stylesheet">
 <style>
 :root {
-  --bg: #0f172a; --surface: #1e293b; --surface2: #293548;
-  --border: #334155; --text: #f8fafc; --text2: #94a3b8;
-  --accent: #22c55e; --accent-dim: rgba(34,197,94,0.15);
+  --bg: #1d4ed8; --surface: #2563eb; --surface2: #3b82f6;
+  --border: rgba(255,255,255,0.15); --text: #ffffff; --text2: rgba(255,255,255,0.6);
+  --accent: #93c5fd; --accent-dim: rgba(147,197,253,0.18);
   --red: #ef4444; --blue: #3b82f6;
   --header-h: 56px; --toolbar-h: 68px;
   --radius: 10px; --transition: 0.18s ease;
 }
 [data-theme="light"] {
-  --bg: #f1f5f9; --surface: #ffffff; --surface2: #f8fafc;
-  --border: #e2e8f0; --text: #0f172a; --text2: #64748b;
+  --bg: #eff6ff; --surface: #ffffff; --surface2: #dbeafe;
+  --border: #bfdbfe; --text: #1e3a8a; --text2: #3b82f6;
+  --accent: #1d4ed8; --accent-dim: rgba(29,78,216,0.12);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; }
@@ -50,7 +51,7 @@ button {
 .app-title {
   font-family: 'Cabinet Grotesk', system-ui, sans-serif;
   font-weight: 900; font-size: 18px;
-  background: linear-gradient(135deg, var(--accent) 0%, #86efac 100%);
+  background: linear-gradient(135deg, #93c5fd 0%, #bfdbfe 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
 }
@@ -297,11 +298,11 @@ button {
 <header id="app-header">
   <div id="logo-wrap">
     <svg id="logo-svg" viewBox="0 0 28 28" fill="none">
-      <rect x="1" y="1" width="26" height="26" rx="5" stroke="#22c55e" stroke-width="2"/>
-      <line x1="14" y1="1" x2="14" y2="27" stroke="#22c55e" stroke-width="1.5"/>
-      <line x1="1" y1="14" x2="27" y2="14" stroke="#22c55e" stroke-width="1.5"/>
-      <rect x="5" y="5" width="7" height="7" rx="1" fill="none" stroke="#22c55e" stroke-width="1" opacity="0.5"/>
-      <rect x="16" y="16" width="7" height="7" rx="1" fill="none" stroke="#22c55e" stroke-width="1" opacity="0.5"/>
+      <rect x="1" y="1" width="26" height="26" rx="5" stroke="#93c5fd" stroke-width="2"/>
+      <line x1="14" y1="1" x2="14" y2="27" stroke="#93c5fd" stroke-width="1.5"/>
+      <line x1="1" y1="14" x2="27" y2="14" stroke="#93c5fd" stroke-width="1.5"/>
+      <rect x="5" y="5" width="7" height="7" rx="1" fill="none" stroke="#93c5fd" stroke-width="1" opacity="0.5"/>
+      <rect x="16" y="16" width="7" height="7" rx="1" fill="none" stroke="#93c5fd" stroke-width="1" opacity="0.5"/>
     </svg>
     <span class="app-title">CourtDraw</span>
   </div>
@@ -487,10 +488,10 @@ const COURTS = [
   // ── RACKET SPORTS ──
   {
     id:'tennis_singles', name:'Tennis (Singles)', category:'racket', free:true,
-    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d5a3e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/></svg>`,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1d4ed8" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/></svg>`,
     svg(){return `
-      <rect width="1000" height="600" fill="#1a3a2a"/>
-      <rect x="70" y="151" width="860" height="298" fill="#2d5a3e"/>
+      <rect width="1000" height="600" fill="#1e3a8a"/>
+      <rect x="70" y="151" width="860" height="298" fill="#1d4ed8"/>
       <rect x="70" y="151" width="860" height="298" fill="none" stroke="white" stroke-width="3"/>
       <line x1="500" y1="151" x2="500" y2="449" stroke="rgba(255,255,255,0.5)" stroke-width="6" stroke-dasharray="8,5"/>
       <line x1="268" y1="151" x2="268" y2="449" stroke="white" stroke-width="2"/>
@@ -503,10 +504,10 @@ const COURTS = [
   },
   {
     id:'tennis_doubles', name:'Tennis (Doubles)', category:'racket', free:true,
-    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d5a3e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/><line x1="5" y1="2" x2="5" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="43" y1="2" x2="43" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1d4ed8" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/><line x1="5" y1="2" x2="5" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="43" y1="2" x2="43" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
     svg(){return `
-      <rect width="1000" height="600" fill="#1a3a2a"/>
-      <rect x="70" y="102" width="860" height="396" fill="#2d5a3e"/>
+      <rect width="1000" height="600" fill="#1e3a8a"/>
+      <rect x="70" y="102" width="860" height="396" fill="#1d4ed8"/>
       <rect x="70" y="102" width="860" height="396" fill="none" stroke="white" stroke-width="3"/>
       <line x1="120" y1="102" x2="120" y2="498" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="4,3"/>
       <line x1="880" y1="102" x2="880" y2="498" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="4,3"/>
@@ -1159,9 +1160,9 @@ const FREE_SAVES = 3;
 
 // ── Stripe price IDs — paste values from Stripe Dashboard → Products ──
 const STRIPE_PRICES = {
-  proMonthly: 'PASTE_STRIPE_PRICE_ID_PRO_MONTHLY',
-  proYearly:  'PASTE_STRIPE_PRICE_ID_PRO_YEARLY',
-  club:       'PASTE_STRIPE_PRICE_ID_CLUB'
+  proMonthly: 'price_1TXcRlPJqd0y6tXmlReqKxZ5',
+  proYearly:  'price_1TXcTWPJqd0y6tXmY0aJr80k',
+  club:       'price_1TXcWHPJqd0y6tXmf0AclVdB'
 };
 
 // Called by the Firebase module script once auth state resolves
@@ -1230,18 +1231,29 @@ function drawObject(ctx, obj, preview) {
     case 'arrow':
     case 'dashed-arrow': {
       if (obj.points && obj.points.length > 1) {
-        const pts = obj.points.map(p => n2c(p[0], p[1]));
-        ctx.beginPath();
-        ctx.moveTo(pts[0].x, pts[0].y);
-        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        const pts  = obj.points.map(p => n2c(p[0], p[1]));
         const last = pts[pts.length - 1];
         const prev = pts[Math.max(0, pts.length - 3)];
+        // Trim the final segment so the stem ends at the arrowhead base.
+        const ah    = arrowheadLen(obj.lineWidth);
+        const ang   = Math.atan2(last.y - prev.y, last.x - prev.x);
+        const trimX = last.x - ah * Math.cos(ang);
+        const trimY = last.y - ah * Math.sin(ang);
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length - 1; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.lineTo(trimX, trimY);
+        ctx.stroke();
+        ctx.setLineDash([]);
         drawArrowhead(ctx, prev.x, prev.y, last.x, last.y, obj.color, obj.lineWidth);
       } else if (obj.x1 !== undefined) {
-        const a = n2c(obj.x1, obj.y1), b = n2c(obj.x2, obj.y2);
-        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        const a   = n2c(obj.x1, obj.y1), b = n2c(obj.x2, obj.y2);
+        const ah  = arrowheadLen(obj.lineWidth);
+        const ang = Math.atan2(b.y - a.y, b.x - a.x);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x - ah * Math.cos(ang), b.y - ah * Math.sin(ang));
+        ctx.stroke();
         ctx.setLineDash([]);
         drawArrowhead(ctx, a.x, a.y, b.x, b.y, obj.color, obj.lineWidth);
       }
@@ -1296,16 +1308,28 @@ function drawObject(ctx, obj, preview) {
   ctx.restore();
 }
 
+// Returns the length of the arrowhead for a given line-width, used to trim stems.
+function arrowheadLen(lw) {
+  return Math.max(16, lw * 5) * (canvasW / 1000) * 1.5;
+}
+
+// Draws a filled triangle arrowhead — explicit perpendicular geometry, same
+// proportions as the app icon (halfWidth = len × 7/16 ≈ 0.4375).
+// The tip lands exactly at (x2, y2); the filled triangle always renders on top
+// of the stem so the tip is never obscured.
 function drawArrowhead(ctx, x1, y1, x2, y2, color, lw) {
-  const angle = Math.atan2(y2-y1, x2-x1);
-  const len = Math.max(14, lw * 5) * (canvasW / 1000) * 1.5;
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const len   = arrowheadLen(lw);
+  const halfW = len * 0.4375;                          // 7/16 — matches icon proportions
+  const bx    = x2 - len * Math.cos(angle);            // base centre x
+  const by    = y2 - len * Math.sin(angle);            // base centre y
   ctx.save();
   ctx.fillStyle = color;
   ctx.setLineDash([]);
   ctx.beginPath();
-  ctx.moveTo(x2, y2);
-  ctx.lineTo(x2 - len*Math.cos(angle-0.42), y2 - len*Math.sin(angle-0.42));
-  ctx.lineTo(x2 - len*Math.cos(angle+0.42), y2 - len*Math.sin(angle+0.42));
+  ctx.moveTo(x2, y2);                                                     // tip
+  ctx.lineTo(bx - halfW * Math.sin(angle), by + halfW * Math.cos(angle)); // base left
+  ctx.lineTo(bx + halfW * Math.sin(angle), by - halfW * Math.cos(angle)); // base right
   ctx.closePath();
   ctx.fill();
   ctx.restore();
