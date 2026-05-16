@@ -2021,7 +2021,7 @@ async function openBillingPortal() {
   if (!user) { openPaywall(); return; }
   // Club members (invited coaches) don't have their own subscription
   if (state.isClub && !state.isClubOwner) {
-    showToast(‘You\’re a club member — billing is managed by your club owner.’);
+    showToast("You're a club member — billing is managed by your club owner.");
     return;
   }
   try {
