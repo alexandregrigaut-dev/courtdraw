@@ -1264,8 +1264,6 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner) {
     badge.textContent = isClub ? 'CLUB ✦' : isPro ? 'PRO ✦' : 'Upgrade ✦';
     // free-badge style = pulsing CTA; only show for users who have neither Pro nor Club
     badge.classList.toggle('free-badge', !isPro && !isClub);
-  }
-  if (badge) {
     // Pro/Club users: badge click opens billing portal; free users: opens paywall
     badge.onclick = (isPro || isClub) ? () => openBillingPortal() : () => openPaywall();
   }
@@ -1951,7 +1949,7 @@ function deleteTactic(i) {
 // PAYWALL & CHECKOUT
 // ══════════════════════════════════════════════
 function openPaywall(reason) {
-  if (reason) document.getElementById('paywall-reason').textContent = reason;
+  document.getElementById('paywall-reason').textContent = reason || 'Upgrade to Pro to unlock all 37+ sport courts and unlimited saves.';
   openModal('modal-paywall');
 }
 
@@ -2179,9 +2177,9 @@ async function loadClubLibrary() {
       const row = document.createElement('div');
       row.className = 'tactic-row';
       const court = COURTS.find(c => c.id === t.courtId);
-      const safeName = t.name.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const safeName = t.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const courtName = court ? court.name : (t.courtId || '—');
-      const authorName = (t.authorName || 'Coach').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const authorName = (t.authorName || 'Coach').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const sharedDate = new Date(t.sharedAt).toLocaleDateString();
       row.innerHTML = `
         <div class="tactic-info">
@@ -2388,11 +2386,12 @@ function init() {
   document.getElementById('court-svg').innerHTML = court.svg();
   document.getElementById('court-name-chip').textContent = court.name;
   updateUndoButtons();
-  // Update Pro badge
+  // Update Pro badge (pre-Firebase: set text/class/onclick from localStorage)
   if (state.isPro) {
     const badge = document.getElementById('pro-badge');
     badge.textContent = 'PRO ✦';
     badge.classList.remove('free-badge');
+    badge.onclick = () => openBillingPortal();
   }
   // Theme button
   document.getElementById('btn-theme').textContent = state.theme === 'dark' ? '☀️' : '🌙';

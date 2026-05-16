@@ -23,7 +23,9 @@ exports.handler = async (event) => {
   if (userData.plan !== 'club' || !userData.clubId)
     return { statusCode: 403, body: 'Club plan required' };
   const clubId = userData.clubId;
-  const { tacticId } = JSON.parse(event.body);
+  let tacticId;
+  try { ({ tacticId } = JSON.parse(event.body || '{}')); } catch { return { statusCode: 400, body: 'Bad JSON' }; }
+  if (!tacticId || typeof tacticId !== 'string') return { statusCode: 400, body: 'Missing tacticId' };
   await db.collection('clubs').doc(clubId).collection('tactics').doc(tacticId).delete();
   return { statusCode: 200, body: JSON.stringify({ ok: true }) };
 };
