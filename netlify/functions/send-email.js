@@ -27,6 +27,18 @@ const templates = {
       <p><a href="${APP_URL}/courtdraw-app.html">Open the app →</a></p>
     `
   }),
+  clubWelcome: (email) => ({
+    from: FROM,
+    to: email,
+    subject: 'Welcome to CourtDraw Club 🏟',
+    html: `
+      <h1>Welcome to CourtDraw Club!</h1>
+      <p>Your Club plan is active. All Pro features are unlocked, plus your shared team library, club branding on exports, and the admin dashboard.</p>
+      <p>Head to your Club Admin dashboard to set your club name and invite your coaching staff:</p>
+      <p><a href="${APP_URL}/club-admin.html">Open Club Admin →</a></p>
+      <p style="color:#666;font-size:12px;">Questions? Reply to this email or contact hello@courtdraw.app</p>
+    `
+  }),
   paymentFailed: (email) => ({
     from: FROM,
     to: email,

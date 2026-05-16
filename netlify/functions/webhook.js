@@ -56,7 +56,7 @@ exports.handler = async (event) => {
       }, { merge: true });
     }
     await db.collection('users').doc(userId).update(update);
-    await sendEmail('paymentConfirmed', session.customer_email);
+    await sendEmail(plan === 'club' ? 'clubWelcome' : 'paymentConfirmed', session.customer_email);
   }
 
   if (stripeEvent.type === 'customer.subscription.deleted') {

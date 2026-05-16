@@ -190,12 +190,16 @@ header {
     for (const t of tactics) {
       const row = document.createElement('div');
       row.className = 'tactic-row';
+      const esc = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       row.innerHTML = `
         <div class="tactic-info">
-          <div class="tactic-name">${t.name}</div>
-          <div class="tactic-meta">${t.courtId || '—'} · Shared by ${t.authorName || 'Coach'} · ${new Date(t.sharedAt).toLocaleDateString()}</div>
+          <div class="tactic-name">${esc(t.name)}</div>
+          <div class="tactic-meta">${esc(t.courtId) || '—'} · Shared by ${esc(t.authorName) || 'Coach'} · ${new Date(t.sharedAt).toLocaleDateString()}</div>
         </div>
-        <button class="btn-del" onclick="deleteTactic('${t._firestoreId}', this)">Delete</button>`;
+        <button class="btn-del">Delete</button>`;
+      row.querySelector('.btn-del').addEventListener('click', function() {
+        deleteTactic(t._firestoreId, this);
+      });
       list.appendChild(row);
     }
   }

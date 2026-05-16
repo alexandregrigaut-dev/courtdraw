@@ -2028,6 +2028,7 @@ function exportPNG() {
 // PDF EXPORT
 // ══════════════════════════════════════════════
 function exportPDF() {
+  if (!state.isPro) { openPaywall('Print / PDF export is a Pro feature. Upgrade to unlock clean PDF exports.'); return; }
   const W = 2400, H = 1440;
   const off = document.createElement('canvas');
   off.width = W; off.height = H;

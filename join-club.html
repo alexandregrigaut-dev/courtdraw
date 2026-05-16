@@ -131,7 +131,7 @@ header {
         const clubSnap = await getDoc(doc(db, 'clubs', clubId));
         if (!clubSnap.exists()) { show('invalid-card'); return; }
         const clubData = clubSnap.data();
-        const displayName = clubData.name || 'Club Library';
+        const displayName = clubData.clubName || clubData.name || 'Club Library';
         document.getElementById('club-name-display').textContent = displayName;
         show('join-card');
 
