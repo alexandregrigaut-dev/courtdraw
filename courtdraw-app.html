@@ -603,7 +603,7 @@ button {
 const COURTS = [
   // ── RACKET SPORTS ──
   {
-    id:'tennis_singles', name:'Tennis (Singles)', category:'racket', free:true,
+    id:'tennis_singles', name:'Tennis (Singles)', category:'racket', free:false,
     icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1d4ed8" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/></svg>`,
     svg(){return `
       <rect width="1000" height="600" fill="#0f2040"/>
@@ -620,7 +620,7 @@ const COURTS = [
       <text x="500" y="548" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">TENNIS — SINGLES</text>`}
   },
   {
-    id:'tennis_doubles', name:'Tennis (Doubles)', category:'racket', free:true,
+    id:'tennis_doubles', name:'Tennis (Doubles)', category:'racket', free:false,
     icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1d4ed8" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="11" y1="2" x2="11" y2="28" stroke="white" stroke-width="1"/><line x1="37" y1="2" x2="37" y2="28" stroke="white" stroke-width="1"/><line x1="11" y1="15" x2="37" y2="15" stroke="white" stroke-width="1"/><line x1="5" y1="2" x2="5" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="43" y1="2" x2="43" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
     svg(){return `
       <rect width="1000" height="600" fill="#0f2040"/>
@@ -640,7 +640,7 @@ const COURTS = [
       <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">TENNIS — DOUBLES</text>`}
   },
   {
-    id:'padel', name:'Padel', category:'racket', free:true,
+    id:'padel', name:'Padel', category:'racket', free:false,
     icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1a4a6e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="#7dd3fc" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="15" y1="2" x2="15" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="33" y1="2" x2="33" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="2" y1="15" x2="15" y2="15" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="33" y1="15" x2="46" y2="15" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
     svg(){return `
       <rect width="1000" height="600" fill="#0d2233"/>
@@ -655,7 +655,7 @@ const COURTS = [
       <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">PADEL</text>`}
   },
   {
-    id:'pickleball', name:'Pickleball', category:'racket', free:true,
+    id:'pickleball', name:'Pickleball', category:'racket', free:false,
     icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1a4a6e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1.2"/><line x1="16" y1="2" x2="16" y2="28" stroke="rgba(255,255,255,0.7)" stroke-width="1"/><line x1="32" y1="2" x2="32" y2="28" stroke="rgba(255,255,255,0.7)" stroke-width="1"/><rect x="16" y="9" width="16" height="12" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/><line x1="2" y1="15" x2="16" y2="15" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="32" y1="15" x2="46" y2="15" stroke="rgba(255,255,255,0.5)" stroke-width="1"/></svg>`,
     svg(){return `
       <rect width="1000" height="600" fill="#0d2233"/>
@@ -760,7 +760,7 @@ const COURTS = [
 
   // ── INDOOR TEAM ──
   {
-    id:'handball', name:'Handball', category:'indoor', free:true,
+    id:'handball', name:'Handball', category:'indoor', free:false,
     icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#4a2e1e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><path d="M2,11 A9,9 0 0,1 2,19" fill="none" stroke="white" stroke-width="1.2"/><path d="M46,11 A9,9 0 0,0 46,19" fill="none" stroke="white" stroke-width="1.2"/><path d="M2,8 A13,13 0 0,1 2,22" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1" stroke-dasharray="2,2"/></svg>`,
     svg(){return `
       <rect width="1000" height="600" fill="#2a1a0e"/>
@@ -779,7 +779,7 @@ const COURTS = [
       <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">HANDBALL</text>`}
   },
   {
-    id:'futsal', name:'Futsal', category:'indoor', free:true,
+    id:'futsal', name:'Futsal', category:'indoor', free:false,
     icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#4a2e1e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><circle cx="24" cy="15" r="5" fill="none" stroke="white" stroke-width="1"/><path d="M2,11 A6,6 0 0,1 2,19" fill="none" stroke="white" stroke-width="1.2"/><path d="M46,11 A6,6 0 0,0 46,19" fill="none" stroke="white" stroke-width="1.2"/></svg>`,
     svg(){return `
       <rect width="1000" height="600" fill="#2a1a0e"/>
@@ -1309,6 +1309,17 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner) {
   const phaseBtn = document.getElementById('btn-add-phase');
   if (phaseBtn) phaseBtn.textContent = isPro ? '+ Phase' : '+ Phase 🔒';
   if (isClub) updateClubUI();
+  // Auto-trigger checkout if user was redirected here from the paywall
+  if (!isPro && !isClub) {
+    const pending = localStorage.getItem('courtdraw_pending_checkout');
+    if (pending) {
+      localStorage.removeItem('courtdraw_pending_checkout');
+      setTimeout(() => startCheckout(pending), 800);
+    }
+  } else {
+    // Already Pro/Club — clear any stale pending checkout
+    localStorage.removeItem('courtdraw_pending_checkout');
+  }
 };
 window.__currentUser = null;
 
@@ -1909,7 +1920,7 @@ function renderCourtGrid(filter) {
     for (const c of grouped[cat]) {
       const card = document.createElement('div');
       const isActive = c.id === state.courtId;
-      const isLocked = !state.isPro && !c.free && state.freeCourt && c.id !== state.freeCourt;
+      const isLocked = !state.isPro && !!state.freeCourt && c.id !== state.freeCourt;
       const isFree = c.id === state.freeCourt;
       card.className = `court-card${isActive?' active':''}${isLocked?' locked':''}`;
       card.innerHTML = `${c.icon}<div class="court-card-name">${c.name}</div>${isFree?'<span class="free-pill">FREE</span>':''}`;
@@ -2059,8 +2070,10 @@ function openPaywall(reason) {
 async function startCheckout(planKey) {
   const user = window.__currentUser;
   if (!user) {
+    // Save the intended plan so we can auto-trigger checkout after login
+    localStorage.setItem('courtdraw_pending_checkout', planKey);
     closeModal('modal-paywall');
-    showToast('Please sign in to upgrade — redirecting…');
+    showToast('Sign in to complete your upgrade — redirecting…');
     setTimeout(() => { window.location.href = '/login.html?next=' + encodeURIComponent(location.pathname); }, 1400);
     return;
   }

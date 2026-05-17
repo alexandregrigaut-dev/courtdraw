@@ -28,8 +28,8 @@ header {
   background: var(--surface); border-bottom: 1px solid var(--border);
   padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between;
 }
-.logo { font-family: 'Cabinet Grotesk', system-ui, sans-serif; font-weight: 900; font-size: 18px; color: var(--text); text-decoration: none; }
-.logo span { opacity: 0.5; font-weight: 400; font-size: 14px; margin-left: 8px; }
+.logo { font-family: 'Cabinet Grotesk', system-ui, sans-serif; font-weight: 900; font-size: 18px; color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+.logo span { opacity: 0.5; font-weight: 400; font-size: 14px; margin-left: 0; }
 .header-right { display: flex; align-items: center; gap: 12px; }
 .back-btn { font-size: 13px; color: var(--text2); text-decoration: none; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); }
 .back-btn:hover { color: var(--text); border-color: var(--accent); }
@@ -84,7 +84,22 @@ header {
 </head>
 <body>
 <header>
-  <a href="courtdraw-app.html" class="logo">CourtDraw <span>Club Admin</span></a>
+  <a href="courtdraw-app.html" class="logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="6" fill="#3b82f6"/>
+      <rect x="2" y="8.5" width="24" height="11" rx="1" fill="#1d4ed8"/>
+      <rect x="2" y="8.5" width="24" height="11" rx="1" stroke="white" stroke-width="0.9"/>
+      <line x1="14" y1="8.5" x2="14" y2="19.5" stroke="white" stroke-width="0.9"/>
+      <line x1="7.5" y1="9.8" x2="7.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+      <line x1="20.5" y1="9.8" x2="20.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+      <line x1="2" y1="9.8" x2="26" y2="9.8" stroke="white" stroke-width="0.75"/>
+      <line x1="2" y1="18.2" x2="26" y2="18.2" stroke="white" stroke-width="0.75"/>
+      <line x1="7.5" y1="14" x2="20.5" y2="14" stroke="white" stroke-width="0.75"/>
+      <line x1="2" y1="14" x2="2.7" y2="14" stroke="white" stroke-width="0.75"/>
+      <line x1="26" y1="14" x2="25.3" y2="14" stroke="white" stroke-width="0.75"/>
+    </svg>
+    CourtDraw <span>Club Admin</span>
+  </a>
   <div class="header-right">
     <a href="courtdraw-app.html" class="back-btn">← Back to App</a>
   </div>
