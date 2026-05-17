@@ -16,7 +16,7 @@
   --bg:      #0a1628; --bg2: #0d1f3c; --bg3: #1a2d4a;
   --border:  #1a2d4a; --border2: #2a3f5c;
   --text:    #f1f5f9; --muted: #94a3b8;
-  --accent:  #3b82f6; --accent2: #2563eb;
+  --accent:  #3b82f6; --accent2: #2563eb; --accent-dim: rgba(59,130,246,0.15);
   --gold:    #f59e0b; --purple: #a855f7;
   --red:     #ef4444; --green: #22c55e;
   --radius:  12px;
@@ -284,6 +284,22 @@ header {
         <div class="input-hint">PNG, JPG or SVG · paste a direct image URL · displays at max 160×48 px in the app header</div>
         <img id="logo-preview" class="logo-preview" style="display:none" alt="Club logo preview">
         <div id="logo-status" style="font-size:12px;margin-top:6px;min-height:16px;color:var(--green);"></div>
+        <div style="margin-top:12px;">
+          <p style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Team Colors</p>
+          <div style="display:flex;gap:12px;align-items:center;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="color" id="color-team-a" value="#60a5fa" title="Team A (Blue) color"
+                style="width:40px;height:36px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0;">
+              <span style="font-size:13px;color:var(--text2);">Team A</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="color" id="color-team-b" value="#dc2626" title="Team B (Red) color"
+                style="width:40px;height:36px;border:none;border-radius:6px;cursor:pointer;background:none;padding:0;">
+              <span style="font-size:13px;color:var(--text2);">Team B</span>
+            </div>
+            <button onclick="saveTeamColors()" style="margin-left:auto;padding:7px 14px;border-radius:8px;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;">Save Colors</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -397,7 +413,7 @@ header {
         document.getElementById('club-logo-url').value = data.clubLogoUrl;
       }
 
-      // Load club doc for code
+      // Load club doc for code and colors
       const clubSnap = await getDoc(doc(db, 'clubs', userClubId));
       const clubData = clubSnap.exists() ? clubSnap.data() : {};
       if (clubData.clubCode) {
@@ -406,6 +422,9 @@ header {
         // Existing clubs created before this feature: generate one on first load
         regenCode();
       }
+      // Pre-populate team color pickers from saved club data
+      if (clubData.teamColorA) document.getElementById('color-team-a').value = clubData.teamColorA;
+      if (clubData.teamColorB) document.getElementById('color-team-b').value = clubData.teamColorB;
 
       // Parallel data loads
       loadRoster();
@@ -541,12 +560,21 @@ header {
     const el = document.getElementById('roster-list');
     try {
       const token = await currentUser.getIdToken();
-      const res   = await fetch('/.netlify/functions/get-club-members', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      const { members } = await res.json();
+      const [membersRes, tacticsRes] = await Promise.all([
+        fetch('/.netlify/functions/get-club-members', { headers: { 'Authorization': 'Bearer ' + token } }),
+        fetch('/.netlify/functions/get-club-tactics',  { headers: { 'Authorization': 'Bearer ' + token } })
+      ]);
+      const { members } = await membersRes.json();
+      let tacticCounts = {};
+      try {
+        const { tactics } = await tacticsRes.json();
+        for (const t of tactics) {
+          const key = t.authorName || t.authorEmail || 'unknown';
+          tacticCounts[key] = (tacticCounts[key] || 0) + 1;
+        }
+      } catch {}
 
-      document.getElementById('stat-coaches').textContent = members.length;
+      document.getElementById('stat-coaches').textContent = members.length + ' / 10';
 
       if (!members.length) {
         el.innerHTML = `
@@ -564,6 +592,11 @@ header {
         const joined   = m.joinedAt
           ? new Date(m.joinedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
           : '—';
+        const nameKey = m.displayName || m.email || 'unknown';
+        const playsCount = tacticCounts[nameKey] || 0;
+        const playsBadge = playsCount > 0
+          ? `<span style="font-size:11px;background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.3);border-radius:100px;padding:3px 9px;font-weight:700;flex-shrink:0;">${playsCount} play${playsCount !== 1 ? 's' : ''}</span>`
+          : '';
         const card = document.createElement('article');
         card.className = 'coach-card';
         card.innerHTML = `
@@ -572,6 +605,7 @@ header {
             <div class="coach-email">${esc(m.email)}</div>
             <div class="coach-meta">Joined ${joined}</div>
           </div>
+          ${playsBadge}
           <span class="coach-badge badge-coach">Coach</span>
           <span class="coach-badge badge-active">Active</span>`;
         el.appendChild(card);
@@ -639,6 +673,22 @@ header {
       alert('Could not delete — please try again.');
     }
   }
+
+  // ── Team colors ───────────────────────────────────────────────────────────
+  window.saveTeamColors = async () => {
+    const a = document.getElementById('color-team-a').value;
+    const b = document.getElementById('color-team-b').value;
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch('/.netlify/functions/update-club-colors', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teamColorA: a, teamColorB: b })
+      });
+      if (!res.ok) throw new Error();
+      showStatus('logo-status', '✓ Team colors saved!');
+    } catch { showStatus('logo-status', '✗ Could not save colors.', true); }
+  };
 
   function esc(s) {
     return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');

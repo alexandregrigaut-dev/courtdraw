@@ -130,8 +130,8 @@ button {
   color: white; line-height: 1;
   text-shadow: 0 1px 2px rgba(0,0,0,0.8);
 }
-.player-token.team-red { background: #dc2626; }
-.player-token.team-blue { background: #60a5fa; }
+.player-token.team-red { background: var(--team-red, #dc2626); }
+.player-token.team-blue { background: var(--team-blue, #60a5fa); }
 .player-token:active { cursor: grabbing; transform: translate(-50%,-50%) scale(1.15); box-shadow: 0 4px 16px rgba(0,0,0,0.6); }
 .ball-token { background: #f8fafc; border-color: #334155; color: #0f172a; }
 /* ── Toolbar ── */
@@ -348,6 +348,48 @@ button {
   min-height: 32px;
 }
 #btn-add-phase:hover { filter: brightness(1.1); }
+#btn-play-anim {
+  font-size: 13px; font-weight: 700; color: var(--accent);
+  padding: 8px 10px; border-radius: 6px;
+  background: var(--accent-dim); border: 1px solid var(--accent);
+  min-height: 32px; min-width: 36px;
+  transition: background 0.15s;
+}
+#btn-play-anim.playing { background: rgba(239,68,68,0.15); color: #ef4444; border-color: #ef4444; }
+#btn-play-anim:hover { filter: brightness(1.1); }
+#drawing-canvas, #token-layer { transition: opacity 0.25s ease; }
+/* ── Presentation mode ── */
+body.presentation-mode #app-header,
+body.presentation-mode #toolbar,
+body.presentation-mode #phase-bar { display: none !important; }
+body.presentation-mode #board-area { height: 100dvh; height: 100vh; }
+#presentation-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200; pointer-events: none;
+  flex-direction: column; justify-content: space-between;
+}
+body.presentation-mode #presentation-overlay { display: flex; }
+#pres-top-bar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 20px; pointer-events: all;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%);
+}
+#pres-bottom-bar {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 14px 20px; pointer-events: all;
+  background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%);
+}
+.pres-btn {
+  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+  color: #fff; border-radius: 8px; padding: 8px 14px;
+  font-size: 14px; font-weight: 700; cursor: pointer; backdrop-filter: blur(4px);
+}
+.pres-btn:hover { background: rgba(255,255,255,0.25); }
+.pres-btn.pres-exit { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.5); }
+#pres-play-btn.playing { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.5); }
+#pres-phase-label { color: rgba(255,255,255,0.7); font-size: 13px; min-width: 80px; text-align: center; }
+#pres-tactic-name { color: #fff; font-size: 15px; font-weight: 700; flex: 1; }
+#pres-logo { height: 32px; max-width: 120px; object-fit: contain; border-radius: 4px; }
+#pres-club-name { color: #fff; font-family: 'Cabinet Grotesk', system-ui, sans-serif; font-size: 16px; font-weight: 900; }
 /* Token rename input */
 .token-rename-input {
   position: fixed; border: 2px solid var(--accent); border-radius: 6px;
@@ -459,6 +501,7 @@ button {
   <div class="phase-dots" id="phase-dots" role="tablist" aria-label="Phases"></div>
   <span id="phase-label" aria-live="polite">Phase 1 / 1</span>
   <button class="phase-nav" id="btn-phase-next" title="Next phase" aria-label="Next phase" onclick="nextPhase()" disabled>▶</button>
+  <button id="btn-play-anim" title="Play animation" aria-label="Play animation" onclick="toggleAnimation()">▶</button>
   <button id="btn-add-phase" title="Add new phase" aria-label="Add new phase" onclick="addPhase()">+ Phase</button>
 </div>
 
@@ -511,6 +554,9 @@ button {
   </button>
   <button class="tb-btn" title="Print / Export PDF" onclick="exportPDF()">
     <span class="icon">🖨</span><span>Print</span>
+  </button>
+  <button class="tb-btn" id="btn-present" title="Club Presentation Mode" onclick="enterPresentation()" style="display:none">
+    <span class="icon">⛶</span><span>Present</span>
   </button>
   <button class="tb-btn" title="Copy share link" onclick="shareBoard()">
     <span class="icon">🔗</span><span>Share</span>
@@ -1328,6 +1374,8 @@ const state = {
   clubId: null,
   clubName: '',
   clubLogoUrl: null,
+  teamColorA: null,  // Club custom "blue" team color (hex)
+  teamColorB: null,  // Club custom "red" team color (hex)
   freeCourt: null,
   savedTactics: [],
   theme: 'dark',
@@ -1347,13 +1395,16 @@ const STRIPE_PRICES = {
 };
 
 // Called by the Firebase module script once auth state resolves
-window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, clubLogoUrl) {
+window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, clubLogoUrl, teamColorA, teamColorB) {
   state.isPro = isPro;
   state.isClub = isClub || false;
   state.isClubOwner = isClubOwner || false;
   state.clubId = clubId || null;
   state.clubName = clubName || localStorage.getItem('courtdraw_club_name') || '';
   state.clubLogoUrl = clubLogoUrl || null;
+  state.teamColorA = teamColorA || null;
+  state.teamColorB = teamColorB || null;
+  applyTeamColors();
   localStorage.setItem('courtdraw_pro', isPro ? '1' : '0');
   if (state.clubName) localStorage.setItem('courtdraw_club_name', state.clubName);
   const badge = document.getElementById('pro-badge');
@@ -2215,7 +2266,7 @@ function exportPNG() {
       const x = t.pct[0] * 1200, y = t.pct[1] * 720;
       oc.beginPath();
       oc.arc(x, y, 24, 0, Math.PI*2);
-      oc.fillStyle = t.team === 'red' ? '#dc2626' : '#60a5fa';
+      oc.fillStyle = t.team === 'red' ? (state.teamColorB || '#dc2626') : (state.teamColorA || '#60a5fa');
       oc.fill();
       oc.strokeStyle = 'rgba(255,255,255,0.8)';
       oc.lineWidth = 3;
@@ -2268,7 +2319,7 @@ function exportPDF() {
     for (const t of state.tokenPositions) {
       const x = t.pct[0] * W, y = t.pct[1] * H;
       oc.beginPath(); oc.arc(x, y, 28, 0, Math.PI * 2);
-      oc.fillStyle = t.team === 'red' ? '#dc2626' : '#60a5fa';
+      oc.fillStyle = t.team === 'red' ? (state.teamColorB || '#dc2626') : (state.teamColorA || '#60a5fa');
       oc.fill();
       oc.strokeStyle = 'rgba(255,255,255,0.8)'; oc.lineWidth = 4; oc.stroke();
       oc.fillStyle = 'white';
@@ -2287,11 +2338,25 @@ function exportPDF() {
     const dataUrl = off.toDataURL('image/png');
     const win = window.open('', '_blank');
     if (!win) { showToast('Allow pop-ups to use Print / PDF'); return; }
-    win.document.write(`<!DOCTYPE html><html><head><title>CourtDraw — ${court.name}</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}
-img{max-width:100%;height:auto;display:block}
-@media print{body{margin:0}img{width:100%;height:auto}@page{margin:0;size:landscape}}</style>
-</head><body><img src="${dataUrl}"></body></html>`);
+    const hasClubBrand = state.isClub && (state.clubLogoUrl || state.clubName);
+    const clubBrandHtml = hasClubBrand ? `
+      <div class="club-header">
+        ${state.clubLogoUrl ? `<img class="club-logo" src="${state.clubLogoUrl}" alt="">` : ''}
+        <span class="club-label">${(state.clubName || 'CourtDraw').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
+        <span class="court-label">${court.name.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
+      </div>` : '';
+    win.document.write(`<!DOCTYPE html><html><head><title>${hasClubBrand ? (state.clubName + ' — ') : 'CourtDraw — '}${court.name}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#fff}
+.club-header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:#1d4ed8;color:#fff}
+.club-logo{height:36px;max-width:140px;object-fit:contain;border-radius:3px}
+.club-label{font-family:system-ui,sans-serif;font-weight:700;font-size:18px}
+.court-label{font-family:system-ui,sans-serif;font-size:13px;opacity:0.65;margin-left:auto}
+img.court-img{max-width:100%;height:auto;display:block}
+@media print{body{margin:0}.club-header{-webkit-print-color-adjust:exact;print-color-adjust:exact}img.court-img{width:100%;height:auto}@page{margin:0;size:landscape}}
+</style>
+</head><body>${clubBrandHtml}<img class="court-img" src="${dataUrl}"></body></html>`);
     win.document.close();
     win.addEventListener('load', () => { win.focus(); win.print(); });
     showToast('Print dialog opened.');
@@ -2339,6 +2404,12 @@ function loadFromHash() {
 // ══════════════════════════════════════════════
 // CLUB FEATURES
 // ══════════════════════════════════════════════
+function applyTeamColors() {
+  const root = document.documentElement;
+  root.style.setProperty('--team-blue', state.teamColorA || '#60a5fa');
+  root.style.setProperty('--team-red',  state.teamColorB || '#dc2626');
+}
+
 // ── Header logo: swap CourtDraw logo for club logo when one is set ──────────
 function updateHeaderLogo() {
   const svgEl    = document.getElementById('logo-svg');
@@ -2372,6 +2443,8 @@ function updateClubUI() {
   const myClubWrap = document.getElementById('my-club-wrap');
   if (myClubWrap) myClubWrap.style.display = (state.isClub && !state.isClubOwner) ? 'block' : 'none';
   if (state.isClub && !state.isClubOwner) loadMyClub();
+  const presentBtn = document.getElementById('btn-present');
+  if (presentBtn) presentBtn.style.display = 'flex';
 }
 
 // ── My Club panel (coaches only) ──────────────────────────────────────────
@@ -2591,8 +2664,8 @@ function addPhase() {
   showToast(`Phase ${state.phases.length} added.`);
 }
 
-function prevPhase() { if (state.currentPhase > 0) loadPhase(state.currentPhase - 1); }
-function nextPhase() { if (state.currentPhase < state.phases.length - 1) loadPhase(state.currentPhase + 1); }
+function prevPhase() { stopAnimation(); if (state.currentPhase > 0) loadPhase(state.currentPhase - 1); }
+function nextPhase() { stopAnimation(); if (state.currentPhase < state.phases.length - 1) loadPhase(state.currentPhase + 1); }
 
 function updatePhaseUI() {
   if (!state.phases) return;
@@ -2614,6 +2687,91 @@ function updatePhaseUI() {
     d.onclick = () => loadPhase(i);
     dotsEl.appendChild(d);
   }
+  // Keep presentation overlay in sync
+  const presLabel = document.getElementById('pres-phase-label');
+  if (presLabel) presLabel.textContent = `Phase ${cur + 1} / ${total}`;
+  const presPlayBtn = document.getElementById('pres-play-btn');
+  if (presPlayBtn) presPlayBtn.textContent = animInterval ? '⏹ Stop' : '▶ Play';
+}
+
+// ══════════════════════════════════════════════
+// ANIMATED PLAYBACK
+// ══════════════════════════════════════════════
+let animInterval = null;
+const ANIM_SPEED_MS = 1600; // ms per phase
+
+function toggleAnimation() {
+  if (!state.isPro && !state.isClub) {
+    openPaywall('Animated playback is a Pro feature. Watch your tactical sequence come to life automatically.');
+    return;
+  }
+  if (state.phases.length < 2) {
+    showToast('Add at least 2 phases to animate (tap + Phase).');
+    return;
+  }
+  if (animInterval) { stopAnimation(); } else { startAnimation(); }
+}
+
+function startAnimation() {
+  const btn = document.getElementById('btn-play-anim');
+  if (btn) { btn.textContent = '⏹'; btn.classList.add('playing'); }
+  loadPhase(0);
+  animInterval = setInterval(() => {
+    const canvas = document.getElementById('drawing-canvas');
+    const tokenLayer = document.getElementById('token-layer');
+    canvas.style.opacity = '0.15';
+    tokenLayer.style.opacity = '0.15';
+    setTimeout(() => {
+      if (state.currentPhase < state.phases.length - 1) {
+        loadPhase(state.currentPhase + 1);
+      } else {
+        stopAnimation();
+        return;
+      }
+      canvas.style.opacity = '1';
+      tokenLayer.style.opacity = '1';
+    }, 220);
+  }, ANIM_SPEED_MS);
+}
+
+function stopAnimation() {
+  if (animInterval) { clearInterval(animInterval); animInterval = null; }
+  const btn = document.getElementById('btn-play-anim');
+  if (btn) { btn.textContent = '▶'; btn.classList.remove('playing'); }
+  const canvas = document.getElementById('drawing-canvas');
+  const tokenLayer = document.getElementById('token-layer');
+  if (canvas) canvas.style.opacity = '1';
+  if (tokenLayer) tokenLayer.style.opacity = '1';
+}
+
+// ── Presentation Mode ─────────────────────────────────────────────────────
+function enterPresentation() {
+  if (!state.isClub) { showToast('Presentation mode is a Club feature.'); return; }
+  document.body.classList.add('presentation-mode');
+
+  // Set logo + club name
+  const logo = document.getElementById('pres-logo');
+  const nameEl = document.getElementById('pres-club-name');
+  if (logo) {
+    if (state.clubLogoUrl) { logo.src = state.clubLogoUrl; logo.style.display = 'block'; }
+    else logo.style.display = 'none';
+  }
+  if (nameEl) nameEl.textContent = state.clubName || 'CourtDraw';
+
+  // Try fullscreen
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+  syncCanvas();
+}
+
+function exitPresentation() {
+  stopAnimation();
+  document.body.classList.remove('presentation-mode');
+  if (document.fullscreenElement && document.exitFullscreen) {
+    document.exitFullscreen().catch(() => {});
+  }
+  setTimeout(syncCanvas, 100);
 }
 
 // ══════════════════════════════════════════════
@@ -2786,6 +2944,7 @@ document.addEventListener('keydown', e => {
 
   // Escape closes account menu or any open modal
   if (e.key === 'Escape') {
+    if (document.body.classList.contains('presentation-mode')) { exitPresentation(); return; }
     const acctMenu = document.getElementById('account-menu');
     if (acctMenu?.classList.contains('open')) { closeAccountMenu(); return; }
     if (anyModal) anyModal.classList.remove('open');
@@ -2831,6 +2990,22 @@ document.addEventListener('keydown', e => {
 document.addEventListener('DOMContentLoaded', init);
 </script>
 
+<!-- Presentation Mode Overlay -->
+<div id="presentation-overlay">
+  <div id="pres-top-bar">
+    <img id="pres-logo" src="" alt="" style="display:none;">
+    <span id="pres-club-name"></span>
+    <span id="pres-tactic-name"></span>
+    <button class="pres-btn pres-exit" onclick="exitPresentation()">✕ Exit</button>
+  </div>
+  <div id="pres-bottom-bar">
+    <button class="pres-btn" onclick="stopAnimation(); prevPhase();">◀</button>
+    <button class="pres-btn" id="pres-play-btn" onclick="toggleAnimation()">▶ Play</button>
+    <span id="pres-phase-label">Phase 1 / 1</span>
+    <button class="pres-btn" onclick="stopAnimation(); nextPhase();">▶</button>
+  </div>
+</div>
+
 <script type="importmap">
 {
   "imports": {
@@ -2871,8 +3046,22 @@ document.addEventListener('DOMContentLoaded', init);
       const isClubOwner = plan === 'club';
       // isClub is true for club owners AND for invited coaches with clubMember:true
       const isClub = isClubOwner || (data.clubMember === true && !!data.clubId);
+      // Load club-level settings (colors, logo) for all club users
+      let clubLogoUrl = data.clubLogoUrl || null;
+      let teamColorA = null, teamColorB = null;
+      if (isClub && data.clubId) {
+        try {
+          const clubSnap = await getDoc(doc(db, 'clubs', data.clubId));
+          if (clubSnap.exists()) {
+            const cd = clubSnap.data();
+            clubLogoUrl = cd.logoUrl || clubLogoUrl;
+            teamColorA  = cd.teamColorA || null;
+            teamColorB  = cd.teamColorB || null;
+          }
+        } catch {}
+      }
       if (typeof window.__updatePro === 'function')
-        window.__updatePro(isPro, isClub, data.clubId || null, data.clubName || '', isClubOwner, data.clubLogoUrl || null);
+        window.__updatePro(isPro, isClub, data.clubId || null, data.clubName || data.clubId || '', isClubOwner, clubLogoUrl, teamColorA, teamColorB);
     } catch {
       // Firestore unavailable — keep localStorage state as fallback
       // Still show logged-in state even if Firestore is unreachable
