@@ -317,14 +317,15 @@
           document.getElementById('signup-password').value
         );
 
-        // Fire-and-forget — don't block navigation if email fails
+        // Fire-and-forget — keepalive ensures the request survives page navigation
         fetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             template: 'welcome',
             email: document.getElementById('signup-email').value
-          })
+          }),
+          keepalive: true
         }).catch(() => {});
 
         window.location.href = nextUrl;
