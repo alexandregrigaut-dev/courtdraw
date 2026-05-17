@@ -167,6 +167,22 @@ const templates = {
       ctaUrl: `${APP_URL}/courtdraw-app.html`,
       footerNote: "You're receiving this because of a billing issue on your CourtDraw account."
     })
+  }),
+
+  cancellation: (email) => ({
+    from: FROM,
+    to: email,
+    subject: 'Your CourtDraw subscription has been cancelled',
+    html: layout({
+      label: 'Subscription cancelled',
+      labelColor: '#64748b',
+      title: "You've been downgraded to Free.",
+      body: `Your subscription has been cancelled and your account is now on the Free plan. You'll keep access to one court of your choice and up to 3 saved tactics.<br><br>
+             Changed your mind? You can resubscribe at any time — all your saved tactics will still be there.`,
+      ctaText: 'Resubscribe →',
+      ctaUrl: `${APP_URL}/#pricing`,
+      footerNote: "You're receiving this because your CourtDraw subscription was cancelled."
+    })
   })
 
 };

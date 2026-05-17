@@ -71,7 +71,10 @@ exports.handler = async (event) => {
       .limit(1)
       .get();
     if (!snap.empty) {
-      await snap.docs[0].ref.update({ plan: 'free', cancelledAt: new Date().toISOString() });
+      const userDoc = snap.docs[0];
+      await userDoc.ref.update({ plan: 'free', cancelledAt: new Date().toISOString() });
+      const userEmail = userDoc.data().email;
+      if (userEmail) await sendEmail('cancellation', userEmail);
     }
   }
 
