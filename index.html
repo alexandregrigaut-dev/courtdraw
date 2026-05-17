@@ -156,8 +156,8 @@
       font-size: 1.3rem; font-weight: 800; letter-spacing: -0.03em;
     }
     .nav-logo-mark {
-      width: 34px; height: 34px; border-radius: 9px;
-      background: var(--accent); display: flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
     .nav-links { display: flex; align-items: center; gap: 8px; }
     .nav-links a { color: var(--muted); font-size: 0.9rem; font-weight: 500; padding: 6px 12px; border-radius: 8px; transition: color .15s; }
@@ -490,18 +490,19 @@
   <div class="container nav-inner">
     <a href="/" class="nav-logo">
       <div class="nav-logo-mark">
-        <!-- courtdraw-icon-v7 court lines on the accent background -->
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="1" y="6" width="20" height="10" rx="1" fill="rgba(0,0,0,0.25)"/>
-          <rect x="1" y="6" width="20" height="10" rx="1" stroke="white" stroke-width="0.9"/>
-          <line x1="11" y1="6" x2="11" y2="16" stroke="white" stroke-width="0.8"/>
-          <line x1="7.8" y1="7" x2="7.8" y2="15" stroke="white" stroke-width="0.65"/>
-          <line x1="16.3" y1="7" x2="16.3" y2="15" stroke="white" stroke-width="0.65"/>
-          <line x1="1" y1="7.9" x2="21" y2="7.9" stroke="white" stroke-width="0.65"/>
-          <line x1="1" y1="14.1" x2="21" y2="14.1" stroke="white" stroke-width="0.65"/>
-          <line x1="7.8" y1="11" x2="16.3" y2="11" stroke="white" stroke-width="0.65"/>
-          <line x1="1" y1="11" x2="3" y2="11" stroke="white" stroke-width="0.65"/>
-          <line x1="21" y1="11" x2="19" y2="11" stroke="white" stroke-width="0.65"/>
+        <!-- courtdraw-icon-v7 pixel-perfect proportions -->
+        <svg width="34" height="34" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="28" height="28" rx="6" fill="#3b82f6"/>
+          <rect x="2" y="8.5" width="24" height="11" rx="1" fill="#1d4ed8"/>
+          <rect x="2" y="8.5" width="24" height="11" rx="1" stroke="white" stroke-width="0.9"/>
+          <line x1="14" y1="8.5" x2="14" y2="19.5" stroke="white" stroke-width="0.9"/>
+          <line x1="7.5" y1="9.8" x2="7.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+          <line x1="20.5" y1="9.8" x2="20.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+          <line x1="2" y1="9.8" x2="26" y2="9.8" stroke="white" stroke-width="0.75"/>
+          <line x1="2" y1="18.2" x2="26" y2="18.2" stroke="white" stroke-width="0.75"/>
+          <line x1="7.5" y1="14" x2="20.5" y2="14" stroke="white" stroke-width="0.75"/>
+          <line x1="2" y1="14" x2="2.7" y2="14" stroke="white" stroke-width="0.75"/>
+          <line x1="26" y1="14" x2="25.3" y2="14" stroke="white" stroke-width="0.75"/>
         </svg>
       </div>
       CourtDraw
@@ -682,10 +683,10 @@
     </div>
     <div class="sports-grid">
       <!-- Racket -->
-      <div class="sport-card free"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis Singles</div></div>
-      <div class="sport-card free"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis Doubles</div></div>
-      <div class="sport-card free"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Padel</div></div>
-      <div class="sport-card free"><div class="sport-card-icon">🏓</div><div class="sport-card-name">Pickleball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis Singles</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis Doubles</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Padel</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏓</div><div class="sport-card-name">Pickleball</div></div>
       <div class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton Singles</div></div>
       <div class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton Doubles</div></div>
       <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Squash</div></div>
@@ -696,8 +697,8 @@
       <div class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">American Football</div></div>
       <div class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Ice Hockey</div></div>
       <div class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Field Hockey</div></div>
-      <div class="sport-card free"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Futsal</div></div>
-      <div class="sport-card free"><div class="sport-card-icon">🤾</div><div class="sport-card-name">Handball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Futsal</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🤾</div><div class="sport-card-name">Handball</div></div>
       <div class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Volleyball</div></div>
       <div class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Beach Volleyball</div></div>
       <div class="sport-card"><div class="sport-card-icon">⚾</div><div class="sport-card-name">Baseball</div></div>
@@ -896,7 +897,7 @@
         <div class="plan-name">Pro</div>
         <div class="plan-price" id="pro-price"><sup>€</sup>4<span class="period"> / mo</span></div>
         <p class="plan-tagline" id="pro-tagline">Billed annually at €49/yr. €6/mo billed monthly.</p>
-        <a href="courtdraw-app.html" class="btn btn-primary plan-btn">Upgrade to Pro</a>
+        <a href="login.html?checkout=proYearly" class="btn btn-primary plan-btn" id="btn-pro-plan">Upgrade to Pro</a>
         <ul class="plan-features">
           <li><span class="check">✓</span> <span><strong>All 37+ sport courts</strong></span></li>
           <li><span class="check">✓</span> <span><strong>Unlimited saved tactics</strong></span></li>
@@ -916,7 +917,7 @@
         <div class="plan-name">Club</div>
         <div class="plan-price"><sup>€</sup>99<span class="period"> / yr</span></div>
         <p class="plan-tagline">Unlimited coaches. One flat rate. Billed annually.</p>
-        <a href="courtdraw-app.html" class="btn btn-ghost plan-btn">Get Club Plan</a>
+        <a href="login.html?checkout=club" class="btn btn-ghost plan-btn">Get Club Plan</a>
         <ul class="plan-features">
           <li><span class="check">✓</span> <span><strong>Everything in Pro</strong></span></li>
           <li><span class="check">✓</span> <span><strong>Unlimited coaching staff</strong> seats</span></li>
@@ -1095,11 +1096,18 @@
       <div class="footer-brand">
         <a href="/" class="nav-logo">
           <div class="nav-logo-mark">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <circle cx="10" cy="10" r="8" stroke="#0b1120" stroke-width="2"/>
-              <line x1="2" y1="10" x2="18" y2="10" stroke="#0b1120" stroke-width="2"/>
-              <path d="M10 2 C6 5, 6 15, 10 18" stroke="#0b1120" stroke-width="1.5" fill="none"/>
-              <path d="M10 2 C14 5, 14 15, 10 18" stroke="#0b1120" stroke-width="1.5" fill="none"/>
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="28" height="28" rx="6" fill="#3b82f6"/>
+              <rect x="2" y="8.5" width="24" height="11" rx="1" fill="#1d4ed8"/>
+              <rect x="2" y="8.5" width="24" height="11" rx="1" stroke="white" stroke-width="0.9"/>
+              <line x1="14" y1="8.5" x2="14" y2="19.5" stroke="white" stroke-width="0.9"/>
+              <line x1="7.5" y1="9.8" x2="7.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+              <line x1="20.5" y1="9.8" x2="20.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+              <line x1="2" y1="9.8" x2="26" y2="9.8" stroke="white" stroke-width="0.75"/>
+              <line x1="2" y1="18.2" x2="26" y2="18.2" stroke="white" stroke-width="0.75"/>
+              <line x1="7.5" y1="14" x2="20.5" y2="14" stroke="white" stroke-width="0.75"/>
+              <line x1="2" y1="14" x2="2.7" y2="14" stroke="white" stroke-width="0.75"/>
+              <line x1="26" y1="14" x2="25.3" y2="14" stroke="white" stroke-width="0.75"/>
             </svg>
           </div>
           CourtDraw
@@ -1151,14 +1159,17 @@
     const annual = document.getElementById('toggle-annual');
     const price = document.getElementById('pro-price');
     const tagline = document.getElementById('pro-tagline');
+    const proBtnEl = document.getElementById('btn-pro-plan');
     if (mode === 'monthly') {
       monthly.classList.add('active'); annual.classList.remove('active');
       price.innerHTML = '<sup>€</sup>6<span class="period"> / mo</span>';
       tagline.textContent = 'Billed monthly. Switch to annual to save 32%.';
+      if (proBtnEl) proBtnEl.href = 'login.html?checkout=proMonthly';
     } else {
       annual.classList.add('active'); monthly.classList.remove('active');
       price.innerHTML = '<sup>€</sup>4<span class="period"> / mo</span>';
       tagline.textContent = 'Billed annually at €49/yr. €6/mo billed monthly.';
+      if (proBtnEl) proBtnEl.href = 'login.html?checkout=proYearly';
     }
   }
 

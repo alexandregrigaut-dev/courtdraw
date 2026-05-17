@@ -242,7 +242,13 @@
     import { auth } from '/src/firebase.js';
     import { onAuthStateChanged } from 'firebase/auth';
 
-    const nextUrl = new URLSearchParams(location.search).get('next') || '/courtdraw-app.html';
+    const params = new URLSearchParams(location.search);
+    const nextUrl = params.get('next') || '/courtdraw-app.html';
+    // If a checkout plan was passed (e.g. from the landing page pricing buttons),
+    // store it so the app auto-triggers Stripe checkout after login.
+    const pendingPlan = params.get('checkout');
+    if (pendingPlan) localStorage.setItem('courtdraw_pending_checkout', pendingPlan);
+
     onAuthStateChanged(auth, user => {
       if (user) window.location.href = nextUrl;
     });
