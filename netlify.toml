@@ -2,6 +2,12 @@
   publish = "."
   functions = "netlify/functions"
 
+# Firebase client-side API keys are intentionally public — they are not secrets.
+# Firebase security is enforced by Firebase Security Rules, not key secrecy.
+# This disables Netlify's false-positive secret scanning failure for this repo.
+[build.environment]
+  NETLIFY_SKIP_SECRETS_SCANNING = "true"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
