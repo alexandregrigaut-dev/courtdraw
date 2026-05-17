@@ -317,14 +317,15 @@
           document.getElementById('signup-password').value
         );
 
-        await fetch('/api/send-email', {
+        // Fire-and-forget — don't block navigation if email fails
+        fetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             template: 'welcome',
             email: document.getElementById('signup-email').value
           })
-        });
+        }).catch(() => {});
 
         window.location.href = nextUrl;
       } catch (err) {

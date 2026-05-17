@@ -357,6 +357,34 @@ button {
   width: 72px; z-index: 300;
   box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
+/* Account button — lit up when signed in */
+#btn-account.signed-in { color: var(--accent); }
+/* Account dropdown menu */
+#account-menu {
+  position: fixed;
+  top: calc(var(--header-h) + env(safe-area-inset-top) + 6px);
+  right: 12px; z-index: 500;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 16px;
+  min-width: 230px; max-width: calc(100vw - 24px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  display: none;
+}
+#account-menu.open { display: block; animation: fadein 0.15s ease; }
+.acct-email { font-size: 13px; font-weight: 600; word-break: break-all; margin-bottom: 3px; }
+.acct-plan  { font-size: 11px; color: var(--text2); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 14px; }
+.acct-divider { height: 1px; background: var(--border); margin: 10px 0; }
+.acct-btn {
+  display: block; width: 100%; text-align: left;
+  padding: 9px 12px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: inherit; border: none; background: none;
+  color: var(--text2); transition: var(--transition);
+  text-decoration: none;
+}
+.acct-btn:hover { background: var(--surface2); color: var(--text); }
+.acct-btn.danger { color: #ef4444; }
+.acct-btn.danger:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
 /* Responsive */
 @media (max-width: 480px) {
   .app-title { display: none; }
@@ -395,9 +423,25 @@ button {
     <button class="hdr-btn" id="btn-undo" title="Undo" aria-label="Undo" onclick="undo()">↩</button>
     <button class="hdr-btn" id="btn-redo" title="Redo" aria-label="Redo" onclick="redo()">↪</button>
     <button class="hdr-btn" id="btn-theme" title="Toggle theme" aria-label="Toggle theme" onclick="toggleTheme()">☀️</button>
+    <button class="hdr-btn" id="btn-account" title="My account" aria-label="My account" onclick="openAccountMenu()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+    </button>
     <button id="pro-badge" class="free-badge" aria-label="Upgrade to Pro" onclick="openPaywall()">Upgrade ✦</button>
   </div>
 </header>
+
+<!-- Account dropdown -->
+<div id="account-menu" role="dialog" aria-label="Account">
+  <div class="acct-email" id="acct-email">—</div>
+  <div class="acct-plan"  id="acct-plan">Free Plan</div>
+  <div class="acct-divider"></div>
+  <button class="acct-btn" id="acct-billing-btn" onclick="closeAccountMenu(); openBillingPortal();" style="display:none">💳 Manage billing</button>
+  <a class="acct-btn" id="acct-club-link" href="/club-admin.html" style="display:none">🏟 Club Admin</a>
+  <div class="acct-divider" id="acct-div2" style="display:none"></div>
+  <button class="acct-btn danger" onclick="signOutUser()">Sign out</button>
+</div>
 
 <!-- Board -->
 <main id="board-area">
@@ -1309,6 +1353,7 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner) {
   const phaseBtn = document.getElementById('btn-add-phase');
   if (phaseBtn) phaseBtn.textContent = isPro ? '+ Phase' : '+ Phase 🔒';
   if (isClub) updateClubUI();
+  updateAccountUI(window.__currentUser, isPro, isClub, isClubOwner);
   // Auto-trigger checkout if user was redirected here from the paywall
   if (!isPro && !isClub) {
     const pending = localStorage.getItem('courtdraw_pending_checkout');
@@ -2561,6 +2606,49 @@ function init() {
 }
 
 // ══════════════════════════════════════════════
+// ACCOUNT MENU
+// ══════════════════════════════════════════════
+function openAccountMenu() {
+  if (!window.__currentUser) { window.location.href = '/login.html'; return; }
+  document.getElementById('account-menu').classList.toggle('open');
+}
+function closeAccountMenu() {
+  document.getElementById('account-menu').classList.remove('open');
+}
+// Close when clicking outside
+document.addEventListener('click', e => {
+  const menu = document.getElementById('account-menu');
+  const btn  = document.getElementById('btn-account');
+  if (!menu.classList.contains('open')) return;
+  if (!menu.contains(e.target) && !btn.contains(e.target)) closeAccountMenu();
+});
+function signOutUser() {
+  closeAccountMenu();
+  if (typeof window.__signOut === 'function') window.__signOut();
+}
+function updateAccountUI(user, isPro, isClub, isClubOwner) {
+  const btn          = document.getElementById('btn-account');
+  const emailEl      = document.getElementById('acct-email');
+  const planEl       = document.getElementById('acct-plan');
+  const billingBtn   = document.getElementById('acct-billing-btn');
+  const clubLink     = document.getElementById('acct-club-link');
+  const div2         = document.getElementById('acct-div2');
+  if (!btn) return;
+  if (user) {
+    btn.classList.add('signed-in');
+    btn.title = user.email || 'My account';
+    if (emailEl) emailEl.textContent = user.email || '—';
+    if (planEl)  planEl.textContent  = isClub ? 'Club Plan' : isPro ? 'Pro Plan' : 'Free Plan';
+    if (billingBtn) billingBtn.style.display = (isPro || isClub) ? 'block' : 'none';
+    if (clubLink)   clubLink.style.display   = isClubOwner ? 'block' : 'none';
+    if (div2)       div2.style.display       = (isPro || isClub || isClubOwner) ? 'block' : 'none';
+  } else {
+    btn.classList.remove('signed-in');
+    btn.title = 'Sign in';
+  }
+}
+
+// ══════════════════════════════════════════════
 // KEYBOARD SHORTCUTS
 // ══════════════════════════════════════════════
 document.addEventListener('keydown', e => {
@@ -2570,8 +2658,10 @@ document.addEventListener('keydown', e => {
 
   const anyModal = document.querySelector('.modal-backdrop.open');
 
-  // Escape closes any open modal
+  // Escape closes account menu or any open modal
   if (e.key === 'Escape') {
+    const acctMenu = document.getElementById('account-menu');
+    if (acctMenu?.classList.contains('open')) { closeAccountMenu(); return; }
     if (anyModal) anyModal.classList.remove('open');
     return;
   }
@@ -2626,11 +2716,22 @@ document.addEventListener('DOMContentLoaded', init);
 </script>
 <script type="module">
   import { auth, db } from '/src/firebase.js';
-  import { onAuthStateChanged } from 'firebase/auth';
+  import { onAuthStateChanged, signOut } from 'firebase/auth';
   import { doc, getDoc } from 'firebase/firestore';
+
+  // Expose sign-out globally so the account menu button can call it
+  window.__signOut = async () => {
+    try { await signOut(auth); } catch {}
+    window.__currentUser = null;
+    window.location.href = '/login.html';
+  };
 
   onAuthStateChanged(auth, async user => {
     window.__currentUser = user;
+    // Always update the account button to reflect auth state
+    if (typeof updateAccountUI === 'function') {
+      updateAccountUI(user, false, false, false);
+    }
     if (!user) return;
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
@@ -2644,6 +2745,10 @@ document.addEventListener('DOMContentLoaded', init);
         window.__updatePro(isPro, isClub, data.clubId || null, data.clubName || '', isClubOwner);
     } catch {
       // Firestore unavailable — keep localStorage state as fallback
+      // Still show logged-in state even if Firestore is unreachable
+      if (typeof updateAccountUI === 'function') {
+        updateAccountUI(user, false, false, false);
+      }
     }
   });
 </script>

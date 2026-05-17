@@ -39,15 +39,21 @@ exports.handler = async (event) => {
   try { ({ priceId } = JSON.parse(event.body || '{}')); } catch { return { statusCode: 400, body: 'Bad JSON' }; }
   if (!priceId) return { statusCode: 400, body: 'Missing priceId' };
 
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ['card'],
-    mode: 'subscription',
-    customer_email: decoded.email,
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${process.env.PUBLIC_URL}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${PLAN_BY_PRICE[priceId] || 'pro'}`,
-    cancel_url:  `${process.env.PUBLIC_URL}/#pricing`,
-    metadata: { userId: decoded.uid, priceId }
-  });
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      customer_email: decoded.email,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${process.env.PUBLIC_URL}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${PLAN_BY_PRICE[priceId] || 'pro'}`,
+      cancel_url:  `${process.env.PUBLIC_URL}/#pricing`,
+      metadata: { userId: decoded.uid, priceId }
+    });
+  } catch (err) {
+    console.error('Stripe error:', err.message);
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+  }
 
   return {
     statusCode: 200,
