@@ -542,10 +542,9 @@
     ───────────────────────────────────────── */
     #acct-section {
       display: none;    /* revealed by JS after auth resolves */
-      padding: 72px 0 56px;
-      border-top: 1px solid var(--border);
+      padding: 64px 0 56px;
       border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(59,130,246,.04) 0%, transparent 100%);
+      background: linear-gradient(180deg, rgba(59,130,246,.06) 0%, transparent 100%);
     }
     .acct-inner { max-width: 800px; margin: 0 auto; }
     .acct-kicker {
@@ -670,6 +669,56 @@
     </div>
   </div>
 </nav>
+
+<!-- ════ ACCOUNT (logged-in only — first thing visible after nav) ════ -->
+<section id="acct-section" aria-label="Your account">
+  <div class="container acct-inner">
+
+    <p class="acct-kicker">Your membership</p>
+    <h2 class="acct-heading" id="acct-heading">Welcome back!</h2>
+
+    <!-- Skeleton shown while Firestore data is loading -->
+    <div id="acct-skeleton" class="acct-grid">
+      <div class="acct-card" style="grid-column:1/-1">
+        <div class="skel" style="height:16px;width:30%;margin-bottom:14px"></div>
+        <div class="skel" style="height:24px;width:55%;margin-bottom:10px"></div>
+        <div class="skel" style="height:14px;width:80%"></div>
+      </div>
+      <div class="acct-card"><div class="skel" style="height:14px;width:40%;margin-bottom:10px"></div><div class="skel" style="height:18px;width:75%"></div></div>
+      <div class="acct-card"><div class="skel" style="height:14px;width:40%;margin-bottom:10px"></div><div class="skel" style="height:18px;width:75%"></div></div>
+    </div>
+
+    <!-- Real content — revealed once auth + Firestore resolve -->
+    <div id="acct-content" class="acct-grid" style="display:none">
+
+      <!-- Plan card — full width, colour-coded by tier -->
+      <div class="acct-plan-card plan-free" id="acct-plan-card">
+        <div class="acct-plan-info">
+          <div class="acct-plan-name">
+            <span id="acct-plan-label">Free Plan</span>
+            <span class="nav-plan-pill plan-free" id="acct-plan-pill">Free</span>
+          </div>
+          <ul class="acct-plan-features" id="acct-plan-features"></ul>
+        </div>
+        <div class="acct-plan-cta" id="acct-plan-cta"></div>
+      </div>
+
+      <!-- User info -->
+      <div class="acct-card">
+        <div class="acct-card-label">Email</div>
+        <div class="acct-card-val" id="acct-email-val">—</div>
+      </div>
+
+      <!-- Tactics saved stat -->
+      <div class="acct-card">
+        <div class="acct-card-label">Saved tactics</div>
+        <div class="acct-card-val" id="acct-tactics-val">—</div>
+        <div class="acct-card-sub" id="acct-tactics-sub"></div>
+      </div>
+
+    </div>
+  </div>
+</section>
 
 <!-- ════ HERO ════ -->
 <section class="hero">
@@ -1003,56 +1052,6 @@
     </div>
     <div style="text-align:center;margin-top:48px">
       <a href="courtdraw-app.html" class="btn btn-primary btn-lg">Open Tactics Board →</a>
-    </div>
-  </div>
-</section>
-
-<!-- ════ ACCOUNT (logged-in only) ════ -->
-<section id="acct-section" aria-label="Your account">
-  <div class="container acct-inner">
-
-    <p class="acct-kicker">Your membership</p>
-    <h2 class="acct-heading" id="acct-heading">Welcome back!</h2>
-
-    <!-- Skeleton shown while Firestore data is loading -->
-    <div id="acct-skeleton" class="acct-grid">
-      <div class="acct-card" style="grid-column:1/-1">
-        <div class="skel" style="height:16px;width:30%;margin-bottom:14px"></div>
-        <div class="skel" style="height:24px;width:55%;margin-bottom:10px"></div>
-        <div class="skel" style="height:14px;width:80%"></div>
-      </div>
-      <div class="acct-card"><div class="skel" style="height:14px;width:40%;margin-bottom:10px"></div><div class="skel" style="height:18px;width:75%"></div></div>
-      <div class="acct-card"><div class="skel" style="height:14px;width:40%;margin-bottom:10px"></div><div class="skel" style="height:18px;width:75%"></div></div>
-    </div>
-
-    <!-- Real content — revealed once auth + Firestore resolve -->
-    <div id="acct-content" class="acct-grid" style="display:none">
-
-      <!-- Plan card — full width, colour-coded by tier -->
-      <div class="acct-plan-card plan-free" id="acct-plan-card">
-        <div class="acct-plan-info">
-          <div class="acct-plan-name">
-            <span id="acct-plan-label">Free Plan</span>
-            <span class="nav-plan-pill plan-free" id="acct-plan-pill">Free</span>
-          </div>
-          <ul class="acct-plan-features" id="acct-plan-features"></ul>
-        </div>
-        <div class="acct-plan-cta" id="acct-plan-cta"></div>
-      </div>
-
-      <!-- User info -->
-      <div class="acct-card">
-        <div class="acct-card-label">Email</div>
-        <div class="acct-card-val" id="acct-email-val">—</div>
-      </div>
-
-      <!-- Tactics saved stat -->
-      <div class="acct-card">
-        <div class="acct-card-label">Saved tactics</div>
-        <div class="acct-card-val" id="acct-tactics-val">—</div>
-        <div class="acct-card-sub" id="acct-tactics-sub"></div>
-      </div>
-
     </div>
   </div>
 </section>
