@@ -416,7 +416,8 @@ button {
       <line x1="2" y1="14" x2="2.7" y2="14" stroke="white" stroke-width="0.75"/>
       <line x1="26" y1="14" x2="25.3" y2="14" stroke="white" stroke-width="0.75"/>
     </svg>
-    <span class="app-title">CourtDraw</span>
+    <span class="app-title" id="app-title-text">CourtDraw</span>
+    <img id="club-header-logo" src="" alt="" style="display:none;height:28px;max-width:110px;object-fit:contain;border-radius:4px;">
   </div>
   <button id="court-name-chip" onclick="openCourtPicker()">Tennis (Singles)</button>
   <div class="header-right">
@@ -545,6 +546,18 @@ button {
       </div>
       <div id="club-library-body"><p style="font-size:12px;color:var(--text2);padding:8px 0;">Loading club tactics…</p></div>
     </div>
+    <!-- "My Club" panel — shown for club members (non-owners) -->
+    <div id="my-club-wrap" style="display:none;border-top:1px solid var(--border);padding:12px 20px 8px;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <img id="my-club-logo" src="" alt="" style="height:28px;max-width:90px;object-fit:contain;border-radius:4px;display:none;">
+        <span id="my-club-name" class="cat-label" style="color:var(--purple);">My Club</span>
+      </div>
+      <div id="my-club-roster" style="display:flex;flex-direction:column;gap:6px;margin-bottom:4px;">
+        <p style="font-size:12px;color:var(--text2);">Loading team…</p>
+      </div>
+      <a href="/club-admin.html" style="display:none;font-size:11px;color:var(--accent);text-decoration:none;" id="my-club-admin-link">⚙ Club Admin →</a>
+    </div>
+
     <div id="club-name-wrap" style="display:none;border-top:1px solid var(--border);padding:10px 20px;flex-shrink:0;">
       <div style="display:flex;gap:8px;align-items:center;">
         <input type="text" id="club-name-input" placeholder="Club name (on exports)…" maxlength="50"
@@ -1314,6 +1327,7 @@ const state = {
   isClubOwner: false,
   clubId: null,
   clubName: '',
+  clubLogoUrl: null,
   freeCourt: null,
   savedTactics: [],
   theme: 'dark',
@@ -1333,12 +1347,13 @@ const STRIPE_PRICES = {
 };
 
 // Called by the Firebase module script once auth state resolves
-window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner) {
+window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, clubLogoUrl) {
   state.isPro = isPro;
   state.isClub = isClub || false;
   state.isClubOwner = isClubOwner || false;
   state.clubId = clubId || null;
   state.clubName = clubName || localStorage.getItem('courtdraw_club_name') || '';
+  state.clubLogoUrl = clubLogoUrl || null;
   localStorage.setItem('courtdraw_pro', isPro ? '1' : '0');
   if (state.clubName) localStorage.setItem('courtdraw_club_name', state.clubName);
   const badge = document.getElementById('pro-badge');
@@ -1352,6 +1367,8 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner) {
   // Phase button: show lock hint for non-Pro users
   const phaseBtn = document.getElementById('btn-add-phase');
   if (phaseBtn) phaseBtn.textContent = isPro ? '+ Phase' : '+ Phase 🔒';
+  // Update header logo (club logo replaces CourtDraw logo for club users)
+  updateHeaderLogo();
   if (isClub) updateClubUI();
   updateAccountUI(window.__currentUser, isPro, isClub, isClubOwner);
   // Reload tactics from this user's scoped key now that we have their UID.
@@ -2322,6 +2339,26 @@ function loadFromHash() {
 // ══════════════════════════════════════════════
 // CLUB FEATURES
 // ══════════════════════════════════════════════
+// ── Header logo: swap CourtDraw logo for club logo when one is set ──────────
+function updateHeaderLogo() {
+  const svgEl    = document.getElementById('logo-svg');
+  const titleEl  = document.getElementById('app-title-text');
+  const logoImg  = document.getElementById('club-header-logo');
+  if (!svgEl || !titleEl || !logoImg) return;
+
+  const url = state.clubLogoUrl;
+  if (url && state.isClub) {
+    logoImg.src = url;
+    logoImg.style.display = 'block';
+    svgEl.style.display   = 'none';
+    titleEl.style.display = 'none';
+  } else {
+    logoImg.style.display = 'none';
+    svgEl.style.display   = '';
+    titleEl.style.display = '';
+  }
+}
+
 function updateClubUI() {
   document.getElementById('club-library-wrap').style.display = 'block';
   // Club name editing only available to owners
@@ -2330,6 +2367,79 @@ function updateClubUI() {
   const inp = document.getElementById('club-name-input');
   if (inp && state.clubName) inp.value = state.clubName;
   loadClubLibrary();
+
+  // "My Club" panel for non-owner coaches
+  const myClubWrap = document.getElementById('my-club-wrap');
+  if (myClubWrap) myClubWrap.style.display = (state.isClub && !state.isClubOwner) ? 'block' : 'none';
+  if (state.isClub && !state.isClubOwner) loadMyClub();
+}
+
+// ── My Club panel (coaches only) ──────────────────────────────────────────
+async function loadMyClub() {
+  const user = window.__currentUser;
+  if (!user || !state.isClub || state.isClubOwner) return;
+
+  // Update club name header
+  const nameEl = document.getElementById('my-club-name');
+  if (nameEl && state.clubName) nameEl.textContent = state.clubName;
+
+  // Show club logo if available
+  const logoEl = document.getElementById('my-club-logo');
+  if (logoEl) {
+    if (state.clubLogoUrl) {
+      logoEl.src = state.clubLogoUrl;
+      logoEl.style.display = 'inline';
+    } else {
+      logoEl.style.display = 'none';
+    }
+  }
+
+  // Fetch roster
+  const rosterEl = document.getElementById('my-club-roster');
+  if (!rosterEl) return;
+  rosterEl.innerHTML = '<p style="font-size:12px;color:var(--text2);">Loading team…</p>';
+
+  try {
+    const token = await user.getIdToken();
+    const res = await fetch('/.netlify/functions/get-club-members', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) throw new Error('server error');
+    const { members, clubName, logoUrl } = await res.json();
+
+    // Update name + logo from server data (may be more current)
+    if (clubName && nameEl) nameEl.textContent = clubName;
+    if (logoUrl && !state.clubLogoUrl) {
+      state.clubLogoUrl = logoUrl;
+      updateHeaderLogo();
+      if (logoEl) { logoEl.src = logoUrl; logoEl.style.display = 'inline'; }
+    }
+
+    if (!members || !members.length) {
+      rosterEl.innerHTML = '<p style="font-size:12px;color:var(--text2);">No teammates yet.</p>';
+      return;
+    }
+
+    rosterEl.innerHTML = '';
+    for (const m of members) {
+      const initials = (m.email || '?').slice(0, 2).toUpperCase();
+      const label    = m.role === 'admin' ? '👑 Admin' : '🏀 Coach';
+      const display  = m.name || m.email || 'Coach';
+      const safe     = display.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const joined   = m.joinedAt ? new Date(m.joinedAt).toLocaleDateString() : '';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0;';
+      row.innerHTML = `
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${initials}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${safe}</div>
+          <div style="font-size:10px;color:var(--text2);">${label}${joined ? ' · ' + joined : ''}</div>
+        </div>`;
+      rosterEl.appendChild(row);
+    }
+  } catch {
+    rosterEl.innerHTML = '<p style="font-size:12px;color:var(--text2);">Could not load team. Check your connection.</p>';
+  }
 }
 
 async function loadClubLibrary() {
@@ -2367,7 +2477,7 @@ async function loadClubLibrary() {
         </div>
         <div class="tactic-actions">
           <button class="tac-btn load" data-club-id="${t._firestoreId}">Load</button>
-          ${state.isClubOwner ? `<button class="tac-btn del" data-del-club-id="${t._firestoreId}">Del</button>` : ''}
+          ${(state.isClubOwner || (window.__currentUser && t.authorUid === window.__currentUser.uid)) ? `<button class="tac-btn del" data-del-club-id="${t._firestoreId}">Del</button>` : ''}
         </div>`;
       row.querySelector('[data-club-id]').addEventListener('click', () => loadClubTactic(window.__clubTactics[t._firestoreId]));
       const delBtn = row.querySelector('[data-del-club-id]');
@@ -2762,7 +2872,7 @@ document.addEventListener('DOMContentLoaded', init);
       // isClub is true for club owners AND for invited coaches with clubMember:true
       const isClub = isClubOwner || (data.clubMember === true && !!data.clubId);
       if (typeof window.__updatePro === 'function')
-        window.__updatePro(isPro, isClub, data.clubId || null, data.clubName || '', isClubOwner);
+        window.__updatePro(isPro, isClub, data.clubId || null, data.clubName || '', isClubOwner, data.clubLogoUrl || null);
     } catch {
       // Firestore unavailable — keep localStorage state as fallback
       // Still show logged-in state even if Firestore is unreachable

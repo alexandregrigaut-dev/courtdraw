@@ -19,6 +19,14 @@ const PLAN_BY_PRICE = {
   [process.env.STRIPE_PRICE_ID_CLUB]:        'club'
 };
 
+// Generate a 6-char alphanumeric club join code (no ambiguous chars)
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function generateClubCode() {
+  return Array.from({ length: 6 }, () =>
+    CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]
+  ).join('');
+}
+
 async function sendEmail(template, email) {
   await fetch(`${process.env.PUBLIC_URL}/.netlify/functions/send-email`, {
     method: 'POST',
@@ -51,12 +59,14 @@ exports.handler = async (event) => {
       return { statusCode: 200, body: JSON.stringify({ received: true }) };
     }
     const update = { plan, stripeCustomerId: session.customer, subscribedAt: new Date().toISOString() };
-    // Club plan: create the club document and assign a stable clubId
+    // Club plan: create the club document, assign a stable clubId, and generate a join code
     if (plan === 'club') {
-      const clubId = 'club_' + userId;
+      const clubId  = 'club_' + userId;
+      const clubCode = generateClubCode();
       update.clubId = clubId;
       await db.collection('clubs').doc(clubId).set({
-        ownerId: userId,
+        ownerId:   userId,
+        clubCode,           // 6-char code coaches use to join
         createdAt: new Date().toISOString()
       }, { merge: true });
     }

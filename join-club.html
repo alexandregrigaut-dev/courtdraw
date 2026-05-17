@@ -86,10 +86,26 @@ header {
   <div class="status" id="join-status"></div>
 </div>
 
+<!-- Card shown when no ?c= param — user enters the 6-char code manually -->
+<div class="card" id="code-card" style="display:none">
+  <div class="club-icon">🔑</div>
+  <div class="card-title">Enter Club Code</div>
+  <div class="card-sub">Type the 6-character code your Club Admin shared with you, then sign in to join.</div>
+  <input type="text" id="code-input" placeholder="ABC123"
+    maxlength="8" autocapitalize="characters" spellcheck="false"
+    style="width:100%;padding:14px 18px;border-radius:10px;
+           background:rgba(255,255,255,0.12);border:1px solid var(--border);
+           color:var(--text);font-size:22px;font-weight:700;text-align:center;
+           letter-spacing:.2em;font-family:inherit;text-transform:uppercase;
+           outline:none;margin-bottom:16px;">
+  <button class="btn btn-accent" onclick="handleCodeJoin()">Join Club →</button>
+  <div class="status" id="code-status"></div>
+</div>
+
 <div class="card" id="success-card" style="display:none">
   <div class="club-icon">✅</div>
   <div class="card-title">You're in!</div>
-  <div class="card-sub">You now have access to your club's shared tactic library. Open the app to start browsing and saving plays.</div>
+  <div class="card-sub" id="success-sub">You now have access to your club's shared tactic library. Open the app to start browsing and saving plays.</div>
   <a href="courtdraw-app.html" class="btn btn-accent">Open CourtDraw</a>
 </div>
 
@@ -110,8 +126,9 @@ header {
   const params = new URLSearchParams(location.search);
   const clubId = params.get('c');
 
+  const ALL_CARDS = ['loading-card','invalid-card','join-card','code-card','success-card'];
   function show(id) {
-    ['loading-card','invalid-card','join-card','success-card'].forEach(c => {
+    ALL_CARDS.forEach(c => {
       document.getElementById(c).style.display = c === id ? 'block' : 'none';
     });
   }
@@ -122,7 +139,10 @@ header {
     emailLink.href = `/login.html?next=${encodeURIComponent(location.href)}`;
   }
 
-  if (!clubId || !clubId.startsWith('club_')) {
+  // No club ID in URL → show the manual code entry card
+  if (!clubId) {
+    show('code-card');
+  } else if (!clubId.startsWith('club_')) {
     show('invalid-card');
   } else {
     // Fetch club name from Firestore
@@ -190,6 +210,55 @@ header {
       btn.textContent = 'Join Club Library';
       status.textContent = e.message || 'Something went wrong. Please try again.';
       status.className = 'status error';
+    }
+  };
+
+  // ── Join by code ──────────────────────────────────────────────────────────
+  window.handleCodeJoin = async () => {
+    const input  = document.getElementById('code-input');
+    const status = document.getElementById('code-status');
+    const code   = input.value.trim().toUpperCase();
+    if (!code || code.length < 4) {
+      status.textContent = 'Please enter a valid club code.';
+      status.className   = 'status error';
+      return;
+    }
+
+    input.disabled = true;
+    status.textContent = '';
+    status.className   = 'status';
+
+    try {
+      // Ensure the user is signed in
+      let user = auth.currentUser;
+      if (!user) {
+        status.textContent = 'Opening sign-in…';
+        const provider = new GoogleAuthProvider();
+        const result   = await signInWithPopup(auth, provider);
+        user = result.user;
+      }
+
+      const token = await user.getIdToken();
+      const res   = await fetch('/.netlify/functions/join-by-code', {
+        method:  'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ code })
+      });
+
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({}));
+        throw new Error(error || 'Invalid code — check with your Club Admin.');
+      }
+
+      const { clubName } = await res.json();
+      const sub = document.getElementById('success-sub');
+      if (sub && clubName) sub.textContent =
+        `You've joined ${clubName}. Open the app to browse and save plays.`;
+      show('success-card');
+    } catch(e) {
+      input.disabled     = false;
+      status.textContent = e.message || 'Something went wrong. Try again.';
+      status.className   = 'status error';
     }
   };
 </script>
