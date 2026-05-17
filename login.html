@@ -13,6 +13,7 @@
   <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,7 +27,7 @@
       background: var(--bg);
       color: var(--text);
       font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-      min-height: 100vh;
+      min-height: 100vh; min-height: 100dvh;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       padding: 24px;
@@ -81,7 +82,7 @@
       width: 100%; padding: 12px 14px;
       background: var(--bg3); border: 1px solid var(--border2);
       border-radius: 10px; color: var(--text);
-      font-family: inherit; font-size: 0.95rem;
+      font-family: inherit; font-size: 1rem;
       transition: border-color 0.15s;
       outline: none;
     }

@@ -8,6 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1d4ed8">
 <link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="preload" href="https://fonts.bunny.net/css?family=cabinet-grotesk:700,900|satoshi:400,500,700" as="style">
 <link href="https://fonts.bunny.net/css?family=cabinet-grotesk:700,900|satoshi:400,500,700" rel="stylesheet">
 <style>
 :root {
@@ -22,7 +23,7 @@
   --accent: #1d4ed8; --accent-dim: rgba(29,78,216,0.12);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Satoshi', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+body { font-family: 'Satoshi', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; min-height: 100dvh; -webkit-font-smoothing: antialiased; }
 header {
   background: var(--surface); border-bottom: 1px solid var(--border);
   padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between;
@@ -50,7 +51,7 @@ header {
 .invite-input {
   flex: 1; padding: 10px 12px; border-radius: 8px;
   background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text); font-size: 13px; font-family: inherit; outline: none;
+  color: var(--text); font-size: 16px; font-family: inherit; outline: none;
 }
 .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 8px; font-family: inherit; font-weight: 700; font-size: 13px; cursor: pointer; border: none; text-decoration: none; transition: filter 0.15s; }
 .btn-accent { background: var(--accent); color: #1e3a8a; }
@@ -72,7 +73,7 @@ header {
 .club-name-input {
   flex: 1; padding: 10px 12px; border-radius: 8px;
   background: var(--surface); border: 1px solid var(--border);
-  color: var(--text); font-size: 14px; font-family: inherit; outline: none;
+  color: var(--text); font-size: 16px; font-family: inherit; outline: none;
 }
 .club-name-input:focus { border-color: var(--accent); }
 .empty { text-align: center; padding: 40px; color: var(--text2); font-size: 14px; }

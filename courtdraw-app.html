@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CourtDraw">
 <link rel="preconnect" href="https://fonts.bunny.net">
+<link rel="preload" href="https://fonts.bunny.net/css?family=cabinet-grotesk:700,900|satoshi:400,500,700" as="style">
 <link href="https://fonts.bunny.net/css?family=cabinet-grotesk:700,900|satoshi:400,500,700" rel="stylesheet">
 <style>
 :root {
@@ -20,7 +21,7 @@
   --border: rgba(255,255,255,0.15); --text: #ffffff; --text2: rgba(255,255,255,0.6);
   --accent: #93c5fd; --accent-dim: rgba(147,197,253,0.18);
   --red: #ef4444; --blue: #3b82f6;
-  --header-h: 56px; --toolbar-h: 68px; --phase-bar-h: 36px;
+  --header-h: 56px; --toolbar-h: 68px; --phase-bar-h: 44px;
   --radius: 10px; --transition: 0.18s ease;
 }
 [data-theme="light"] {
@@ -30,6 +31,7 @@
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; }
+@supports (height: 100dvh) { html, body { height: 100dvh; } }
 body {
   font-family: 'Satoshi', system-ui, sans-serif;
   background: var(--bg); color: var(--text);
@@ -44,36 +46,40 @@ button {
 }
 /* ── Header ── */
 #app-header {
-  height: var(--header-h); min-height: var(--header-h);
+  height: calc(var(--header-h) + env(safe-area-inset-top));
+  min-height: calc(var(--header-h) + env(safe-area-inset-top));
   background: var(--surface); border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 12px; gap: 8px; z-index: 10;
+  padding: env(safe-area-inset-top) 12px 0; gap: 8px;
+  position: relative; z-index: 10;
 }
 #logo-wrap { display: flex; align-items: center; gap: 8px; }
 #logo-svg { width: 28px; height: 28px; }
 .app-title {
   font-family: 'Cabinet Grotesk', system-ui, sans-serif;
   font-weight: 900; font-size: 18px;
+  color: #93c5fd; /* fallback for Firefox */
   background: linear-gradient(135deg, #93c5fd 0%, #bfdbfe 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 [data-theme="light"] .app-title {
+  color: #1d4ed8; /* fallback for Firefox */
   background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
   -webkit-background-clip: text; background-clip: text;
 }
 #court-name-chip {
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 20px; padding: 4px 12px;
+  border-radius: 20px; padding: 8px 12px;
   font-size: 12px; font-weight: 500; color: var(--text2);
   cursor: pointer; transition: var(--transition);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  max-width: 140px;
+  max-width: 140px; min-height: 36px;
 }
 #court-name-chip:hover { border-color: var(--accent); color: var(--accent); }
 .header-right { display: flex; align-items: center; gap: 4px; }
 .hdr-btn {
-  width: 36px; height: 36px; border-radius: 8px;
+  width: 44px; height: 44px; border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   font-size: 16px; transition: var(--transition);
   color: var(--text2);
@@ -130,11 +136,14 @@ button {
 .ball-token { background: #f8fafc; border-color: #334155; color: #0f172a; }
 /* ── Toolbar ── */
 #toolbar {
-  height: var(--toolbar-h); min-height: var(--toolbar-h);
+  height: calc(var(--toolbar-h) + env(safe-area-inset-bottom));
+  min-height: calc(var(--toolbar-h) + env(safe-area-inset-bottom));
   background: var(--surface); border-top: 1px solid var(--border);
-  display: flex; align-items: center; padding: 0 8px;
+  display: flex; align-items: center;
+  padding: 0 8px env(safe-area-inset-bottom);
   gap: 4px; overflow-x: auto; overflow-y: hidden;
-  scrollbar-width: none; z-index: 10;
+  scrollbar-width: none; position: relative; z-index: 10;
+  -webkit-overflow-scrolling: touch;
 }
 #toolbar::-webkit-scrollbar { display: none; }
 .tool-sep { width: 1px; min-width: 1px; height: 32px; background: var(--border); margin: 0 4px; }
@@ -154,14 +163,17 @@ button {
   width: 24px; height: 24px; border-radius: 50%;
   border: 2.5px solid transparent; cursor: pointer; flex-shrink: 0;
   transition: transform 0.12s, border-color 0.12s;
+  touch-action: manipulation;
 }
 .color-dot:hover { transform: scale(1.15); }
 .color-dot.active { border-color: var(--text); transform: scale(1.1); box-shadow: 0 0 0 1px var(--surface); }
+.color-dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 /* #lw-slider reserved for future line-width control */
 /* ── Modals ── */
 .modal-backdrop {
   position: fixed; inset: 0; z-index: 400;
-  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  background: rgba(0,0,0,0.6);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
   display: none; align-items: flex-end; justify-content: center;
 }
 .modal-backdrop.open { display: flex; animation: fadein 0.18s ease; }
@@ -171,13 +183,14 @@ button {
 }
 .modal-sheet {
   background: var(--surface); border-radius: 20px 20px 0 0;
-  width: 100%; max-width: 640px; max-height: 90vh;
+  width: 100%; max-width: 640px;
+  max-height: 90vh; max-height: 90dvh;
   display: flex; flex-direction: column;
   box-shadow: 0 -8px 32px rgba(0,0,0,0.4);
   overflow: hidden;
 }
 @media (min-width: 600px) {
-  .modal-sheet { border-radius: 20px; max-height: 80vh; }
+  .modal-sheet { border-radius: 20px; max-height: 80vh; max-height: 80dvh; }
 }
 .modal-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -185,15 +198,15 @@ button {
   flex-shrink: 0;
 }
 .modal-title { font-family: 'Cabinet Grotesk', system-ui, sans-serif; font-weight: 700; font-size: 18px; }
-.modal-close { width: 32px; height: 32px; border-radius: 8px; font-size: 18px; color: var(--text2); display: flex; align-items: center; justify-content: center; }
+.modal-close { width: 44px; height: 44px; border-radius: 8px; font-size: 18px; color: var(--text2); display: flex; align-items: center; justify-content: center; }
 .modal-close:hover { background: var(--surface2); color: var(--text); }
-.modal-body { overflow-y: auto; flex: 1; padding: 16px 20px; }
+.modal-body { overflow-y: auto; flex: 1; padding: 16px 20px; -webkit-overflow-scrolling: touch; }
 .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
 /* Court picker */
 #court-search {
   width: 100%; padding: 10px 14px; border-radius: 10px;
   background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text); font-size: 14px; font-family: inherit;
+  color: var(--text); font-size: 16px; font-family: inherit;
   outline: none; margin-bottom: 16px;
 }
 #court-search:focus { border-color: var(--accent); }
@@ -235,7 +248,7 @@ button {
 .save-bar input {
   flex: 1; padding: 10px 14px; border-radius: 10px;
   background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text); font-size: 14px; font-family: inherit; outline: none;
+  color: var(--text); font-size: 16px; font-family: inherit; outline: none;
 }
 .save-bar input:focus { border-color: var(--accent); }
 .btn-accent {
@@ -276,7 +289,7 @@ button {
 #text-input-field {
   background: var(--surface); border: 2px solid var(--accent);
   border-radius: 8px; padding: 6px 10px; color: var(--text);
-  font-size: 14px; font-family: inherit; outline: none;
+  font-size: 16px; font-family: inherit; outline: none;
   min-width: 140px; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
 /* Confirm dialog */
@@ -288,8 +301,9 @@ button {
 .btn-cancel { flex: 1; padding: 12px; border-radius: 10px; background: var(--surface2); color: var(--text); border: 1px solid var(--border); font-weight: 600; font-size: 14px; cursor: pointer; }
 /* Toast */
 #toast {
-  position: fixed; bottom: calc(var(--toolbar-h) + var(--phase-bar-h) + 12px); left: 50%;
-  transform: translateX(-50%) translateY(8px);
+  position: fixed;
+  bottom: calc(var(--toolbar-h) + var(--phase-bar-h) + env(safe-area-inset-bottom) + 12px);
+  left: 50%; transform: translateX(-50%) translateY(8px);
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 20px; padding: 8px 16px; font-size: 13px; font-weight: 500;
   box-shadow: 0 4px 16px rgba(0,0,0,0.4); opacity: 0;
@@ -303,10 +317,10 @@ button {
   height: var(--phase-bar-h); min-height: var(--phase-bar-h);
   background: var(--surface); border-top: 1px solid var(--border);
   display: flex; align-items: center; justify-content: center;
-  gap: 10px; padding: 0 12px; z-index: 10; flex-shrink: 0;
+  gap: 10px; padding: 0 12px; position: relative; z-index: 10; flex-shrink: 0;
 }
 .phase-nav {
-  width: 26px; height: 26px; border-radius: 6px; font-size: 14px;
+  width: 36px; height: 36px; border-radius: 8px; font-size: 14px;
   display: flex; align-items: center; justify-content: center;
   color: var(--text2); flex-shrink: 0;
 }
@@ -317,24 +331,30 @@ button {
   width: 7px; height: 7px; border-radius: 50%;
   background: var(--border); cursor: pointer;
   transition: background var(--transition), transform var(--transition);
-  flex-shrink: 0;
+  flex-shrink: 0; position: relative;
+}
+/* Expand tap target via pseudo-element (primary navigation is prev/next buttons) */
+.phase-dot::after {
+  content: ''; position: absolute;
+  top: -8px; bottom: -8px; left: -5px; right: -5px;
 }
 .phase-dot.active { background: var(--accent); transform: scale(1.3); }
 .phase-dot:hover:not(.active) { background: var(--text2); }
 #phase-label { font-size: 10px; font-weight: 600; color: var(--text2); min-width: 60px; text-align: center; }
 #btn-add-phase {
   font-size: 10px; font-weight: 700; color: var(--accent);
-  padding: 2px 7px; border-radius: 5px;
+  padding: 8px 10px; border-radius: 6px;
   background: var(--accent-dim); border: 1px solid var(--accent);
+  min-height: 32px;
 }
 #btn-add-phase:hover { filter: brightness(1.1); }
 /* Token rename input */
 .token-rename-input {
   position: fixed; border: 2px solid var(--accent); border-radius: 6px;
   background: var(--surface); color: var(--text);
-  font-size: 13px; font-family: inherit; font-weight: 700;
+  font-size: 16px; font-family: inherit; font-weight: 700;
   padding: 4px 6px; text-align: center; outline: none;
-  width: 64px; z-index: 300;
+  width: 72px; z-index: 300;
   box-shadow: 0 4px 16px rgba(0,0,0,0.4);
 }
 /* Responsive */
@@ -350,32 +370,32 @@ button {
 <header id="app-header">
   <div id="logo-wrap">
     <svg id="logo-svg" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- courtdraw-icon-v7 proportions, 28×28 -->
+      <!-- courtdraw-icon-v7 pixel-perfect proportions, scale = 28/512 -->
       <rect width="28" height="28" rx="6" fill="#3b82f6"/>
       <rect x="2" y="8.5" width="24" height="11" rx="1" fill="#1d4ed8"/>
       <rect x="2" y="8.5" width="24" height="11" rx="1" stroke="white" stroke-width="0.9"/>
-      <!-- net (centre, dashed) -->
+      <!-- net (centre) x=256→14 -->
       <line x1="14" y1="8.5" x2="14" y2="19.5" stroke="white" stroke-width="0.9"/>
-      <!-- service lines (v7 at ~36% and ~73% from left) -->
-      <line x1="10.7" y1="9.8" x2="10.7" y2="18.2" stroke="white" stroke-width="0.75"/>
-      <line x1="20.6" y1="9.8" x2="20.6" y2="18.2" stroke="white" stroke-width="0.75"/>
-      <!-- top + bottom service rows -->
-      <line x1="2" y1="10.9" x2="26" y2="10.9" stroke="white" stroke-width="0.75"/>
-      <line x1="2" y1="18.1" x2="26" y2="18.1" stroke="white" stroke-width="0.75"/>
-      <!-- centre T-line (between service lines) -->
-      <line x1="10.7" y1="14" x2="20.6" y2="14" stroke="white" stroke-width="0.75"/>
+      <!-- service lines: left x=138→7.5, right x=375→20.5 -->
+      <line x1="7.5" y1="9.8" x2="7.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+      <line x1="20.5" y1="9.8" x2="20.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+      <!-- top service row y=180→9.8, bottom y=332→18.2 -->
+      <line x1="2" y1="9.8" x2="26" y2="9.8" stroke="white" stroke-width="0.75"/>
+      <line x1="2" y1="18.2" x2="26" y2="18.2" stroke="white" stroke-width="0.75"/>
+      <!-- centre T-line: between service lines, y=256→14 -->
+      <line x1="7.5" y1="14" x2="20.5" y2="14" stroke="white" stroke-width="0.75"/>
       <!-- centre marks -->
-      <line x1="2" y1="14" x2="3.8" y2="14" stroke="white" stroke-width="0.75"/>
-      <line x1="26" y1="14" x2="24.2" y2="14" stroke="white" stroke-width="0.75"/>
+      <line x1="2" y1="14" x2="2.7" y2="14" stroke="white" stroke-width="0.75"/>
+      <line x1="26" y1="14" x2="25.3" y2="14" stroke="white" stroke-width="0.75"/>
     </svg>
     <span class="app-title">CourtDraw</span>
   </div>
   <button id="court-name-chip" onclick="openCourtPicker()">Tennis (Singles)</button>
   <div class="header-right">
-    <button class="hdr-btn" id="btn-undo" title="Undo" onclick="undo()">↩</button>
-    <button class="hdr-btn" id="btn-redo" title="Redo" onclick="redo()">↪</button>
-    <button class="hdr-btn" id="btn-theme" title="Toggle theme" onclick="toggleTheme()">☀️</button>
-    <button id="pro-badge" class="free-badge" onclick="openPaywall()">Upgrade ✦</button>
+    <button class="hdr-btn" id="btn-undo" title="Undo" aria-label="Undo" onclick="undo()">↩</button>
+    <button class="hdr-btn" id="btn-redo" title="Redo" aria-label="Redo" onclick="redo()">↪</button>
+    <button class="hdr-btn" id="btn-theme" title="Toggle theme" aria-label="Toggle theme" onclick="toggleTheme()">☀️</button>
+    <button id="pro-badge" class="free-badge" aria-label="Upgrade to Pro" onclick="openPaywall()">Upgrade ✦</button>
   </div>
 </header>
 
@@ -390,11 +410,11 @@ button {
 
 <!-- Phase bar -->
 <div id="phase-bar">
-  <button class="phase-nav" id="btn-phase-prev" title="Previous phase" onclick="prevPhase()" disabled>◀</button>
-  <div class="phase-dots" id="phase-dots"></div>
-  <span id="phase-label">Phase 1 / 1</span>
-  <button class="phase-nav" id="btn-phase-next" title="Next phase" onclick="nextPhase()" disabled>▶</button>
-  <button id="btn-add-phase" title="Add new phase" onclick="addPhase()">+ Phase</button>
+  <button class="phase-nav" id="btn-phase-prev" title="Previous phase" aria-label="Previous phase" onclick="prevPhase()" disabled>◀</button>
+  <div class="phase-dots" id="phase-dots" role="tablist" aria-label="Phases"></div>
+  <span id="phase-label" aria-live="polite">Phase 1 / 1</span>
+  <button class="phase-nav" id="btn-phase-next" title="Next phase" aria-label="Next phase" onclick="nextPhase()" disabled>▶</button>
+  <button id="btn-add-phase" title="Add new phase" aria-label="Add new phase" onclick="addPhase()">+ Phase</button>
 </div>
 
 <!-- Toolbar -->
@@ -457,7 +477,7 @@ button {
   <div class="modal-sheet">
     <div class="modal-header">
       <span class="modal-title">Choose Sport</span>
-      <button class="modal-close" onclick="closeModal('modal-court-picker')">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="closeModal('modal-court-picker')">✕</button>
     </div>
     <div class="modal-body">
       <input type="search" id="court-search" placeholder="Search sport..." oninput="filterCourts(this.value)" autocomplete="off">
@@ -471,7 +491,7 @@ button {
   <div class="modal-sheet">
     <div class="modal-header">
       <span class="modal-title">Tactic Library</span>
-      <button class="modal-close" onclick="closeModal('modal-library')">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="closeModal('modal-library')">✕</button>
     </div>
     <div class="modal-body" id="library-body"></div>
     <div id="club-library-wrap" style="display:none;border-top:1px solid var(--border);padding:12px 20px 4px;flex-shrink:0;">
@@ -484,7 +504,7 @@ button {
     <div id="club-name-wrap" style="display:none;border-top:1px solid var(--border);padding:10px 20px;flex-shrink:0;">
       <div style="display:flex;gap:8px;align-items:center;">
         <input type="text" id="club-name-input" placeholder="Club name (on exports)…" maxlength="50"
-          style="flex:1;padding:7px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;outline:none;">
+          style="flex:1;padding:7px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:16px;outline:none;">
         <button onclick="saveClubName()" style="padding:7px 12px;border-radius:8px;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);font-size:12px;font-weight:700;">Save</button>
       </div>
       <p style="font-size:11px;color:var(--text2);margin-top:4px;">Replaces the watermark on exports.</p>
@@ -503,7 +523,7 @@ button {
   <div class="modal-sheet">
     <div class="modal-header">
       <span class="modal-title">Upgrade Your Plan</span>
-      <button class="modal-close" onclick="closeModal('modal-paywall')">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="closeModal('modal-paywall')">✕</button>
     </div>
     <div class="modal-body">
       <div class="paywall-hero">
@@ -553,7 +573,7 @@ button {
   <div class="modal-sheet">
     <div class="modal-header">
       <span class="modal-title">Clear Board</span>
-      <button class="modal-close" onclick="closeModal('modal-confirm')">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="closeModal('modal-confirm')">✕</button>
     </div>
     <div class="modal-body">
       <div class="confirm-body">
@@ -1304,14 +1324,33 @@ let canvasW = 0, canvasH = 0;
 let previewObj = null;
 
 function syncCanvas() {
-  const svgRect = courtSvg.getBoundingClientRect();
+  // The SVG element fills the container 100%×100%, but with
+  // preserveAspectRatio="xMidYMid meet" the actual court content
+  // is letterboxed inside it. We must size the canvas to match
+  // only the content area so drawing coordinates align with the court.
   const cRect = container.getBoundingClientRect();
-  canvasW = svgRect.width; canvasH = svgRect.height;
-  canvas.width = canvasW; canvas.height = canvasH;
-  canvas.style.width = svgRect.width + 'px';
-  canvas.style.height = svgRect.height + 'px';
-  canvas.style.left = (svgRect.left - cRect.left) + 'px';
-  canvas.style.top = (svgRect.top - cRect.top) + 'px';
+  const elW = cRect.width, elH = cRect.height;
+  const vbAspect = 1000 / 600;  // viewBox ratio
+  const elAspect = elW / (elH || 1);
+  let contentW, contentH, contentX, contentY;
+  if (elAspect > vbAspect) {
+    contentH = elH; contentW = elH * vbAspect;
+    contentX = (elW - contentW) / 2; contentY = 0;
+  } else {
+    contentW = elW; contentH = elW / vbAspect;
+    contentX = 0; contentY = (elH - contentH) / 2;
+  }
+  // canvasW/H are always in CSS pixels; the buffer is scaled by dpr for Retina sharpness
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  canvasW = contentW; canvasH = contentH;
+  canvas.width  = Math.round(contentW * dpr);
+  canvas.height = Math.round(contentH * dpr);
+  canvas.style.width  = contentW + 'px';
+  canvas.style.height = contentH + 'px';
+  canvas.style.left   = contentX + 'px';
+  canvas.style.top    = contentY + 'px';
+  // Apply DPR transform once; all drawing commands use CSS pixel coords
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   redrawAll();
   repositionTokens();
 }
@@ -1326,12 +1365,11 @@ function c2n(cx, cy) {
   return { nx: cx / canvasW * 1000, ny: cy / canvasH * 600 };
 }
 function getPos(e) {
+  // Return normalized coords from CSS pixel position.
+  // ctx.setTransform handles the DPR scaling — no need to multiply here.
   const r = canvas.getBoundingClientRect();
   const t = e.touches ? e.touches[0] : e;
-  return c2n(
-    (t.clientX - r.left) * (canvas.width / r.width),
-    (t.clientY - r.top) * (canvas.height / r.height)
-  );
+  return c2n(t.clientX - r.left, t.clientY - r.top);
 }
 
 function drawObject(ctx, obj, preview) {
@@ -1477,7 +1515,12 @@ function redrawAll() {
 canvas.addEventListener('pointerdown', onDown, { passive: false });
 canvas.addEventListener('pointermove', onMove, { passive: false });
 canvas.addEventListener('pointerup', onUp);
-canvas.addEventListener('pointercancel', onUp);
+// pointercancel: abort without committing (avoid bad coords from cancelled events)
+canvas.addEventListener('pointercancel', () => {
+  state.isDrawing = false;
+  previewObj = null;
+  redrawAll();
+});
 
 function onDown(e) {
   e.preventDefault();
@@ -1625,15 +1668,17 @@ function saveUndo(push=true) {
   updateUndoButtons();
 }
 function undo() {
-  if (!state.undoStack.length) return;
+  if (!state.undoStack.length) { showToast('Nothing left to undo.'); return; }
   state.redoStack.push(JSON.stringify(state.objects));
   state.objects = JSON.parse(state.undoStack.pop());
+  saveCurrentPhase();
   redrawAll(); updateUndoButtons();
 }
 function redo() {
-  if (!state.redoStack.length) return;
+  if (!state.redoStack.length) { showToast('Nothing left to redo.'); return; }
   state.undoStack.push(JSON.stringify(state.objects));
   state.objects = JSON.parse(state.redoStack.pop());
+  saveCurrentPhase();
   redrawAll(); updateUndoButtons();
 }
 function updateUndoButtons() {
@@ -1714,40 +1759,45 @@ function makeDraggable(el, idx) {
   function start(e) {
     e.preventDefault(); e.stopPropagation();
     dragging = true; hasMoved = false;
-    const p = e.touches ? e.touches[0] : e;
-    ox = p.clientX; oy = p.clientY;
+    ox = e.clientX; oy = e.clientY;
     startL = parseFloat(el.style.left) || 0;
     startT = parseFloat(el.style.top) || 0;
     el.style.zIndex = 10;
     el.style.transition = 'none';
+    // Capture keeps all pointer events routed to this element — no window leak
+    el.setPointerCapture(e.pointerId);
   }
   function move(e) {
     if (!dragging) return;
     e.preventDefault();
-    const p = e.touches ? e.touches[0] : e;
-    if (Math.abs(p.clientX - ox) > 5 || Math.abs(p.clientY - oy) > 5) hasMoved = true;
-    const dx = p.clientX - ox, dy = p.clientY - oy;
+    if (Math.abs(e.clientX - ox) > 5 || Math.abs(e.clientY - oy) > 5) hasMoved = true;
+    const dx = e.clientX - ox, dy = e.clientY - oy;
     const layer = document.getElementById('token-layer');
     const lr = layer.getBoundingClientRect();
-    const newL = Math.max(0, Math.min(lr.width, startL + dx));
-    const newT = Math.max(0, Math.min(lr.height, startT + dy));
+    const cr = canvas.getBoundingClientRect();
+    // Clamp tokens within the court content area (not the full letterboxed layer)
+    const minL = cr.left - lr.left, minT = cr.top - lr.top;
+    const maxL = minL + cr.width,   maxT = minT + cr.height;
+    const newL = Math.max(minL, Math.min(maxL, startL + dx));
+    const newT = Math.max(minT, Math.min(maxT, startT + dy));
     el.style.left = newL + 'px';
     el.style.top = newT + 'px';
-    const cr = canvas.getBoundingClientRect();
     state.tokenPositions[idx].pct = [
-      (newL - (cr.left - lr.left)) / cr.width,
-      (newT - (cr.top - lr.top)) / cr.height
+      (newL - minL) / cr.width,
+      (newT - minT) / cr.height
     ];
   }
-  function end() {
-    if (!hasMoved) renameToken(idx, el);
+  function end(e) {
+    if (!dragging) return;
     dragging = false;
     el.style.zIndex = 5;
     el.style.transition = '';
+    if (!hasMoved) renameToken(idx, el);
   }
   el.addEventListener('pointerdown', start, { passive: false });
-  window.addEventListener('pointermove', move, { passive: false });
-  window.addEventListener('pointerup', end);
+  el.addEventListener('pointermove', move, { passive: false });
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end);
 }
 
 function renameToken(idx, el) {
@@ -1796,12 +1846,28 @@ function buildColors() {
     const d = document.createElement('div');
     d.className = 'color-dot' + (c === state.color ? ' active' : '');
     d.style.background = c;
+    d.setAttribute('role', 'button');
+    d.setAttribute('aria-label', 'Color: ' + c);
+    d.setAttribute('tabindex', '0');
     if (c === '#ffffff' || c === '#111827') d.style.border = '2.5px solid #64748b';
-    d.onclick = () => {
+    // Use pointerdown for instant response on iOS (avoids 300ms scroll-detection delay)
+    // No stopPropagation — dots are in a different DOM branch from the canvas
+    d.addEventListener('pointerdown', () => {
       state.color = c;
+      localStorage.setItem('courtdraw_color', c);
       document.querySelectorAll('.color-dot').forEach(x => x.classList.remove('active'));
       d.classList.add('active');
-    };
+    });
+    // Keyboard support
+    d.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        state.color = c;
+        localStorage.setItem('courtdraw_color', c);
+        document.querySelectorAll('.color-dot').forEach(x => x.classList.remove('active'));
+        d.classList.add('active');
+      }
+    });
     wrap.appendChild(d);
   });
 }
@@ -1872,6 +1938,8 @@ function switchCourt(id, locked) {
     state.freeCourt = id;
     saveToStorage();
   }
+  // Dismiss any lingering rename inputs before switching
+  document.querySelectorAll('.token-rename-input').forEach(el => el.remove());
   state.courtId = id;
   const court = COURTS.find(c => c.id === id);
   if (!court) return;
@@ -1962,7 +2030,7 @@ function loadTactic(i) {
   state.currentPhase = t.currentPhase || 0;
   switchCourt(t.courtId, false);
   closeModal('modal-library');
-  setTimeout(() => { syncCanvas(); renderTokensFromState(); updatePhaseUI(); }, 200);
+  setTimeout(() => { syncCanvas(); renderTokensFromState(); updatePhaseUI(); }, 350);
   showToast(`"${t.name}" loaded.`);
 }
 
@@ -2252,7 +2320,7 @@ function loadClubTactic(t) {
   state.currentPhase = t.currentPhase || 0;
   switchCourt(t.courtId, false);
   closeModal('modal-library');
-  setTimeout(() => { syncCanvas(); renderTokensFromState(); updatePhaseUI(); }, 200);
+  setTimeout(() => { syncCanvas(); renderTokensFromState(); updatePhaseUI(); }, 350);
   showToast(`"${t.name}" loaded from club.`);
 }
 
@@ -2361,6 +2429,10 @@ function updatePhaseUI() {
     const d = document.createElement('div');
     d.className = 'phase-dot' + (i === cur ? ' active' : '');
     d.title = `Phase ${i + 1}`;
+    d.setAttribute('role', 'tab');
+    d.setAttribute('aria-label', `Phase ${i + 1}`);
+    d.setAttribute('aria-selected', String(i === cur));
+    d.setAttribute('tabindex', i === cur ? '0' : '-1');
     d.onclick = () => loadPhase(i);
     dotsEl.appendChild(d);
   }
@@ -2411,6 +2483,8 @@ function saveToStorage() {
   localStorage.setItem('courtdraw_tactics', JSON.stringify(state.savedTactics));
   localStorage.setItem('courtdraw_pro', state.isPro ? '1' : '0');
   localStorage.setItem('courtdraw_free_court', state.freeCourt || '');
+  localStorage.setItem('courtdraw_color', state.color);
+  localStorage.setItem('courtdraw_linewidth', String(state.lineWidth));
 }
 function loadFromStorage() {
   try {
@@ -2421,6 +2495,11 @@ function loadFromStorage() {
     state.clubName = localStorage.getItem('courtdraw_club_name') || '';
     const theme = localStorage.getItem('courtdraw_theme');
     if (theme) { state.theme = theme; document.documentElement.setAttribute('data-theme', theme); }
+    // Restore last-used color and stroke width
+    const savedColor = localStorage.getItem('courtdraw_color');
+    if (savedColor && COLORS.includes(savedColor)) state.color = savedColor;
+    const savedLW = parseInt(localStorage.getItem('courtdraw_linewidth') || '', 10);
+    if (savedLW >= 1 && savedLW <= 10) state.lineWidth = savedLW;
   } catch(e) {}
 }
 
@@ -2467,6 +2546,58 @@ function init() {
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   }
 }
+
+// ══════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ══════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  // Never intercept while typing in an input or textarea
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+  const anyModal = document.querySelector('.modal-backdrop.open');
+
+  // Escape closes any open modal
+  if (e.key === 'Escape') {
+    if (anyModal) anyModal.classList.remove('open');
+    return;
+  }
+
+  // Ignore other shortcuts while a modal is open
+  if (anyModal) return;
+
+  // Ctrl/Cmd+Z → undo, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y → redo
+  if ((e.metaKey || e.ctrlKey) && !e.altKey) {
+    if (e.key === 'z' || e.key === 'Z') {
+      e.preventDefault();
+      if (e.shiftKey) redo(); else undo();
+      return;
+    }
+    if (e.key === 'y' || e.key === 'Y') {
+      e.preventDefault();
+      redo();
+      return;
+    }
+  }
+
+  // Single-key shortcuts (no modifier)
+  if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+
+  switch (e.key) {
+    case 'e': case 'E': setTool('eraser'); showToast('Eraser'); break;
+    case 'ArrowLeft':  e.preventDefault(); prevPhase(); break;
+    case 'ArrowRight': e.preventDefault(); nextPhase(); break;
+  }
+
+  // Number keys 1–8 → select color
+  const num = parseInt(e.key, 10);
+  if (num >= 1 && num <= COLORS.length) {
+    const c = COLORS[num - 1];
+    state.color = c;
+    localStorage.setItem('courtdraw_color', c);
+    document.querySelectorAll('.color-dot').forEach((d, i) => d.classList.toggle('active', i === num - 1));
+  }
+});
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
