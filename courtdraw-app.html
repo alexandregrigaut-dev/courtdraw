@@ -1630,8 +1630,12 @@ function buildObject(x1, y1, x2, y2, pts) {
   switch(state.tool) {
     case 'arrow':
     case 'dashed-arrow': {
-      const simplified = simplifyPoints(pts, 4);
-      return { ...base, type: state.tool, points: simplified };
+      // Straighten on draw completion: discard the freehand path and store only
+      // the start→end vector as a 2-point line.  The arrowhead direction and all
+      // other properties are derived from this pair at render time, so the result
+      // is always a perfectly straight arrow regardless of how it was drawn.
+      // Undo captures this corrected form, not the raw input.
+      return { ...base, type: state.tool, points: [[x1, y1], [x2, y2]] };
     }
     case 'line':
       return { ...base, type:'line', x1, y1, x2, y2 };

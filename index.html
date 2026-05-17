@@ -481,6 +481,138 @@
     .fade-up-1 { animation-delay: .1s; }
     .fade-up-2 { animation-delay: .2s; }
     .fade-up-3 { animation-delay: .3s; }
+
+    /* ─────────────────────────────────────────
+       NAV — logged-in user area
+    ───────────────────────────────────────── */
+    .nav-user-wrap { position: relative; display: flex; align-items: center; gap: 10px; }
+
+    /* Avatar circle showing user initials */
+    .nav-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+      cursor: pointer; flex-shrink: 0; user-select: none;
+      border: 2px solid rgba(255,255,255,0.12);
+      transition: border-color .15s;
+    }
+    .nav-avatar:hover { border-color: rgba(255,255,255,0.35); }
+
+    /* Plan badge pill */
+    .nav-plan-pill {
+      padding: 3px 10px; border-radius: 100px;
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .nav-plan-pill.plan-free  { background: rgba(148,163,184,.15); color: #94a3b8; border: 1px solid rgba(148,163,184,.3); }
+    .nav-plan-pill.plan-pro   { background: rgba(245,158, 11,.12); color: #f59e0b; border: 1px solid rgba(245,158, 11,.3); }
+    .nav-plan-pill.plan-club  { background: rgba(168, 85,247,.12); color: #a855f7; border: 1px solid rgba(168, 85,247,.3); }
+
+    /* Dropdown */
+    .nav-dropdown {
+      position: absolute; top: calc(100% + 12px); right: 0; z-index: 300;
+      background: var(--bg2); border: 1px solid var(--border2);
+      border-radius: 14px; padding: 14px;
+      min-width: 210px; max-width: calc(100vw - 24px);
+      box-shadow: 0 12px 40px rgba(0,0,0,.55);
+      opacity: 0; pointer-events: none; transform: translateY(-6px);
+      transition: opacity .15s, transform .15s;
+    }
+    .nav-dropdown.open { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .ndd-email { font-size: 12px; color: var(--muted); margin-bottom: 12px; word-break: break-all; padding: 0 4px; }
+    .ndd-divider { height: 1px; background: var(--border2); margin: 8px 0; }
+    .ndd-btn {
+      display: block; width: 100%; text-align: left;
+      padding: 9px 12px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; background: none; border: none;
+      color: var(--muted); font-family: inherit; text-decoration: none;
+      transition: background .12s, color .12s;
+    }
+    .ndd-btn:hover { background: var(--bg3); color: var(--text); }
+    .ndd-btn.danger { color: #ef4444; }
+    .ndd-btn.danger:hover { background: rgba(239,68,68,.1); color: #ef4444; }
+
+    /* Skeleton shimmer */
+    @keyframes skelShimmer { 0%,100%{opacity:.55} 50%{opacity:.2} }
+    .skel { background: var(--bg3); border-radius: 6px; animation: skelShimmer 1.3s ease infinite; }
+
+    /* ─────────────────────────────────────────
+       ACCOUNT SECTION (visible when logged in)
+    ───────────────────────────────────────── */
+    #acct-section {
+      display: none;    /* revealed by JS after auth resolves */
+      padding: 72px 0 56px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(59,130,246,.04) 0%, transparent 100%);
+    }
+    .acct-inner { max-width: 800px; margin: 0 auto; }
+    .acct-kicker {
+      font-size: 0.75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 6px;
+    }
+    .acct-heading {
+      font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800;
+      letter-spacing: -.03em; margin-bottom: 28px;
+    }
+    .acct-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .acct-grid { grid-template-columns: 1fr; } }
+
+    .acct-card {
+      background: var(--bg2); border: 1px solid var(--border2);
+      border-radius: 18px; padding: 24px 26px;
+    }
+    .acct-card.highlight { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(59,130,246,.2); }
+    .acct-card-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 10px;
+    }
+    .acct-card-val { font-size: 1rem; font-weight: 600; color: var(--text); word-break: break-all; }
+    .acct-card-sub { font-size: 0.82rem; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+    /* Plan card — spans full width, has coloured left border by tier */
+    .acct-plan-card {
+      grid-column: 1 / -1;
+      background: var(--bg2); border: 1px solid var(--border2);
+      border-radius: 18px; padding: 24px 26px;
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 20px; flex-wrap: wrap;
+      border-left: 4px solid var(--muted);
+    }
+    .acct-plan-card.plan-free  { border-left-color: #64748b; }
+    .acct-plan-card.plan-pro   { border-left-color: #f59e0b; }
+    .acct-plan-card.plan-club  { border-left-color: #a855f7; }
+    .acct-plan-info { flex: 1; min-width: 0; }
+    .acct-plan-name {
+      font-size: 1.25rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: 6px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .acct-plan-name .nav-plan-pill { font-size: 0.68rem; }
+    .acct-plan-features { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+    .acct-plan-features li { font-size: 0.85rem; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+    .acct-plan-features li::before { content: '✓'; color: var(--accent); font-weight: 700; flex-shrink: 0; }
+    .acct-plan-cta { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; align-self: center; }
+    .acct-btn-primary {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 10px 20px; border-radius: 10px; font-size: 0.875rem; font-weight: 700;
+      background: var(--accent); color: #fff; text-decoration: none;
+      border: none; cursor: pointer; font-family: inherit; white-space: nowrap;
+      transition: background .15s, transform .15s;
+    }
+    .acct-btn-primary:hover { background: #60a5fa; transform: translateY(-1px); }
+    .acct-btn-primary.amber { background: #f59e0b; }
+    .acct-btn-primary.amber:hover { background: #fbbf24; }
+    .acct-btn-primary.purple { background: #a855f7; }
+    .acct-btn-primary.purple:hover { background: #c084fc; }
+    .acct-btn-ghost {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 9px 18px; border-radius: 10px; font-size: 0.82rem; font-weight: 600;
+      background: transparent; color: var(--muted); white-space: nowrap;
+      border: 1px solid var(--border2); cursor: pointer; font-family: inherit;
+      text-decoration: none; transition: border-color .15s, color .15s;
+    }
+    .acct-btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
   </style>
 </head>
 <body>
@@ -514,9 +646,27 @@
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
     </div>
-    <div class="nav-cta">
+    <!-- Guest CTA — hidden once auth resolves as logged-in -->
+    <div class="nav-cta" id="nav-cta-guest">
       <a href="login.html" class="btn btn-ghost" style="padding:9px 18px;font-size:.875rem;">Sign in</a>
       <a href="courtdraw-app.html" class="btn btn-primary" style="padding:9px 18px;font-size:.875rem;">Try Free</a>
+    </div>
+
+    <!-- Logged-in user area — revealed by JS after auth resolves -->
+    <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
+      <!-- Initials avatar — clicking toggles the dropdown -->
+      <div class="nav-avatar" id="nav-avatar" onclick="toggleNavDropdown()" aria-haspopup="true" aria-expanded="false" title="My account">?</div>
+      <!-- Plan tier pill -->
+      <span class="nav-plan-pill plan-free" id="nav-plan-pill" role="status" aria-label="Current plan">Free</span>
+
+      <!-- Dropdown menu -->
+      <div class="nav-dropdown" id="nav-dropdown" role="menu">
+        <div class="ndd-email" id="ndd-email">—</div>
+        <a href="courtdraw-app.html" class="ndd-btn" role="menuitem">🎯 Open app</a>
+        <button class="ndd-btn" id="ndd-billing-btn" onclick="landingOpenBilling()" style="display:none" role="menuitem">💳 Manage billing</button>
+        <div class="ndd-divider"></div>
+        <button class="ndd-btn danger" onclick="landingSignOut()" role="menuitem">Sign out</button>
+      </div>
     </div>
   </div>
 </nav>
@@ -853,6 +1003,56 @@
     </div>
     <div style="text-align:center;margin-top:48px">
       <a href="courtdraw-app.html" class="btn btn-primary btn-lg">Open Tactics Board →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ════ ACCOUNT (logged-in only) ════ -->
+<section id="acct-section" aria-label="Your account">
+  <div class="container acct-inner">
+
+    <p class="acct-kicker">Your membership</p>
+    <h2 class="acct-heading" id="acct-heading">Welcome back!</h2>
+
+    <!-- Skeleton shown while Firestore data is loading -->
+    <div id="acct-skeleton" class="acct-grid">
+      <div class="acct-card" style="grid-column:1/-1">
+        <div class="skel" style="height:16px;width:30%;margin-bottom:14px"></div>
+        <div class="skel" style="height:24px;width:55%;margin-bottom:10px"></div>
+        <div class="skel" style="height:14px;width:80%"></div>
+      </div>
+      <div class="acct-card"><div class="skel" style="height:14px;width:40%;margin-bottom:10px"></div><div class="skel" style="height:18px;width:75%"></div></div>
+      <div class="acct-card"><div class="skel" style="height:14px;width:40%;margin-bottom:10px"></div><div class="skel" style="height:18px;width:75%"></div></div>
+    </div>
+
+    <!-- Real content — revealed once auth + Firestore resolve -->
+    <div id="acct-content" class="acct-grid" style="display:none">
+
+      <!-- Plan card — full width, colour-coded by tier -->
+      <div class="acct-plan-card plan-free" id="acct-plan-card">
+        <div class="acct-plan-info">
+          <div class="acct-plan-name">
+            <span id="acct-plan-label">Free Plan</span>
+            <span class="nav-plan-pill plan-free" id="acct-plan-pill">Free</span>
+          </div>
+          <ul class="acct-plan-features" id="acct-plan-features"></ul>
+        </div>
+        <div class="acct-plan-cta" id="acct-plan-cta"></div>
+      </div>
+
+      <!-- User info -->
+      <div class="acct-card">
+        <div class="acct-card-label">Email</div>
+        <div class="acct-card-val" id="acct-email-val">—</div>
+      </div>
+
+      <!-- Tactics saved stat -->
+      <div class="acct-card">
+        <div class="acct-card-label">Saved tactics</div>
+        <div class="acct-card-val" id="acct-tactics-val">—</div>
+        <div class="acct-card-sub" id="acct-tactics-sub"></div>
+      </div>
+
     </div>
   </div>
 </section>
@@ -1206,6 +1406,197 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(console.error);
   }
+</script>
+
+<!-- ── Firebase auth for logged-in nav + account section ── -->
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app":       "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth":      "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+  }
+}
+</script>
+<script type="module">
+  import { auth, db } from '/src/firebase.js';
+  import { onAuthStateChanged, signOut } from 'firebase/auth';
+  import { doc, getDoc } from 'firebase/firestore';
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  function initials(email) {
+    if (!email) return '?';
+    const parts = email.split('@')[0].split(/[._\-+]/);
+    return parts.length > 1
+      ? (parts[0][0] + parts[1][0]).toUpperCase()
+      : email.slice(0, 2).toUpperCase();
+  }
+
+  // Plan config — features list and CTA buttons per tier
+  const PLAN_CONFIG = {
+    free: {
+      label: 'Free Plan',
+      pillClass: 'plan-free',
+      cardClass: 'plan-free',
+      features: ['1 court of your choice', '8 drawing tools', '3 saved tactics', 'PNG export (with watermark)'],
+      cta: `<a href="login.html?checkout=proYearly" class="acct-btn-primary">Upgrade to Pro ✦</a>
+            <a href="#pricing" class="acct-btn-ghost">See all plans</a>`
+    },
+    pro: {
+      label: 'Pro Plan',
+      pillClass: 'plan-pro',
+      cardClass: 'plan-pro',
+      features: ['All 37+ courts', 'Unlimited saves', 'Multi-phase plays', 'Clean PNG export (no watermark)', 'Priority support'],
+      cta: `<button class="acct-btn-primary amber" onclick="landingOpenBilling()">Manage billing</button>
+            <a href="login.html?checkout=club" class="acct-btn-ghost">Upgrade to Club</a>`
+    },
+    club: {
+      label: 'Club Plan',
+      pillClass: 'plan-club',
+      cardClass: 'plan-club',
+      features: ['Everything in Pro', 'Unlimited coaches', 'Shared team library', 'Club branding on exports', 'Club Admin dashboard'],
+      cta: `<button class="acct-btn-primary purple" onclick="landingOpenBilling()">Manage billing</button>`
+    }
+  };
+
+  // Tactics count for the current user (reads user-scoped localStorage key)
+  function getTacticsCount(uid) {
+    try {
+      const raw = localStorage.getItem('courtdraw_tactics_' + uid);
+      return raw ? JSON.parse(raw).length : 0;
+    } catch { return 0; }
+  }
+
+  // ── Nav update ────────────────────────────────────────────────────────────
+
+  function showLoggedInNav(user, plan) {
+    const cfg = PLAN_CONFIG[plan] || PLAN_CONFIG.free;
+
+    // Hide guest CTAs, show user area
+    document.getElementById('nav-cta-guest').style.display = 'none';
+    const wrap = document.getElementById('nav-user-wrap');
+    wrap.style.display = 'flex';
+
+    // Avatar initials
+    document.getElementById('nav-avatar').textContent = initials(user.email);
+
+    // Plan pill
+    const pill = document.getElementById('nav-plan-pill');
+    pill.textContent = plan === 'club' ? 'Club' : plan === 'pro' ? 'Pro' : 'Free';
+    pill.className = 'nav-plan-pill ' + cfg.pillClass;
+
+    // Dropdown email
+    document.getElementById('ndd-email').textContent = user.email || '—';
+
+    // Show billing button for paid plans
+    document.getElementById('ndd-billing-btn').style.display =
+      (plan === 'pro' || plan === 'club') ? 'block' : 'none';
+  }
+
+  // ── Account section update ────────────────────────────────────────────────
+
+  function showAccountSection(user, plan) {
+    const cfg = PLAN_CONFIG[plan] || PLAN_CONFIG.free;
+
+    // Reveal section, hide skeleton, show content
+    document.getElementById('acct-section').style.display = 'block';
+    document.getElementById('acct-skeleton').style.display = 'none';
+    document.getElementById('acct-content').style.display = 'contents';
+
+    // Personalised heading
+    const name = user.email ? user.email.split('@')[0] : 'Coach';
+    document.getElementById('acct-heading').textContent = `Welcome back, ${name}!`;
+
+    // Plan card
+    const card = document.getElementById('acct-plan-card');
+    card.className = 'acct-plan-card ' + cfg.cardClass;
+
+    document.getElementById('acct-plan-label').textContent = cfg.label;
+    const planPill = document.getElementById('acct-plan-pill');
+    planPill.textContent = plan === 'club' ? 'Club' : plan === 'pro' ? 'Pro' : 'Free';
+    planPill.className = 'nav-plan-pill ' + cfg.pillClass;
+
+    // Features list
+    const ul = document.getElementById('acct-plan-features');
+    ul.innerHTML = cfg.features.map(f => `<li>${f}</li>`).join('');
+
+    // CTA buttons
+    document.getElementById('acct-plan-cta').innerHTML = cfg.cta;
+
+    // Email
+    document.getElementById('acct-email-val').textContent = user.email || '—';
+
+    // Tactics count
+    const count = getTacticsCount(user.uid);
+    const limit = plan === 'free' ? 3 : null;
+    document.getElementById('acct-tactics-val').textContent = count;
+    document.getElementById('acct-tactics-sub').textContent =
+      limit ? `${limit - count} slot${limit - count !== 1 ? 's' : ''} remaining on Free` : 'Unlimited saves';
+  }
+
+  // ── Global helpers exposed for inline onclick ─────────────────────────────
+
+  window.toggleNavDropdown = () => {
+    const dd = document.getElementById('nav-dropdown');
+    const avatar = document.getElementById('nav-avatar');
+    const isOpen = dd.classList.toggle('open');
+    avatar.setAttribute('aria-expanded', isOpen);
+  };
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', e => {
+    const wrap = document.getElementById('nav-user-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById('nav-dropdown')?.classList.remove('open');
+    }
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.getElementById('nav-dropdown')?.classList.remove('open');
+  });
+
+  window.landingSignOut = async () => {
+    try { await signOut(auth); } catch {}
+    window.location.reload();
+  };
+
+  window.landingOpenBilling = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+      const token = await user.getIdToken();
+      const res = await fetch('/api/create-portal-session', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const { url } = await res.json();
+      if (url) window.location.href = url;
+    } catch { alert('Could not open billing portal. Please try again.'); }
+  };
+
+  // ── Auth state listener ───────────────────────────────────────────────────
+
+  onAuthStateChanged(auth, async user => {
+    if (!user) return; // guest — leave default UI as-is
+
+    // Show skeleton section immediately while Firestore loads
+    document.getElementById('acct-section').style.display = 'block';
+
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      const data = snap.exists() ? snap.data() : {};
+      const plan = data.plan || 'free';
+
+      showLoggedInNav(user, plan);
+      showAccountSection(user, plan);
+    } catch {
+      // Firestore unreachable — still show nav with free defaults
+      showLoggedInNav(user, 'free');
+      showAccountSection(user, 'free');
+    }
+  });
 </script>
 </body>
 </html>
