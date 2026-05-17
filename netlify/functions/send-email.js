@@ -1,16 +1,39 @@
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// "from" must be a verified domain in Resend (courtdraw.app → verify in Resend dashboard)
 const FROM = 'CourtDraw <hello@courtdraw.app>';
 const APP_URL = process.env.PUBLIC_URL || 'https://courtdraw.app';
 
-const templates = {
-  welcome: (email) => ({
-    from: FROM,
-    to: email,
-    subject: 'Welcome to CourtDraw 🏀',
-    html: `<!DOCTYPE html>
+// ─── Shared layout helpers ────────────────────────────────────────────────────
+
+const LOGO_SVG = `
+<svg width="36" height="36" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="28" height="28" rx="6" fill="#3b82f6"/>
+  <rect x="2" y="8.5" width="24" height="11" rx="1" fill="#1d4ed8"/>
+  <rect x="2" y="8.5" width="24" height="11" rx="1" stroke="white" stroke-width="0.9"/>
+  <line x1="14" y1="8.5" x2="14" y2="19.5" stroke="white" stroke-width="0.9"/>
+  <line x1="7.5" y1="9.8" x2="7.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+  <line x1="20.5" y1="9.8" x2="20.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+  <line x1="2" y1="9.8" x2="26" y2="9.8" stroke="white" stroke-width="0.75"/>
+  <line x1="2" y1="18.2" x2="26" y2="18.2" stroke="white" stroke-width="0.75"/>
+  <line x1="7.5" y1="14" x2="20.5" y2="14" stroke="white" stroke-width="0.75"/>
+  <line x1="2" y1="14" x2="2.7" y2="14" stroke="white" stroke-width="0.75"/>
+  <line x1="26" y1="14" x2="25.3" y2="14" stroke="white" stroke-width="0.75"/>
+</svg>`;
+
+function layout({ label, labelColor = '#3b82f6', title, body, ctaText, ctaUrl, features, footerNote }) {
+  const featureBlock = features ? `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;">
+      <tr>
+        ${features.map(f => `
+        <td style="padding:10px 12px;background:#1a2d4a;border-radius:8px;text-align:center;">
+          <span style="font-size:20px;">${f.icon}</span><br>
+          <span style="font-size:12px;color:#94a3b8;font-weight:600;">${f.label}</span>
+        </td>`).join('<td width="8"></td>')}
+      </tr>
+    </table>` : '';
+
+  return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#0a1628;font-family:'Helvetica Neue',Arial,sans-serif;">
@@ -20,71 +43,33 @@ const templates = {
 
         <!-- Logo -->
         <tr><td align="center" style="padding-bottom:32px;">
-          <table cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="padding-right:10px;vertical-align:middle;">
-                <svg width="36" height="36" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="28" height="28" rx="6" fill="#3b82f6"/>
-                  <rect x="2" y="8.5" width="24" height="11" rx="1" fill="#1d4ed8"/>
-                  <rect x="2" y="8.5" width="24" height="11" rx="1" stroke="white" stroke-width="0.9"/>
-                  <line x1="14" y1="8.5" x2="14" y2="19.5" stroke="white" stroke-width="0.9"/>
-                  <line x1="7.5" y1="9.8" x2="7.5" y2="18.2" stroke="white" stroke-width="0.75"/>
-                  <line x1="20.5" y1="9.8" x2="20.5" y2="18.2" stroke="white" stroke-width="0.75"/>
-                  <line x1="2" y1="9.8" x2="26" y2="9.8" stroke="white" stroke-width="0.75"/>
-                  <line x1="2" y1="18.2" x2="26" y2="18.2" stroke="white" stroke-width="0.75"/>
-                  <line x1="7.5" y1="14" x2="20.5" y2="14" stroke="white" stroke-width="0.75"/>
-                  <line x1="2" y1="14" x2="2.7" y2="14" stroke="white" stroke-width="0.75"/>
-                  <line x1="26" y1="14" x2="25.3" y2="14" stroke="white" stroke-width="0.75"/>
-                </svg>
-              </td>
-              <td style="vertical-align:middle;">
-                <span style="font-size:22px;font-weight:800;color:#f1f5f9;letter-spacing:-0.03em;">CourtDraw</span>
-              </td>
-            </tr>
-          </table>
+          <table cellpadding="0" cellspacing="0"><tr>
+            <td style="padding-right:10px;vertical-align:middle;">${LOGO_SVG}</td>
+            <td style="vertical-align:middle;">
+              <span style="font-size:22px;font-weight:800;color:#f1f5f9;letter-spacing:-0.03em;">CourtDraw</span>
+            </td>
+          </tr></table>
         </td></tr>
 
         <!-- Card -->
         <tr><td style="background:#0d1f3c;border:1px solid #1e3a5f;border-radius:16px;padding:40px 36px;">
-
-          <p style="margin:0 0 8px;font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#3b82f6;">Account created</p>
-          <h1 style="margin:0 0 16px;font-size:28px;font-weight:800;color:#f1f5f9;letter-spacing:-0.02em;line-height:1.2;">Welcome to CourtDraw!</h1>
-          <p style="margin:0 0 28px;font-size:16px;line-height:1.6;color:#94a3b8;">
-            Your account is ready. Start building your tactics library — draw plays, annotate courts, and save unlimited diagrams for every sport.
-          </p>
+          <p style="margin:0 0 8px;font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${labelColor};">${label}</p>
+          <h1 style="margin:0 0 16px;font-size:28px;font-weight:800;color:#f1f5f9;letter-spacing:-0.02em;line-height:1.2;">${title}</h1>
+          <div style="font-size:16px;line-height:1.7;color:#94a3b8;">${body}</div>
 
           <!-- CTA Button -->
-          <table cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+          <table cellpadding="0" cellspacing="0" style="margin-top:28px;">
             <tr>
-              <td style="background:#3b82f6;border-radius:10px;">
-                <a href="${APP_URL}/courtdraw-app.html"
+              <td style="background:${labelColor};border-radius:10px;">
+                <a href="${ctaUrl}"
                    style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:-0.01em;">
-                  Open the app →
+                  ${ctaText}
                 </a>
               </td>
             </tr>
           </table>
 
-          <!-- Feature pills -->
-          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
-            <tr>
-              <td style="padding:10px 12px;background:#1a2d4a;border-radius:8px;width:30%;text-align:center;">
-                <span style="font-size:20px;">🏀</span><br>
-                <span style="font-size:12px;color:#94a3b8;font-weight:600;">37+ courts</span>
-              </td>
-              <td width="8"></td>
-              <td style="padding:10px 12px;background:#1a2d4a;border-radius:8px;width:30%;text-align:center;">
-                <span style="font-size:20px;">✏️</span><br>
-                <span style="font-size:12px;color:#94a3b8;font-weight:600;">Draw & annotate</span>
-              </td>
-              <td width="8"></td>
-              <td style="padding:10px 12px;background:#1a2d4a;border-radius:8px;width:30%;text-align:center;">
-                <span style="font-size:20px;">📤</span><br>
-                <span style="font-size:12px;color:#94a3b8;font-weight:600;">Export PNG</span>
-              </td>
-            </tr>
-          </table>
-
+          ${featureBlock}
         </td></tr>
 
         <!-- Footer -->
@@ -94,7 +79,7 @@ const templates = {
             <a href="mailto:hello@courtdraw.app" style="color:#3b82f6;text-decoration:none;">hello@courtdraw.app</a>
           </p>
           <p style="margin:0;font-size:11px;color:#334155;">
-            © 2026 CourtDraw · You're receiving this because you created an account.
+            © 2026 CourtDraw · ${footerNote}
           </p>
         </td></tr>
 
@@ -102,42 +87,91 @@ const templates = {
     </td></tr>
   </table>
 </body>
-</html>`
+</html>`;
+}
+
+// ─── Templates ────────────────────────────────────────────────────────────────
+
+const templates = {
+
+  welcome: (email) => ({
+    from: FROM,
+    to: email,
+    subject: 'Welcome to CourtDraw 🏀',
+    html: layout({
+      label: 'Account created',
+      title: 'Welcome to CourtDraw!',
+      body: `Your account is ready. Start building your tactics library — draw plays, annotate courts, and save diagrams for every sport.`,
+      ctaText: 'Open the app →',
+      ctaUrl: `${APP_URL}/courtdraw-app.html`,
+      features: [
+        { icon: '🏀', label: '37+ courts' },
+        { icon: '✏️', label: 'Draw & annotate' },
+        { icon: '📤', label: 'Export PNG' },
+      ],
+      footerNote: "You're receiving this because you created an account."
+    })
   }),
+
   paymentConfirmed: (email) => ({
     from: FROM,
     to: email,
-    subject: 'You\'re now CourtDraw Pro 🎉',
-    html: `
-      <h1>Welcome to CourtDraw Pro!</h1>
-      <p>Your subscription is active. All 37+ courts, unlimited saves, and clean PNG exports are now unlocked.</p>
-      <p><a href="${APP_URL}/courtdraw-app.html">Open the app →</a></p>
-    `
+    subject: "You're now CourtDraw Pro ✦",
+    html: layout({
+      label: 'Pro plan activated',
+      labelColor: '#f59e0b',
+      title: 'Welcome to Pro!',
+      body: `Your subscription is now active. Every court, unlimited saves, multi-phase plays, and clean PNG exports are all unlocked — go build something great.`,
+      ctaText: 'Open the app →',
+      ctaUrl: `${APP_URL}/courtdraw-app.html`,
+      features: [
+        { icon: '🏟', label: '37+ courts' },
+        { icon: '💾', label: 'Unlimited saves' },
+        { icon: '📐', label: 'Multi-phase plays' },
+      ],
+      footerNote: "You're receiving this because you subscribed to CourtDraw Pro."
+    })
   }),
+
   clubWelcome: (email) => ({
     from: FROM,
     to: email,
-    subject: 'Welcome to CourtDraw Club 🏟',
-    html: `
-      <h1>Welcome to CourtDraw Club!</h1>
-      <p>Your Club plan is active. All Pro features are unlocked, plus your shared team library, club branding on exports, and the admin dashboard.</p>
-      <p>Head to your Club Admin dashboard to set your club name and invite your coaching staff:</p>
-      <p><a href="${APP_URL}/club-admin.html">Open Club Admin →</a></p>
-      <p style="color:#666;font-size:12px;">Questions? Reply to this email or contact hello@courtdraw.app</p>
-    `
+    subject: 'CourtDraw Club is ready 🏟',
+    html: layout({
+      label: 'Club plan activated',
+      labelColor: '#8b5cf6',
+      title: 'Your club is live!',
+      body: `All Pro features are unlocked, plus your shared team library, club branding on exports, and the coaching staff admin dashboard.<br><br>
+             Head to Club Admin to set your club name and invite your coaches.`,
+      ctaText: 'Open Club Admin →',
+      ctaUrl: `${APP_URL}/club-admin.html`,
+      features: [
+        { icon: '👥', label: 'Invite coaches' },
+        { icon: '📚', label: 'Shared library' },
+        { icon: '🏷', label: 'Club branding' },
+      ],
+      footerNote: "You're receiving this because you subscribed to CourtDraw Club."
+    })
   }),
+
   paymentFailed: (email) => ({
     from: FROM,
     to: email,
-    subject: 'Action needed — CourtDraw payment issue',
-    html: `
-      <h1>We couldn't process your payment</h1>
-      <p>Please update your billing details to keep your Pro access.</p>
-      <p><a href="${APP_URL}/courtdraw-app.html">Open CourtDraw →</a></p>
-      <p style="color:#666;font-size:12px;">Need help? Contact hello@courtdraw.app</p>
-    `
+    subject: 'Action needed — payment issue ⚠️',
+    html: layout({
+      label: 'Payment failed',
+      labelColor: '#ef4444',
+      title: "We couldn't process your payment.",
+      body: `Your Pro access is at risk. Please update your billing details to keep everything running — it only takes a moment.`,
+      ctaText: 'Update billing →',
+      ctaUrl: `${APP_URL}/courtdraw-app.html`,
+      footerNote: "You're receiving this because of a billing issue on your CourtDraw account."
+    })
   })
+
 };
+
+// ─── Handler ──────────────────────────────────────────────────────────────────
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
