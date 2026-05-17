@@ -1354,6 +1354,12 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner) {
   if (phaseBtn) phaseBtn.textContent = isPro ? '+ Phase' : '+ Phase 🔒';
   if (isClub) updateClubUI();
   updateAccountUI(window.__currentUser, isPro, isClub, isClubOwner);
+  // Reload tactics from this user's scoped key now that we have their UID.
+  // (On cold load the key was 'guest'; now we switch to 'courtdraw_tactics_<uid>'.)
+  try {
+    const t = localStorage.getItem(tacticsKey());
+    state.savedTactics = t ? JSON.parse(t) : [];
+  } catch { state.savedTactics = []; }
   // Auto-trigger checkout if user was redirected here from the paywall
   if (!isPro && !isClub) {
     const pending = localStorage.getItem('courtdraw_pending_checkout');
@@ -2537,8 +2543,14 @@ function showToast(msg) {
 // ══════════════════════════════════════════════
 // LOCAL STORAGE
 // ══════════════════════════════════════════════
+// Returns a per-user localStorage key for tactics so different accounts
+// on the same device never share saves.
+function tacticsKey() {
+  const uid = window.__currentUser && window.__currentUser.uid;
+  return uid ? 'courtdraw_tactics_' + uid : 'courtdraw_tactics_guest';
+}
 function saveToStorage() {
-  localStorage.setItem('courtdraw_tactics', JSON.stringify(state.savedTactics));
+  localStorage.setItem(tacticsKey(), JSON.stringify(state.savedTactics));
   localStorage.setItem('courtdraw_pro', state.isPro ? '1' : '0');
   localStorage.setItem('courtdraw_free_court', state.freeCourt || '');
   localStorage.setItem('courtdraw_color', state.color);
@@ -2546,7 +2558,7 @@ function saveToStorage() {
 }
 function loadFromStorage() {
   try {
-    const t = localStorage.getItem('courtdraw_tactics');
+    const t = localStorage.getItem(tacticsKey());
     if (t) state.savedTactics = JSON.parse(t);
     state.isPro = localStorage.getItem('courtdraw_pro') === '1';
     state.freeCourt = localStorage.getItem('courtdraw_free_court') || null;
@@ -2732,7 +2744,11 @@ document.addEventListener('DOMContentLoaded', init);
     if (typeof updateAccountUI === 'function') {
       updateAccountUI(user, false, false, false);
     }
-    if (!user) return;
+    if (!user) {
+      // Clear in-memory tactics so a signed-out visitor doesn't see previous user's saves
+      if (typeof state !== 'undefined') state.savedTactics = [];
+      return;
+    }
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
       const data = snap.exists() ? snap.data() : {};
