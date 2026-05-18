@@ -115,8 +115,21 @@ exports.handler = async (event) => {
   }
 
   if (stripeEvent.type === 'invoice.payment_failed') {
-    const email = stripeEvent.data.object.customer_email;
-    if (email) await sendEmail('paymentFailed', email);
+    const invoice = stripeEvent.data.object;
+    // For the very first invoice of a new subscription, checkout.session.completed
+    // is the authoritative success/failure signal. Stripe may fire
+    // invoice.payment_failed transiently (e.g. during 3D Secure, bank verification)
+    // before checkout.session.completed confirms the payment succeeded.
+    // Sending an alert here would give a false "payment failed" email even
+    // when checkout completed successfully — which is exactly what happened.
+    // Only alert for recurring billing failures, and only after Stripe has
+    // already auto-retried at least once (attempt_count >= 2).
+    const isFirstInvoice = invoice.billing_reason === 'subscription_create';
+    const attemptCount   = invoice.attempt_count || 1;
+    if (!isFirstInvoice && attemptCount >= 2) {
+      const email = invoice.customer_email;
+      if (email) await sendEmail('paymentFailed', email);
+    }
   }
 
   return { statusCode: 200, body: JSON.stringify({ received: true }) };
