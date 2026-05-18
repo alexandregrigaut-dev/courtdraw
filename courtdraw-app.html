@@ -24,6 +24,7 @@
   --red: #ef4444; --blue: #3b82f6;
   --header-h: 56px; --toolbar-h: 68px; --phase-bar-h: 44px;
   --radius: 10px; --transition: 0.18s ease;
+  --team-a-color: #60a5fa; --team-b-color: #dc2626;
 }
 [data-theme="light"] {
   --bg: #eff6ff; --surface: #ffffff; --surface2: #dbeafe;
@@ -131,8 +132,8 @@ button {
   color: white; line-height: 1;
   text-shadow: 0 1px 2px rgba(0,0,0,0.8);
 }
-.player-token.team-red { background: var(--team-red, #dc2626); }
-.player-token.team-blue { background: var(--team-blue, #60a5fa); }
+.player-token.team-red  { background: var(--team-b-color, #dc2626); }
+.player-token.team-blue { background: var(--team-a-color, #60a5fa); }
 .player-token:active { cursor: grabbing; transform: translate(-50%,-50%) scale(1.15); box-shadow: 0 4px 16px rgba(0,0,0,0.6); }
 .ball-token { background: #f8fafc; border-color: #334155; color: #0f172a; }
 /* ── Toolbar ── */
@@ -521,6 +522,42 @@ body.presentation-mode #presentation-overlay { display: flex; }
   #ls-bottom-hint { bottom: 0; height: 28px; }
 }
 /* Portrait mobile: court fills board-area naturally (no rotation needed) */
+#court-container {
+  transform-origin: 0 0;
+  will-change: transform;
+}
+@media (max-width: 900px) {
+  #toolbar-toggle-btn {
+    display: flex;
+    position: fixed;
+    bottom: calc(var(--toolbar-h) + 12px + env(safe-area-inset-bottom));
+    right: 12px;
+    z-index: 25;
+    width: 42px; height: 42px;
+    background: rgba(29,78,216,0.9);
+    border: none; border-radius: 50%;
+    color: #fff; font-size: 20px;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    transition: transform 0.2s ease;
+  }
+  body.toolbar-collapsed #toolbar-toggle-btn {
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+  body.toolbar-collapsed #toolbar {
+    transform: translateY(100%);
+  }
+  body.toolbar-collapsed #phase-bar {
+    bottom: env(safe-area-inset-bottom, 0px);
+  }
+  #toolbar {
+    transition: transform 0.25s ease;
+  }
+}
+@media (min-width: 901px) {
+  #toolbar-toggle-btn { display: none; }
+}
 /* ── Pro Library Modal ──────────────────────────────────── */
 #pro-library-modal {
   display: none; position: fixed; inset: 0; z-index: 9000;
@@ -650,6 +687,12 @@ body.presentation-mode #presentation-overlay { display: flex; }
     <canvas id="drawing-canvas"></canvas>
     <div id="token-layer"></div>
   </div>
+  <button id="btn-reset-zoom" onclick="state.zoom=1;state.panX=0;state.panY=0;applyZoom()"
+    style="display:none;position:absolute;bottom:12px;right:12px;z-index:25;
+    background:rgba(29,78,216,0.85);color:#fff;border:none;border-radius:20px;
+    padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;
+    align-items:center;gap:6px;backdrop-filter:blur(8px);">&#8854; Reset zoom</button>
+  <button id="toolbar-toggle-btn" onclick="toggleToolbar()" title="Toggle toolbar">&#8943;</button>
 </main>
 
 <!-- Phase bar -->
@@ -692,6 +735,24 @@ body.presentation-mode #presentation-overlay { display: flex; }
   <div class="tool-sep"></div>
   <!-- Colors -->
   <div id="color-dots" style="display:flex;align-items:center;gap:6px;padding:0 4px;flex-shrink:0;"></div>
+  <div class="tool-sep"></div>
+  <!-- Team colors -->
+  <div style="display:flex;align-items:center;gap:6px;padding:0 4px;flex-shrink:0;">
+    <input type="color" id="color-team-a" title="Team A color"
+      style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);cursor:pointer;padding:1px;"
+      onchange="setTeamColor('blue', this.value)">
+    <input type="color" id="color-team-b" title="Team B color"
+      style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);cursor:pointer;padding:1px;"
+      onchange="setTeamColor('red', this.value)">
+  </div>
+  <div class="tool-sep"></div>
+  <!-- Player controls -->
+  <button class="tb-btn" title="Add player" onclick="addPlayer()">
+    <span class="icon">+&#x1F464;</span><span>Add</span>
+  </button>
+  <button class="tb-btn" title="Reset player positions" onclick="confirmResetPositions()">
+    <span class="icon">&#x27F3;</span><span>Reset</span>
+  </button>
   <div class="tool-sep"></div>
   <!-- Actions -->
   <button class="tb-btn" title="Clear board" onclick="confirmClear()">
@@ -1567,6 +1628,7 @@ const state = {
   tokenPositions: [],
   phases: null,       // array of {objects, tokens}
   currentPhase: 0,
+  zoom: 1, panX: 0, panY: 0,
 };
 
 const COLORS = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#ffffff','#111827','#a855f7','#f97316'];
@@ -1684,12 +1746,13 @@ function c2n(cx, cy) {
 }
 function getPos(e) {
   // Return normalized coords from a pointer/touch event.
-  // ctx.setTransform handles the DPR scaling — no need to multiply here.
+  // Divide by rect.width/height (visual size) not canvasW/canvasH (CSS size)
+  // so coords are correct at any zoom level.
   const r = canvas.getBoundingClientRect();
   const t = e.touches ? e.touches[0] : e;
-  const vx = t.clientX - r.left;
-  const vy = t.clientY - r.top;
-  return c2n(vx, vy);
+  const nx = (t.clientX - r.left) / r.width * 1000;
+  const ny = (t.clientY - r.top)  / r.height * 600;
+  return { nx, ny };
 }
 
 function drawObject(ctx, obj, preview) {
@@ -2135,6 +2198,7 @@ function repositionTokens() {
 
 function makeDraggable(el, idx) {
   let dragging = false, hasMoved = false, ox, oy, startL, startT;
+  let longPressTimer = null;
   function start(e) {
     e.preventDefault(); e.stopPropagation();
     dragging = true; hasMoved = false;
@@ -2145,12 +2209,26 @@ function makeDraggable(el, idx) {
     el.style.transition = 'none';
     // Capture keeps all pointer events routed to this element — no window leak
     el.setPointerCapture(e.pointerId);
+    // Long-press: show remove option (600ms hold without moving)
+    longPressTimer = setTimeout(() => {
+      if (!hasMoved) {
+        el.style.zIndex = 5;
+        dragging = false;
+        const currentIdx = parseInt(el.dataset.idx);
+        if (confirm(`Remove player ${state.tokenPositions[currentIdx]?.label}?`)) {
+          removePlayer(currentIdx);
+        }
+      }
+    }, 600);
   }
   function move(e) {
     if (!dragging) return;
     e.preventDefault();
-    if (Math.abs(e.clientX - ox) > 5 || Math.abs(e.clientY - oy) > 5) hasMoved = true;
-    const dx = e.clientX - ox, dy = e.clientY - oy;
+    if (Math.abs(e.clientX - ox) > 5 || Math.abs(e.clientY - oy) > 5) {
+      hasMoved = true;
+      clearTimeout(longPressTimer);
+    }
+    const dx = (e.clientX - ox) / state.zoom, dy = (e.clientY - oy) / state.zoom;
 
     const canvasLeft = parseFloat(canvas.style.left) || 0;
     const canvasTop  = parseFloat(canvas.style.top)  || 0;
@@ -2164,6 +2242,7 @@ function makeDraggable(el, idx) {
     ];
   }
   function end(e) {
+    clearTimeout(longPressTimer);
     if (!dragging) return;
     dragging = false;
     el.style.zIndex = 5;
@@ -2318,6 +2397,14 @@ function switchCourt(id, locked, skipReset) {
   document.querySelectorAll('.token-rename-input').forEach(el => el.remove());
 
   const prevCourtId = state.courtId;
+  const hasDrawings = state.objects.length > 0;
+  if (!skipReset && id !== prevCourtId && hasDrawings) {
+    const courtName = COURTS.find(c => c.id === id)?.name || id;
+    if (!confirm(`Switch to ${courtName}? Your current drawing will be cleared.`)) {
+      state.courtId = prevCourtId;
+      return;
+    }
+  }
   state.courtId = id;
   const court = COURTS.find(c => c.id === id);
   if (!court) return;
@@ -2383,11 +2470,38 @@ function renderLibrary() {
   }
 }
 
-function openSaveDialog() { renderLibrary(); openModal('modal-library'); document.getElementById('tactic-name-input').focus(); }
+function openSaveDialog() {
+  renderLibrary();
+  openModal('modal-library');
+  const inp = document.getElementById('tactic-name-input');
+  if (inp && !inp.value.trim()) {
+    const court = COURTS.find(c => c.id === state.courtId);
+    const sportName = court ? court.name.replace(/ \(.*\)/, '') : 'Tactic';
+    const now = new Date();
+    const day = now.getDate();
+    const month = now.toLocaleDateString('en-GB', { month: 'long' });
+    let baseName = `${sportName} — ${day} ${month}`;
+    const existing = state.savedTactics.map(t => t.name);
+    if (existing.includes(baseName)) {
+      let n = 2;
+      while (existing.includes(`${baseName} (${n})`)) n++;
+      baseName = `${baseName} (${n})`;
+    }
+    inp.value = baseName;
+    inp.select();
+  }
+  document.getElementById('tactic-name-input').focus();
+}
 
 function saveTactic() {
-  const name = document.getElementById('tactic-name-input').value.trim();
-  if (!name) { showToast('Give this play a name first.'); return; }
+  let name = document.getElementById('tactic-name-input').value.trim();
+  if (!name) {
+    const court = COURTS.find(c => c.id === state.courtId);
+    const sportName = court ? court.name.replace(/ \(.*\)/, '') : 'Tactic';
+    const now = new Date();
+    name = `${sportName} — ${now.getDate()} ${now.toLocaleDateString('en-GB', { month: 'long' })}`;
+    document.getElementById('tactic-name-input').value = name;
+  }
   if (!state.isPro && !state.isClub && state.savedTactics.length >= FREE_SAVES) {
     closeModal('modal-library');
     openPaywall(`You've used all ${FREE_SAVES} free saves. Upgrade to Pro for unlimited saves.`);
@@ -2599,16 +2713,39 @@ function exportPDF() {
       const title = (state.isClub && state.clubName)
         ? `${state.clubName} — ${court.name}`
         : `CourtDraw — ${court.name}`;
-      win.document.write(`<!DOCTYPE html><html><head><title>${title.replace(/</g,'&lt;')}</title>
+      const safeTitle = title.replace(/</g,'&lt;');
+      const dlFilename = title.replace(/[^a-z0-9]/gi,'-') + '.png';
+      win.document.write(`<!DOCTYPE html><html><head><title>${safeTitle}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#fff}
+body{background:#fff;display:flex;flex-direction:column;min-height:100vh}
+.action-bar{display:flex;gap:12px;padding:12px 20px;background:#1d4ed8;align-items:center}
+.action-bar span{color:rgba(255,255,255,0.7);font-family:system-ui,sans-serif;font-size:13px;margin-right:auto}
+.btn-print,.btn-dl{padding:8px 18px;border:none;border-radius:8px;font-family:system-ui,sans-serif;font-size:14px;font-weight:700;cursor:pointer}
+.btn-print{background:#fff;color:#1d4ed8}
+.btn-dl{background:rgba(255,255,255,0.15);color:#fff;border:1.5px solid rgba(255,255,255,0.4)}
 img.court-img{width:100%;height:auto;display:block}
-@media print{img.court-img{width:100%;height:auto}@page{margin:0;size:landscape}}
+@media print{.action-bar{display:none}img.court-img{width:100%;height:auto}@page{margin:0;size:landscape}}
 </style>
-</head><body><img class="court-img" src="${dataUrl}"></body></html>`);
+</head>
+<body>
+<div class="action-bar">
+  <span>${safeTitle}</span>
+  <button class="btn-dl" onclick="dl()">&#x2B07; Download PNG</button>
+  <button class="btn-print" onclick="window.print()">&#x1F5A8; Print</button>
+</div>
+<img class="court-img" src="${dataUrl}">
+<script>
+function dl(){
+  var a=document.createElement('a');
+  a.href=document.querySelector('img.court-img').src;
+  a.download='${dlFilename}';
+  a.click();
+}
+<\/script>
+</body></html>`);
       win.document.close();
-      win.addEventListener('load', () => { win.focus(); win.print(); });
+      win.addEventListener('load', () => { win.focus(); });
       showToast('Print dialog opened.');
     };
 
@@ -2705,6 +2842,34 @@ function applyTeamColors() {
   const root = document.documentElement;
   root.style.setProperty('--team-blue', state.teamColorA || '#60a5fa');
   root.style.setProperty('--team-red',  state.teamColorB || '#dc2626');
+  // Also keep the new CSS vars in sync
+  root.style.setProperty('--team-a-color', state.teamColorA || '#60a5fa');
+  root.style.setProperty('--team-b-color', state.teamColorB || '#dc2626');
+}
+
+function setTeamColor(team, color) {
+  if (team === 'blue') {
+    state.teamColorA = color;
+    localStorage.setItem('courtdraw_color_a', color);
+  } else {
+    state.teamColorB = color;
+    localStorage.setItem('courtdraw_color_b', color);
+  }
+  document.documentElement.style.setProperty(
+    team === 'blue' ? '--team-a-color' : '--team-b-color', color
+  );
+  // Keep legacy vars in sync too
+  document.documentElement.style.setProperty(
+    team === 'blue' ? '--team-blue' : '--team-red', color
+  );
+  repositionTokens();
+  document.querySelectorAll('.player-token').forEach(el => {
+    const idx = parseInt(el.dataset.idx);
+    const t = state.tokenPositions[idx];
+    if (t && t.team === (team === 'blue' ? 'blue' : 'red')) {
+      el.style.background = color;
+    }
+  });
 }
 
 // ── Header logo: swap CourtDraw logo for club logo when one is set ──────────
@@ -3150,6 +3315,10 @@ function loadFromStorage() {
     if (savedColor && COLORS.includes(savedColor)) state.color = savedColor;
     const savedLW = parseInt(localStorage.getItem('courtdraw_linewidth') || '', 10);
     if (savedLW >= 1 && savedLW <= 10) state.lineWidth = savedLW;
+    const colorA = localStorage.getItem('courtdraw_color_a');
+    const colorB = localStorage.getItem('courtdraw_color_b');
+    if (colorA) state.teamColorA = colorA;
+    if (colorB) state.teamColorB = colorB;
   } catch(e) {}
 }
 
@@ -3160,6 +3329,13 @@ function init() {
   loadFromStorage();
   const sharedBoard = loadFromHash();
   buildColors();
+  // Initialize team color pickers and apply saved/default colors
+  const pickerA = document.getElementById('color-team-a');
+  const pickerB = document.getElementById('color-team-b');
+  if (pickerA) pickerA.value = state.teamColorA || '#60a5fa';
+  if (pickerB) pickerB.value = state.teamColorB || '#dc2626';
+  if (state.teamColorA) document.documentElement.style.setProperty('--team-a-color', state.teamColorA);
+  if (state.teamColorB) document.documentElement.style.setProperty('--team-b-color', state.teamColorB);
   // Load court (from share link or default)
   const startCourtId = sharedBoard ? state.courtId : (state.freeCourt || 'tennis_singles');
   const court = COURTS.find(c => c.id === startCourtId) || COURTS[0];
@@ -3499,6 +3675,160 @@ document.addEventListener('keydown', e => {
     document.querySelectorAll('.color-dot').forEach((d, i) => d.classList.toggle('active', i === num - 1));
   }
 });
+
+// ══════════════════════════════════════════════
+// ZOOM / PAN
+// ══════════════════════════════════════════════
+function applyZoom() {
+  const z = state.zoom;
+  const boardArea = container.parentElement;
+  const maxPanX = 0;
+  const minPanX = Math.min(0, boardArea.clientWidth  * (1 - z));
+  const maxPanY = 0;
+  const minPanY = Math.min(0, boardArea.clientHeight * (1 - z));
+  state.panX = Math.max(minPanX, Math.min(maxPanX, state.panX));
+  state.panY = Math.max(minPanY, Math.min(maxPanY, state.panY));
+  container.style.transform = z === 1
+    ? ''
+    : `translate(${state.panX}px, ${state.panY}px) scale(${z})`;
+  // Show/hide reset zoom button
+  const btn = document.getElementById('btn-reset-zoom');
+  if (btn) btn.style.display = z > 1.01 ? 'flex' : 'none';
+}
+
+// ── Pinch-to-zoom & pan ──────────────────────────────────────────────────────
+(function() {
+  const MIN_ZOOM = 1, MAX_ZOOM = 4;
+  let touches = {}, pinching = false, panning = false;
+  let pinchStartDist = 0, pinchStartZoom = 1;
+  let pinchMidX = 0, pinchMidY = 0;
+  let panStartX = 0, panStartY = 0, panStartPanX = 0, panStartPanY = 0;
+  // Double-tap detection
+  let lastTapTime = 0;
+
+  function dist(t1, t2) {
+    return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+  }
+  function mid(t1, t2) {
+    return { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+  }
+  function getTouches(e) {
+    return Array.from(e.touches);
+  }
+
+  container.addEventListener('touchstart', (e) => {
+    const ts = getTouches(e);
+    if (ts.length === 2) {
+      e.preventDefault();
+      pinching = true; panning = false;
+      pinchStartDist = dist(ts[0], ts[1]);
+      pinchStartZoom = state.zoom;
+      const m = mid(ts[0], ts[1]);
+      // Midpoint in container space (accounting for current transform)
+      const rect = container.getBoundingClientRect();
+      pinchMidX = (m.x - rect.left) / state.zoom;
+      pinchMidY = (m.y - rect.top)  / state.zoom;
+    } else if (ts.length === 1) {
+      // Double-tap to reset
+      const now = Date.now();
+      if (now - lastTapTime < 300) {
+        e.preventDefault();
+        state.zoom = 1; state.panX = 0; state.panY = 0;
+        applyZoom();
+        lastTapTime = 0;
+        return;
+      }
+      lastTapTime = now;
+      // Pan mode only when zoomed in
+      if (state.zoom > 1.01) {
+        panning = true; pinching = false;
+        panStartX = ts[0].clientX; panStartY = ts[0].clientY;
+        panStartPanX = state.panX; panStartPanY = state.panY;
+      }
+    }
+  }, { passive: false });
+
+  container.addEventListener('touchmove', (e) => {
+    const ts = getTouches(e);
+    if (pinching && ts.length === 2) {
+      e.preventDefault();
+      const d = dist(ts[0], ts[1]);
+      let newZoom = pinchStartZoom * (d / pinchStartDist);
+      newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+      // Keep the pinch midpoint stationary in screen space
+      const boardArea = container.parentElement;
+      const boardRect = boardArea.getBoundingClientRect();
+      const m = mid(ts[0], ts[1]);
+      const mRelBoard = { x: m.x - boardRect.left, y: m.y - boardRect.top };
+      state.panX = mRelBoard.x - pinchMidX * newZoom;
+      state.panY = mRelBoard.y - pinchMidY * newZoom;
+      state.zoom = newZoom;
+      applyZoom();
+    } else if (panning && ts.length === 1 && state.zoom > 1.01) {
+      e.preventDefault();
+      state.panX = panStartPanX + (ts[0].clientX - panStartX);
+      state.panY = panStartPanY + (ts[0].clientY - panStartY);
+      applyZoom();
+    }
+  }, { passive: false });
+
+  container.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) pinching = false;
+    if (e.touches.length < 1) panning = false;
+  });
+})();
+
+// ══════════════════════════════════════════════
+// COLLAPSIBLE TOOLBAR
+// ══════════════════════════════════════════════
+function toggleToolbar() {
+  document.body.classList.toggle('toolbar-collapsed');
+  const btn = document.getElementById('toolbar-toggle-btn');
+  btn.textContent = document.body.classList.contains('toolbar-collapsed') ? '⋯' : '✕';
+}
+
+// ══════════════════════════════════════════════
+// ADD / REMOVE PLAYERS
+// ══════════════════════════════════════════════
+function addPlayer() {
+  const maxPlayers = 30; // absolute cap
+  if (state.tokenPositions.length >= maxPlayers) {
+    showToast('Maximum player count reached.');
+    return;
+  }
+  // Determine next team and label
+  const blueCount = state.tokenPositions.filter(t => t.team === 'blue').length;
+  const redCount  = state.tokenPositions.filter(t => t.team === 'red').length;
+  const team  = blueCount <= redCount ? 'blue' : 'red';
+  const prefix = team === 'blue' ? 'A' : 'B';
+  const count  = team === 'blue' ? blueCount + 1 : redCount + 1;
+  const label  = prefix + count;
+  const newToken = { team, label, pct: [0.5, 0.5] };
+  state.tokenPositions.push(newToken);
+  const idx = state.tokenPositions.length - 1;
+  createTokenEl(idx);
+  repositionTokens();
+  showToast(`Player ${label} added.`);
+}
+
+function removePlayer(idx) {
+  if (state.tokenPositions.length <= 1) {
+    showToast('At least one player must remain.');
+    return;
+  }
+  state.tokenPositions.splice(idx, 1);
+  // Rebuild all token elements (indices shifted)
+  const layer = document.getElementById('token-layer');
+  layer.innerHTML = '';
+  for (let i = 0; i < state.tokenPositions.length; i++) createTokenEl(i);
+  repositionTokens();
+}
+
+function confirmResetPositions() {
+  if (!confirm('Reset all players to default positions for this sport?')) return;
+  resetTokensToDefaults();
+  showToast('Players reset to default positions.');
+}
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
