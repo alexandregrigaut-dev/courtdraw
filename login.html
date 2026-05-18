@@ -245,7 +245,7 @@
   }
   </script>
   <script type="module">
-    import { loginUser, registerUser, resetPassword } from '/src/auth.js';
+    import { loginUser, registerUser } from '/src/auth.js';
     import { auth } from '/src/firebase.js';
     import { onAuthStateChanged } from 'firebase/auth';
 
@@ -355,13 +355,18 @@
 
     window.handleReset = async (e) => {
       e.preventDefault();
-      const email = document.getElementById('signin-email').value;
+      const email = document.getElementById('signin-email').value.trim();
       if (!email) { showError('Enter your email address above first.'); return; }
       try {
-        await resetPassword(email);
-        showSuccess('Password reset email sent — check your inbox.');
-      } catch (err) {
-        showError(friendlyError(err.code));
+        await fetch('/api/send-reset-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        // Always show success — don't reveal whether the account exists
+        showSuccess('If an account exists for that email, a reset link is on its way.');
+      } catch {
+        showError('Could not send reset email — please try again.');
       }
     };
 
