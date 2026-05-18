@@ -3198,7 +3198,7 @@ function loadLibTactic(t) {
     state.phases = t.phases.map(p => ({ objects: JSON.parse(JSON.stringify(p.objects||[])), tokens: JSON.parse(JSON.stringify(p.tokens||[])) }));
     state.currentPhase = 0;
   } else {
-    state.phases = [{ objects: state.objects, tokens: state.tokens }];
+    state.phases = [{ objects: state.objects, tokens: state.tokenPositions }];
     state.currentPhase = 0;
   }
   updatePhaseUI();
