@@ -551,6 +551,21 @@ body.presentation-mode #presentation-overlay { display: flex; }
   body.toolbar-collapsed #phase-bar {
     bottom: env(safe-area-inset-bottom, 0px);
   }
+}
+/* In landscape immersive mode, toolbar-collapsed must not conflict with slide transforms */
+@media (max-width: 900px) and (orientation: landscape) {
+  body.toolbar-collapsed #toolbar {
+    transform: translateY(150px); /* keep landscape default (hidden via immersive) */
+  }
+  body.toolbar-collapsed #phase-bar {
+    bottom: calc(var(--toolbar-h) + env(safe-area-inset-bottom));
+  }
+  /* If chrome is revealed in landscape, collapsed state must not re-hide toolbar */
+  body.ls-chrome-visible.toolbar-collapsed #toolbar {
+    transform: translateY(0);
+  }
+}
+@media (max-width: 900px) {
   #toolbar {
     transition: transform 0.25s ease;
   }
@@ -2214,6 +2229,7 @@ function makeDraggable(el, idx) {
       if (!hasMoved) {
         el.style.zIndex = 5;
         dragging = false;
+        hasMoved = true; // prevent end() from triggering renameToken after confirm dismisses
         const currentIdx = parseInt(el.dataset.idx);
         if (confirm(`Remove player ${state.tokenPositions[currentIdx]?.label}?`)) {
           removePlayer(currentIdx);
@@ -2840,11 +2856,17 @@ function loadFromHash() {
 // ══════════════════════════════════════════════
 function applyTeamColors() {
   const root = document.documentElement;
-  root.style.setProperty('--team-blue', state.teamColorA || '#60a5fa');
-  root.style.setProperty('--team-red',  state.teamColorB || '#dc2626');
-  // Also keep the new CSS vars in sync
-  root.style.setProperty('--team-a-color', state.teamColorA || '#60a5fa');
-  root.style.setProperty('--team-b-color', state.teamColorB || '#dc2626');
+  const colorA = state.teamColorA || '#60a5fa';
+  const colorB = state.teamColorB || '#dc2626';
+  root.style.setProperty('--team-blue', colorA);
+  root.style.setProperty('--team-red',  colorB);
+  root.style.setProperty('--team-a-color', colorA);
+  root.style.setProperty('--team-b-color', colorB);
+  // Sync picker inputs so they reflect the current colors (e.g. after Firestore update)
+  const pA = document.getElementById('color-team-a');
+  const pB = document.getElementById('color-team-b');
+  if (pA) pA.value = colorA;
+  if (pB) pB.value = colorB;
 }
 
 function setTeamColor(team, color) {
@@ -3782,6 +3804,9 @@ function applyZoom() {
 // COLLAPSIBLE TOOLBAR
 // ══════════════════════════════════════════════
 function toggleToolbar() {
+  // In landscape immersive mode, the toolbar is controlled by edge-touch — don't collapse
+  const isLandscape = window.matchMedia('(max-width: 900px) and (orientation: landscape)').matches;
+  if (isLandscape) return;
   document.body.classList.toggle('toolbar-collapsed');
   const btn = document.getElementById('toolbar-toggle-btn');
   btn.textContent = document.body.classList.contains('toolbar-collapsed') ? '⋯' : '✕';

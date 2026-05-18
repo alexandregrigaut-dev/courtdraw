@@ -70,7 +70,7 @@
     "description": "Online tactics board for coaches. Draw plays and share strategy for 37+ sports.",
     "url": "https://courtdraw.app",
     "screenshot": "https://courtdraw.app/assets/og-image.svg",
-    "featureList": "37+ sport courts, drawing tools, player tokens, PNG export, tactic library, offline PWA"
+    "featureList": "37+ sport courts, drawing tools, sport-specific player tokens, PNG export, PDF export, tactic library, offline PWA, pinch-to-zoom, landscape immersive mode"
   }
   </script>
 
@@ -881,7 +881,7 @@
     </div>
     <div class="trust-item">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      Export to PNG
+      Export to PNG &amp; PDF
     </div>
   </div>
 </div>
@@ -895,45 +895,49 @@
       <p>From football to futsal, padel to polo — CourtDraw ships with 37 precisely drawn courts. Pick one free, unlock all with Pro.</p>
     </div>
     <div class="sports-grid">
-      <!-- Racket -->
-      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis Singles</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis Doubles</div></div>
+      <!-- Racket Sports -->
+      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis (Singles)</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis (Doubles)</div></div>
       <div class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Padel</div></div>
       <div class="sport-card"><div class="sport-card-icon">🏓</div><div class="sport-card-name">Pickleball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton Singles</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton Doubles</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton (Singles)</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton (Doubles)</div></div>
       <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Squash</div></div>
-      <!-- Ball sports -->
-      <div class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Football / Soccer</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏀</div><div class="sport-card-name">Basketball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏉</div><div class="sport-card-name">Rugby Union</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">American Football</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Ice Hockey</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Field Hockey</div></div>
-      <div class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Futsal</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏓</div><div class="sport-card-name">Table Tennis</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Racquetball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Beach Tennis</div></div>
+      <!-- Indoor Team Sports -->
       <div class="sport-card"><div class="sport-card-icon">🤾</div><div class="sport-card-name">Handball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Futsal</div></div>
+      <div class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Futsal Mini / 5-a-side</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏀</div><div class="sport-card-name">Basketball (Full)</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏀</div><div class="sport-card-name">Basketball (Half)</div></div>
       <div class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Volleyball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Beach Volleyball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">⚾</div><div class="sport-card-name">Baseball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🥎</div><div class="sport-card-name">Softball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏏</div><div class="sport-card-name">Cricket</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏉</div><div class="sport-card-name">Rugby League</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">Australian Rules</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Lacrosse</div></div>
-      <div class="sport-card"><div class="sport-card-icon">⛳</div><div class="sport-card-name">Gaelic Football</div></div>
       <div class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Floorball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏄</div><div class="sport-card-name">Waterpolo</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏊</div><div class="sport-card-name">Swimming</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏊</div><div class="sport-card-name">Sync Swimming</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🤺</div><div class="sport-card-name">Fencing</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🥋</div><div class="sport-card-name">Judo Mat</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🤼</div><div class="sport-card-name">Wrestling Mat</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏋️</div><div class="sport-card-name">Gymnastics Floor</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏋️</div><div class="sport-card-name">Trampoline</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏊</div><div class="sport-card-name">Diving Pool</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🚴</div><div class="sport-card-name">Cycling Track</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏟️</div><div class="sport-card-name">Athletics Track</div></div>
-      <div class="sport-card"><div class="sport-card-icon">⬜</div><div class="sport-card-name">Blank Canvas</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Korfball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Netball</div></div>
+      <!-- Field Sports -->
+      <div class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Football / Soccer (Full)</div></div>
+      <div class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Football / Soccer (Half)</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏉</div><div class="sport-card-name">Rugby Union</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏉</div><div class="sport-card-name">Rugby League</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Field Hockey</div></div>
+      <div class="sport-card"><div class="sport-card-icon">⛳</div><div class="sport-card-name">Gaelic Football</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Hurling / Camogie</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">American Football</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">Australian Rules</div></div>
+      <!-- Ice & Roller -->
+      <div class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Ice Hockey</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Roller Hockey</div></div>
+      <!-- Beach Sports -->
+      <div class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Beach Volleyball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🤾</div><div class="sport-card-name">Beach Handball</div></div>
+      <div class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Beach Soccer</div></div>
+      <!-- Other -->
+      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Padbol</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Indoor Hockey</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🥍</div><div class="sport-card-name">Lacrosse</div></div>
+      <div class="sport-card"><div class="sport-card-icon">🏊</div><div class="sport-card-name">Water Polo</div></div>
     </div>
     <p style="text-align:center;margin-top:28px;color:var(--muted);font-size:0.85rem;">
       Can't find your sport? <a href="courtdraw-app.html" style="color:var(--accent);text-decoration:underline;">Use the blank canvas</a> — or <a href="mailto:courtdraw.info@gmail.com" style="color:var(--accent);text-decoration:underline;">request a court</a>.
@@ -993,12 +997,12 @@
       <div class="feature-card">
         <div class="feature-icon">✏️</div>
         <h3>8 Drawing Tools</h3>
-        <p>Solid arrows for runs, dashed arrows for off-ball movement, arcs, lines, circles, rectangles, and freehand text labels.</p>
+        <p>Solid arrows for runs, dashed arrows for off-ball movement, arcs, lines, circles, rectangles, text labels, and an eraser — everything you need for any tactical scenario.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">🧑‍🤝‍🧑</div>
         <h3>Draggable Player Tokens</h3>
-        <p>8 blue and 8 red tokens by default — drag to any position. Labels auto-fit. Works with touch and mouse equally well.</p>
+        <p>Sport-specific player counts loaded automatically — 11v11 for football, 5v5 for basketball, 6v6 for volleyball, and so on. Add or remove players, drag to any position, and long-press to relabel. Works with touch and mouse equally well.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">📚</div>
@@ -1033,12 +1037,12 @@
       <div class="feature-card" style="border-color:rgba(168,85,247,0.3);background:linear-gradient(135deg,rgba(168,85,247,0.08) 0%,transparent 100%);">
         <div class="feature-icon">📺</div>
         <h3>Club Presentation Mode <span style="font-size:11px;background:rgba(168,85,247,.15);color:#a855f7;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">CLUB</span></h3>
-        <p>Full-screen, club-branded slideshow of your plays. One tap to go projector-ready for team meetings, parent evenings, or scouting sessions.</p>
+        <p>One tap to go full-screen with your club logo and name overlaid on the court. Chrome disappears, the tactic fills the screen — projector-ready for team meetings, parent evenings, and scouting sessions.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">📱</div>
         <h3>Touch-First on Mobile</h3>
-        <p>Built with the Pointer Events API for buttery-smooth drawing on iPad and Android tablets. No lag, no missed strokes.</p>
+        <p>Pinch to zoom, two-finger pan, collapsible toolbar, and an immersive landscape mode that hides all chrome so the court fills your screen. Buttery-smooth drawing on iPad and Android tablets.</p>
       </div>
     </div>
   </div>
@@ -1280,7 +1284,7 @@
       <div class="feature-card" style="border-color:rgba(168,85,247,0.25);">
         <div class="feature-icon">📄</div>
         <h3>Branded PDF Export</h3>
-        <p>Every PDF your coaches print carries the club logo and name in a branded header. Hand out professional-looking play sheets at training.</p>
+        <p>Every PDF your coaches export carries the club logo (bottom-left) and club name (bottom-right) in a branded footer. Hand out professional-looking play sheets at training.</p>
       </div>
       <div class="feature-card" style="border-color:rgba(168,85,247,0.25);">
         <div class="feature-icon">🏟️</div>
