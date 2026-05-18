@@ -227,8 +227,14 @@ header {
 
 <div class="container">
 
+  <!-- Loading state — shown while auth resolves -->
+  <div id="loading-gate" class="auth-gate">
+    <div style="font-size:32px;margin-bottom:16px;animation:skel 1.3s ease infinite;">⏳</div>
+    <p style="color:var(--muted);font-size:14px;">Loading your club…</p>
+  </div>
+
   <!-- Auth gate (shown when not logged in or not a club owner) -->
-  <div id="auth-gate" class="auth-gate">
+  <div id="auth-gate" class="auth-gate" style="display:none">
     <h2>Club Admin access required</h2>
     <p>You need an active Club plan to view this page.</p>
     <a href="login.html" class="btn btn-accent">Sign In</a>
@@ -275,15 +281,33 @@ header {
 
       <!-- Club logo -->
       <div class="card">
-        <div class="input-label">Club logo (URL)</div>
+        <div class="input-label">Club logo</div>
+
+        <!-- Drag & drop / file picker zone -->
+        <div id="logo-drop-zone"
+          style="border:2px dashed var(--border2);border-radius:10px;padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:12px;"
+          onclick="document.getElementById('logo-file-input').click()"
+          ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='var(--accent-dim)'"
+          ondragleave="this.style.borderColor='var(--border2)';this.style.background=''"
+          ondrop="handleLogoDrop(event)">
+          <div style="font-size:28px;margin-bottom:8px;">🖼️</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">Drop your logo here</div>
+          <div style="font-size:12px;color:var(--muted);">or click to browse · PNG, JPG, SVG · max 1 MB</div>
+          <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/svg+xml" style="display:none" onchange="handleLogoFile(this.files[0])">
+        </div>
+
+        <!-- URL fallback -->
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-align:center;">— or paste a direct image URL —</div>
         <div class="field-row">
           <input type="url" class="input" id="club-logo-url" placeholder="https://yourclub.com/logo.png">
-          <button class="btn btn-accent" onclick="saveLogo()">Save</button>
-          <button class="btn btn-ghost" onclick="removeLogo()" id="btn-remove-logo" style="display:none">Remove</button>
+          <button class="btn btn-accent" onclick="saveLogo()">Save URL</button>
         </div>
-        <div class="input-hint">PNG, JPG or SVG · paste a direct image URL · displays at max 160×48 px in the app header</div>
-        <img id="logo-preview" class="logo-preview" style="display:none" alt="Club logo preview">
-        <div id="logo-status" style="font-size:12px;margin-top:6px;min-height:16px;color:var(--green);"></div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
+          <img id="logo-preview" class="logo-preview" style="display:none;margin-top:0;" alt="Club logo preview">
+          <button class="btn btn-ghost btn-sm" onclick="removeLogo()" id="btn-remove-logo" style="display:none;">✕ Remove</button>
+        </div>
+        <div id="logo-status" style="font-size:12px;margin-top:8px;min-height:16px;color:var(--green);"></div>
         <div style="margin-top:12px;">
           <p style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Team Colors</p>
           <div style="display:flex;gap:12px;align-items:center;">
@@ -401,7 +425,8 @@ header {
       userClubId = club.clubId;
 
       // Show admin UI
-      document.getElementById('auth-gate').style.display    = 'none';
+      document.getElementById('loading-gate').style.display  = 'none';
+      document.getElementById('auth-gate').style.display     = 'none';
       document.getElementById('admin-content').style.display = 'block';
 
       // Page title + club name field
@@ -441,7 +466,8 @@ header {
   });
 
   function showAuthGate(msg) {
-    document.getElementById('auth-gate').style.display    = 'block';
+    document.getElementById('loading-gate').style.display  = 'none';
+    document.getElementById('auth-gate').style.display     = 'block';
     document.getElementById('admin-content').style.display = 'none';
     if (msg) document.querySelector('#auth-gate p').textContent = msg;
   }
@@ -520,6 +546,56 @@ header {
     img.src = url;
     img.style.display = 'block';
     document.getElementById('btn-remove-logo').style.display = '';
+  }
+
+  // ── Logo file upload (drag & drop / file picker) ──────────────────────────
+  window.handleLogoDrop = (e) => {
+    e.preventDefault();
+    const zone = document.getElementById('logo-drop-zone');
+    zone.style.borderColor = 'var(--border2)';
+    zone.style.background  = '';
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleLogoFile(file);
+  };
+
+  window.handleLogoFile = async (file) => {
+    if (!file) return;
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+    if (!allowed.includes(file.type)) {
+      showStatus('logo-status', '✗ Only PNG, JPG or SVG allowed.', true); return;
+    }
+    if (file.size > 1048576) {
+      showStatus('logo-status', '✗ File too large — max 1 MB.', true); return;
+    }
+    showStatus('logo-status', '⏳ Uploading…', false, 60000);
+    try {
+      const base64 = await fileToBase64(file);
+      const token  = await currentUser.getIdToken();
+      const res = await fetch('/api/upload-club-logo', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageData: base64, mimeType: file.type })
+      });
+      if (!res.ok) {
+        const err = await res.text();
+        showStatus('logo-status', '✗ ' + err, true); return;
+      }
+      const { logoUrl } = await res.json();
+      showLogoPreview(logoUrl);
+      document.getElementById('club-logo-url').value = logoUrl;
+      showStatus('logo-status', '✓ Logo uploaded!');
+    } catch {
+      showStatus('logo-status', '✗ Upload failed — please try again.', true);
+    }
+  };
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
   window.saveLogo = async () => {

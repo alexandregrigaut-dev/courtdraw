@@ -246,22 +246,33 @@
   </script>
   <script type="module">
     import { loginUser, registerUser } from '/src/auth.js';
-    import { auth } from '/src/firebase.js';
+    import { auth, db } from '/src/firebase.js';
     import { onAuthStateChanged } from 'firebase/auth';
+    import { doc, getDoc } from 'firebase/firestore';
 
     const params = new URLSearchParams(location.search);
-    const nextUrl = params.get('next') || '/courtdraw-app.html';
-    // If a checkout plan was passed (e.g. from the landing page pricing buttons),
-    // store it so the app auto-triggers Stripe checkout after login.
+    const explicitNext = params.get('next');
     const pendingPlan = params.get('checkout');
     if (pendingPlan) localStorage.setItem('courtdraw_pending_checkout', pendingPlan);
 
-    // Flag to prevent onAuthStateChanged from redirecting during
-    // signup/signin flows that handle their own redirect.
     let handlingAuth = false;
 
+    async function resolveRedirect(user) {
+      if (explicitNext) { window.location.href = explicitNext; return; }
+      if (localStorage.getItem('courtdraw_pending_checkout')) {
+        window.location.href = '/courtdraw-app.html'; return;
+      }
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        const plan = snap.exists() ? (snap.data().plan || 'free') : 'free';
+        window.location.href = plan === 'club' ? '/club-admin.html' : '/';
+      } catch {
+        window.location.href = '/';
+      }
+    }
+
     onAuthStateChanged(auth, user => {
-      if (user && !handlingAuth) window.location.href = nextUrl;
+      if (user && !handlingAuth) resolveRedirect(user);
     });
 
     function showError(msg) {
