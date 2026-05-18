@@ -3015,7 +3015,10 @@ function openProLibrary() {
   renderProLibFilterBar();
   renderProLibGrid();
   const badge = document.getElementById('pro-lib-tier-badge');
-  if (badge) badge.textContent = state.isPro || state.isClub ? '✓ Pro Access' : 'Free Preview';
+  if (badge) {
+    const total = window.TACTICS_LIBRARY.length;
+    badge.textContent = state.isPro || state.isClub ? `✓ Pro Access — ${total} tactics` : `Free Preview — 2 per sport`;
+  }
 }
 
 function closeProLibrary() {
@@ -3062,11 +3065,12 @@ function renderProLibGrid() {
   }
   const hasPro = state.isPro || state.isClub;
   grid.innerHTML = tactics.map(t => {
-    const locked = t.tier === 'pro' && !hasPro;
+    const locked = (t.tier === 'pro' && !hasPro) || (t.tier === 'club' && !state.isClub);
+    const badgeLabel = t.tier === 'club' ? 'CLUB' : 'PRO';
     return `<div class="lib-card${locked ? ' locked' : ''}" onclick="handleLibTacticClick('${t.id}')">
       <div class="lib-card-thumb">
         ${renderTacticThumb(t)}
-        ${locked ? '<div class="lib-card-pro-badge">PRO</div>' : ''}
+        ${locked ? `<div class="lib-card-pro-badge">${badgeLabel}</div>` : ''}
       </div>
       <div class="lib-card-body">
         <div class="lib-card-name">${t.name}</div>
@@ -3124,6 +3128,10 @@ function handleLibTacticClick(id) {
   if (!t) return;
   if (t.tier === 'pro' && !state.isPro && !state.isClub) {
     openPaywall('Unlock the full Tactics Library with Pro — ' + t.sport + ' tactics, all sports, all formations.');
+    return;
+  }
+  if (t.tier === 'club' && !state.isClub) {
+    openPaywall('This tactic requires a Club plan. Upgrade to access the full Club-exclusive library.');
     return;
   }
   closeProLibrary();
