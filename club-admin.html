@@ -689,7 +689,9 @@ header {
           </div>
           ${playsBadge}
           <span class="coach-badge badge-coach">Coach</span>
-          <span class="coach-badge badge-active">Active</span>`;
+          <span class="coach-badge badge-active">Active</span>
+          <button class="btn btn-danger btn-sm" title="Remove from club">✕ Remove</button>`;
+        card.querySelector('.btn-danger').addEventListener('click', () => kickMember(m.uid, m.email, card));
         el.appendChild(card);
       }
     } catch {
@@ -771,6 +773,45 @@ header {
       showStatus('logo-status', '✓ Team colors saved!');
     } catch { showStatus('logo-status', '✗ Could not save colors.', true); }
   };
+
+  // ── Kick member ───────────────────────────────────────────────────────────
+  async function kickMember(memberUid, email, cardEl) {
+    if (!confirm(`Remove ${email} from your club?\n\nThey will lose access to the shared library and club features immediately.`)) return;
+    const btn = cardEl.querySelector('.btn-danger');
+    btn.disabled = true; btn.textContent = 'Removing…';
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch('/.netlify/functions/kick-club-member', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberUid })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      // Animate out
+      cardEl.style.transition = 'opacity .25s, transform .25s';
+      cardEl.style.opacity = '0'; cardEl.style.transform = 'translateX(24px)';
+      setTimeout(() => {
+        cardEl.remove();
+        // Decrement stat counter
+        const statEl = document.getElementById('stat-coaches');
+        const parts = (statEl.textContent || '0 / 10').split(' / ');
+        statEl.textContent = Math.max(0, parseInt(parts[0]) - 1) + ' / 10';
+        // Show empty state if roster is now empty
+        const list = document.getElementById('roster-list');
+        if (!list.querySelector('.coach-card')) {
+          list.innerHTML = `
+            <div class="empty">
+              <div class="empty-icon">👥</div>
+              <strong>No coaches yet</strong>
+              <p style="margin-top:6px">Share your club code or invite link above to get your team started.</p>
+            </div>`;
+        }
+      }, 280);
+    } catch(e) {
+      btn.disabled = false; btn.textContent = '✕ Remove';
+      alert('Could not remove member: ' + (e.message || 'Please try again.'));
+    }
+  }
 
   function esc(s) {
     return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');

@@ -1714,7 +1714,8 @@
       pillClass: 'plan-club',
       cardClass: 'plan-club',
       features: ['Full access to all courts', 'Shared team library', 'Club team colors', 'Club presentation mode', 'Branded PDF export'],
-      cta: `<a href="/courtdraw-app.html" class="acct-btn-primary purple">Open CourtDraw →</a>`
+      cta: `<a href="/courtdraw-app.html" class="acct-btn-primary purple">Open CourtDraw →</a>
+            <button class="acct-btn-ghost" style="color:#ef4444;border-color:rgba(239,68,68,.35);" onclick="landingLeaveClub()">Leave Club</button>`
     }
   };
 
@@ -1859,6 +1860,30 @@
       const { url } = await res.json();
       if (url) window.location.href = url;
     } catch { alert('Could not start checkout. Please try again.'); }
+  };
+
+  window.landingLeaveClub = async () => {
+    if (!confirm('Leave your club?\n\nYou will lose access to the shared team library and club features. You can rejoin later with the club code.')) return;
+    const btn = document.querySelector('[onclick="landingLeaveClub()"]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Leaving…'; }
+    try {
+      const user = auth.currentUser;
+      if (!user) { window.location.href = '/login.html'; return; }
+      const token = await user.getIdToken();
+      const res = await fetch('/.netlify/functions/leave-club', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({}));
+        throw new Error(error || 'Could not leave club');
+      }
+      // Reload so the dashboard reflects the updated (free/pro) plan
+      window.location.reload();
+    } catch(e) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Leave Club'; }
+      alert(e.message || 'Could not leave club. Please try again.');
+    }
   };
 
   // ── Auth state listener ───────────────────────────────────────────────────
