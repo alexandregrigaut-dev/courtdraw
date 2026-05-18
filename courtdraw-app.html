@@ -543,6 +543,7 @@ body.presentation-mode #presentation-overlay { display: flex; }
   <div class="acct-plan"  id="acct-plan">Free Plan</div>
   <div class="acct-divider"></div>
   <button class="acct-btn" id="acct-billing-btn" onclick="closeAccountMenu(); openBillingPortal();" style="display:none">💳 Manage billing</button>
+  <button class="acct-btn" id="acct-upgrade-club-btn" onclick="closeAccountMenu(); startCheckout('club');" style="display:none;color:#a855f7;font-weight:700;">⬆ Upgrade to Club</button>
   <a class="acct-btn" id="acct-club-link" href="/club-admin.html" style="display:none">🏟 Club Admin</a>
   <a class="acct-btn" id="acct-join-club-btn" href="/join-club.html" style="display:none">🔑 Join a Club</a>
   <div class="acct-divider" id="acct-div2" style="display:none"></div>
@@ -693,6 +694,26 @@ body.presentation-mode #presentation-overlay { display: flex; }
 </div>
 
 <!-- Modal: Paywall -->
+<!-- Pro → Club upgrade modal -->
+<div class="modal-backdrop" id="modal-pro-upgrade">
+  <div class="modal-sheet" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-title">Your Pro Plan</span>
+      <button class="modal-close" aria-label="Close" onclick="closeModal('modal-pro-upgrade')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px 24px 24px;display:flex;flex-direction:column;gap:14px;">
+      <button onclick="closeModal('modal-pro-upgrade'); openBillingPortal();"
+        style="width:100%;padding:13px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;">
+        💳 <span>Manage billing</span>
+      </button>
+      <button onclick="closeModal('modal-pro-upgrade'); startCheckout('club');"
+        style="width:100%;padding:13px 16px;border-radius:10px;border:1px solid rgba(168,85,247,0.4);background:rgba(168,85,247,0.1);color:#a855f7;font-size:14px;font-weight:700;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;">
+        ⬆ <span>Upgrade to Club — <span style="font-size:12px;font-weight:600;opacity:0.8;">shared library, team colors, presentation mode</span></span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="modal-paywall">
   <div class="modal-sheet">
     <div class="modal-header">
@@ -1483,8 +1504,10 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
     badge.textContent = isClub ? 'CLUB ✦' : isPro ? 'PRO ✦' : 'Upgrade ✦';
     // free-badge style = pulsing CTA; only show for users who have neither Pro nor Club
     badge.classList.toggle('free-badge', !isPro && !isClub);
-    // Pro/Club users: badge click opens billing portal; free users: opens paywall
-    badge.onclick = (isPro || isClub) ? () => openBillingPortal() : () => openPaywall();
+    // Free: opens paywall; Pro (not Club): opens upgrade modal with billing + Club upgrade; Club: billing portal
+    if (!isPro && !isClub) badge.onclick = () => openPaywall();
+    else if (isPro && !isClub) badge.onclick = () => openProUpgradeModal();
+    else badge.onclick = () => openBillingPortal();
   }
   // Phase button: show lock hint for non-Pro users
   const phaseBtn = document.getElementById('btn-add-phase');
@@ -1499,16 +1522,18 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
     const t = localStorage.getItem(tacticsKey());
     state.savedTactics = t ? JSON.parse(t) : [];
   } catch { state.savedTactics = []; }
-  // Auto-trigger checkout if user was redirected here from the paywall
-  if (!isPro && !isClub) {
-    const pending = localStorage.getItem('courtdraw_pending_checkout');
-    if (pending) {
+  // Auto-trigger checkout if user was redirected here from the paywall.
+  // Also allow Pro → Club upgrade: if user is Pro (not Club) and pending is 'club', still proceed.
+  const pending = localStorage.getItem('courtdraw_pending_checkout');
+  if (pending) {
+    const isClubUpgrade = isPro && !isClub && pending === 'club';
+    if (!isPro && !isClub || isClubUpgrade) {
       localStorage.removeItem('courtdraw_pending_checkout');
       setTimeout(() => startCheckout(pending), 800);
+    } else {
+      // Already on the target plan or higher — clear stale pending checkout
+      localStorage.removeItem('courtdraw_pending_checkout');
     }
-  } else {
-    // Already Pro/Club — clear any stale pending checkout
-    localStorage.removeItem('courtdraw_pending_checkout');
   }
 };
 window.__currentUser = null;
@@ -2323,6 +2348,10 @@ async function startCheckout(planKey) {
   }
 }
 
+function openProUpgradeModal() {
+  openModal('modal-pro-upgrade');
+}
+
 async function openBillingPortal() {
   const user = window.__currentUser;
   if (!user) { openPaywall(); return; }
@@ -3016,25 +3045,27 @@ function signOutUser() {
   if (typeof window.__signOut === 'function') window.__signOut();
 }
 function updateAccountUI(user, isPro, isClub, isClubOwner) {
-  const btn             = document.getElementById('btn-account');
-  const emailEl         = document.getElementById('acct-email');
-  const planEl          = document.getElementById('acct-plan');
-  const billingBtn      = document.getElementById('acct-billing-btn');
-  const clubLink        = document.getElementById('acct-club-link');
-  const joinClubBtn     = document.getElementById('acct-join-club-btn');
-  const div2            = document.getElementById('acct-div2');
-  const joinClubPrompt  = document.getElementById('join-club-prompt');
+  const btn                = document.getElementById('btn-account');
+  const emailEl            = document.getElementById('acct-email');
+  const planEl             = document.getElementById('acct-plan');
+  const billingBtn         = document.getElementById('acct-billing-btn');
+  const upgradeClubBtn     = document.getElementById('acct-upgrade-club-btn');
+  const clubLink           = document.getElementById('acct-club-link');
+  const joinClubBtn        = document.getElementById('acct-join-club-btn');
+  const div2               = document.getElementById('acct-div2');
+  const joinClubPrompt     = document.getElementById('join-club-prompt');
   if (!btn) return;
   if (user) {
     btn.classList.add('signed-in');
     btn.title = user.email || 'My account';
     if (emailEl) emailEl.textContent = user.email || '—';
     if (planEl)  planEl.textContent  = isClub ? 'Club Plan' : isPro ? 'Pro Plan' : 'Free Plan';
-    if (billingBtn)     billingBtn.style.display     = (isPro || isClub) ? 'block' : 'none';
-    if (clubLink)       clubLink.style.display       = isClubOwner ? 'block' : 'none';
-    if (joinClubBtn)    joinClubBtn.style.display    = !isClub ? 'block' : 'none';
-    if (div2)           div2.style.display           = (isPro || isClub || isClubOwner) ? 'block' : 'none';
-    if (joinClubPrompt) joinClubPrompt.style.display = !isClub ? 'block' : 'none';
+    if (billingBtn)      billingBtn.style.display      = (isPro || isClub) ? 'block' : 'none';
+    if (upgradeClubBtn)  upgradeClubBtn.style.display  = (isPro && !isClub) ? 'block' : 'none';
+    if (clubLink)        clubLink.style.display        = isClubOwner ? 'block' : 'none';
+    if (joinClubBtn)     joinClubBtn.style.display     = !isClub ? 'block' : 'none';
+    if (div2)            div2.style.display            = (isPro || isClub || isClubOwner) ? 'block' : 'none';
+    if (joinClubPrompt)  joinClubPrompt.style.display  = !isClub ? 'block' : 'none';
   } else {
     btn.classList.remove('signed-in');
     btn.title = 'Sign in';
