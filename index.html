@@ -1688,7 +1688,7 @@
       cardClass: 'plan-pro',
       features: ['All 37+ courts', 'Unlimited saves', 'Multi-phase plays + animated playback', 'Clean PNG & PDF export', 'Priority email support'],
       cta: `<button class="acct-btn-primary amber" onclick="landingOpenBilling()">Manage billing</button>
-            <a href="login.html?checkout=club" class="acct-btn-ghost">Upgrade to Club</a>`
+            <button class="acct-btn-ghost" onclick="landingUpgradeToClub()">Upgrade to Club</button>`
     },
     club: {
       label: 'Club Plan',
@@ -1813,6 +1813,22 @@
       const { url } = await res.json();
       if (url) window.location.href = url;
     } catch { alert('Could not open billing portal. Please try again.'); }
+  };
+
+  window.landingUpgradeToClub = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) { window.location.href = '/login.html?checkout=club'; return; }
+      const token = await user.getIdToken();
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ priceId: 'price_1TXcWHPJqd0y6tXmf0AclVdB' })
+      });
+      if (!res.ok) throw new Error('server error');
+      const { url } = await res.json();
+      if (url) window.location.href = url;
+    } catch { alert('Could not start checkout. Please try again.'); }
   };
 
   // ── Auth state listener ───────────────────────────────────────────────────
