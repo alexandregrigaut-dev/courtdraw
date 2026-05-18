@@ -21,9 +21,10 @@ exports.handler = async (event) => {
   const userSnap = await db.collection('users').doc(uid).get();
   const userData = userSnap.exists ? userSnap.data() : {};
   const hasClubAccess = userData.plan === 'club' || userData.clubMember === true;
-  if (!hasClubAccess || !userData.clubId)
+  // memberOfClubId is set when a club owner joins a second club as a member
+  const clubId = userData.memberOfClubId || userData.clubId;
+  if (!hasClubAccess || !clubId)
     return { statusCode: 403, body: 'Club access required' };
-  const clubId = userData.clubId;
   const snap = await db.collection('clubs').doc(clubId).collection('tactics')
     .orderBy('sharedAt', 'desc').limit(100).get();
   const tactics = snap.docs.map(d => ({ ...d.data(), _clubShared: true, _firestoreId: d.id }));

@@ -709,7 +709,7 @@ body.presentation-mode #presentation-overlay { display: flex; }
     background:rgba(29,78,216,0.85);color:#fff;border:none;border-radius:20px;
     padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;
     align-items:center;gap:6px;backdrop-filter:blur(8px);">&#8854; Reset zoom</button>
-  <button id="toolbar-toggle-btn" onclick="toggleToolbar()" title="Toggle toolbar">&#8943;</button>
+  <button id="toolbar-toggle-btn" onclick="toggleToolbar()" title="Toggle toolbar">&#x2715;</button>
 </main>
 
 <!-- Phase bar -->
@@ -2412,10 +2412,6 @@ function switchCourt(id, locked, skipReset) {
     openPaywall(`You're on the free plan with ${freeName} as your court. Upgrade to Pro to access all 37+ courts.`);
     return;
   }
-  if (!state.isPro && !state.isClub && !state.freeCourt) {
-    state.freeCourt = id;
-    saveToStorage();
-  }
   // Dismiss any lingering rename inputs before switching
   document.querySelectorAll('.token-rename-input').forEach(el => el.remove());
 
@@ -2429,6 +2425,11 @@ function switchCourt(id, locked, skipReset) {
     }
   }
   state.courtId = id;
+  // Only lock in the free court after the user confirms the switch
+  if (!state.isPro && !state.isClub && !state.freeCourt) {
+    state.freeCourt = id;
+    saveToStorage();
+  }
   const court = COURTS.find(c => c.id === id);
   if (!court) return;
   document.getElementById('court-name-chip').textContent = court.name;
@@ -2513,7 +2514,7 @@ function openSaveDialog() {
     inp.value = baseName;
     inp.select();
   }
-  document.getElementById('tactic-name-input').focus();
+  if (inp) inp.focus();
 }
 
 function saveTactic() {
@@ -2550,10 +2551,13 @@ function saveTactic() {
 
 function loadTactic(i) {
   const t = state.savedTactics[i];
-  state.objects = JSON.parse(JSON.stringify(t.objects));
-  state.tokenPositions = JSON.parse(JSON.stringify(t.tokens));
+  state.objects = JSON.parse(JSON.stringify(t.objects || []));
+  // Fall back to sport-specific defaults if saved tactic has no tokens (old save format)
+  state.tokenPositions = (t.tokens && t.tokens.length)
+    ? JSON.parse(JSON.stringify(t.tokens))
+    : (window.__getDefaultTokens ? window.__getDefaultTokens(t.courtId) : []);
   state.phases = t.phases ? JSON.parse(JSON.stringify(t.phases))
-    : [{ objects: JSON.parse(JSON.stringify(t.objects)), tokens: JSON.parse(JSON.stringify(t.tokens)) }];
+    : [{ objects: JSON.parse(JSON.stringify(t.objects || [])), tokens: JSON.parse(JSON.stringify(state.tokenPositions)) }];
   state.currentPhase = t.currentPhase || 0;
   // skipReset=true: restores saved positions, does not reset to sport defaults
   switchCourt(t.courtId, false, true);
@@ -2653,6 +2657,7 @@ function exportPNG() {
   const blob = new Blob([svgStr], {type:'image/svg+xml'});
   const url = URL.createObjectURL(blob);
   const img = new Image();
+  img.onerror = () => { URL.revokeObjectURL(url); showToast('Export failed — could not render court.'); };
   img.onload = () => {
     oc.drawImage(img, 0, 0, 1200, 720);
     URL.revokeObjectURL(url);
@@ -2708,6 +2713,7 @@ function exportPDF() {
   const blob = new Blob([svgStr], { type: 'image/svg+xml' });
   const url = URL.createObjectURL(blob);
   const img = new Image();
+  img.onerror = () => { URL.revokeObjectURL(url); showToast('Export failed — could not render court.'); };
   img.onload = () => {
     oc.drawImage(img, 0, 0, W, H);
     URL.revokeObjectURL(url);
@@ -3057,10 +3063,13 @@ async function loadClubLibrary() {
 
 function loadClubTactic(t) {
   state.objects = JSON.parse(JSON.stringify(t.objects || []));
-  state.tokenPositions = JSON.parse(JSON.stringify(t.tokens || []));
+  // Fall back to sport-specific defaults if club tactic has no tokens
+  state.tokenPositions = (t.tokens && t.tokens.length)
+    ? JSON.parse(JSON.stringify(t.tokens))
+    : (window.__getDefaultTokens ? window.__getDefaultTokens(t.courtId) : []);
   state.phases = t.phases && t.phases.length
     ? JSON.parse(JSON.stringify(t.phases))
-    : [{ objects: JSON.parse(JSON.stringify(t.objects || [])), tokens: JSON.parse(JSON.stringify(t.tokens || [])) }];
+    : [{ objects: JSON.parse(JSON.stringify(t.objects || [])), tokens: JSON.parse(JSON.stringify(state.tokenPositions)) }];
   state.currentPhase = t.currentPhase || 0;
   // skipReset=true: restores saved positions, does not reset to sport defaults
   switchCourt(t.courtId, false, true);
@@ -3636,7 +3645,8 @@ function loadLibTactic(t) {
     state.phases = t.phases.map(p => ({ objects: JSON.parse(JSON.stringify(p.objects||[])), tokens: JSON.parse(JSON.stringify(p.tokens||[])) }));
     state.currentPhase = 0;
   } else {
-    state.phases = [{ objects: state.objects, tokens: state.tokenPositions }];
+    // Deep-copy: phases must not share references with live state arrays
+    state.phases = [{ objects: JSON.parse(JSON.stringify(state.objects)), tokens: JSON.parse(JSON.stringify(state.tokenPositions)) }];
     state.currentPhase = 0;
   }
   updatePhaseUI();
@@ -3846,8 +3856,11 @@ function addPlayer() {
   const redCount  = state.tokenPositions.filter(t => t.team === 'red').length;
   const team  = blueCount <= redCount ? 'blue' : 'red';
   const prefix = team === 'blue' ? 'A' : 'B';
-  const count  = team === 'blue' ? blueCount + 1 : redCount + 1;
-  const label  = prefix + count;
+  // Skip numbers already in use (guards against gaps from deletions or manual renames)
+  const usedLabels = new Set(state.tokenPositions.map(t => t.label));
+  let count = team === 'blue' ? blueCount + 1 : redCount + 1;
+  while (usedLabels.has(prefix + count)) count++;
+  const label = prefix + count;
   const newToken = { team, label, pct: [0.5, 0.5] };
   state.tokenPositions.push(newToken);
   const idx = state.tokenPositions.length - 1;

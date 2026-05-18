@@ -50,7 +50,7 @@ exports.handler = async (event) => {
     authorUid:    uid,
     authorName:   body.authorName || '',
     authorEmail:  userData.email  || '',
-    sharedAt:     new Date().toISOString()
+    sharedAt:     admin.firestore.FieldValue.serverTimestamp()
   });
 
   return {
