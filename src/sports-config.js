@@ -45,11 +45,11 @@ export const SPORT_TOKENS = {
   ],
 
   badminton_doubles: [
-    // Front-back positioning typical in doubles
-    { team: 'blue', label: 'A1', pct: [0.20, 0.50] },
-    { team: 'blue', label: 'A2', pct: [0.10, 0.50] },
-    { team: 'red',  label: 'B1', pct: [0.80, 0.50] },
-    { team: 'red',  label: 'B2', pct: [0.90, 0.50] },
+    // Doubles: one player near net, one at rear — vertically separated
+    { team: 'blue', label: 'A1', pct: [0.20, 0.33] },
+    { team: 'blue', label: 'A2', pct: [0.10, 0.67] },
+    { team: 'red',  label: 'B1', pct: [0.80, 0.33] },
+    { team: 'red',  label: 'B2', pct: [0.90, 0.67] },
   ],
 
   squash: [
@@ -151,8 +151,8 @@ export const SPORT_TOKENS = {
     { team: 'red',  label: 'PG', pct: [0.22, 0.50] },
     { team: 'red',  label: 'SG', pct: [0.26, 0.22] },
     { team: 'red',  label: 'SF', pct: [0.26, 0.78] },
-    { team: 'red',  label: 'PF', pct: [0.18, 0.35] },
-    { team: 'red',  label: 'C',  pct: [0.18, 0.65] },
+    { team: 'red',  label: 'PF', pct: [0.30, 0.35] },
+    { team: 'red',  label: 'C',  pct: [0.30, 0.65] },
   ],
 
   volleyball: [

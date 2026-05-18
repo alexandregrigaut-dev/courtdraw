@@ -6,6 +6,7 @@
 <title>CourtDraw — Tactics Board</title>
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.json">
+  <link rel="modulepreload" href="/src/sports-config.js">
 <link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
 <meta name="theme-color" content="#1d4ed8">
@@ -2616,14 +2617,7 @@ img.court-img{width:100%;height:auto;display:block}
       openPrintWindow(dataUrl);
     };
 
-    if (!state.isPro && !state.isClub) {
-      // Free watermark
-      oc.save(); oc.globalAlpha = 0.22; oc.fillStyle = '#ffffff';
-      oc.font = 'bold 36px system-ui'; oc.textAlign = 'center'; oc.textBaseline = 'middle';
-      oc.fillText('courtdraw.app', W / 2, H / 2); oc.restore();
-      canvasW = savedW; canvasH = savedH;
-      finalizePdf();
-    } else if (state.isClub && (state.clubLogoUrl || state.clubName)) {
+    if (state.isClub && (state.clubLogoUrl || state.clubName)) {
       // Club branding: semi-transparent footer bar
       oc.save();
       oc.fillStyle = 'rgba(0,0,0,0.55)';
@@ -3182,8 +3176,23 @@ function init() {
   }
   // Theme button
   document.getElementById('btn-theme').textContent = state.theme === 'dark' ? '☀️' : '🌙';
-  // Build tokens, phases, then optionally open court picker
-  setTimeout(() => {
+  // Build tokens after layout AND sports config are both ready.
+  // The sports-config.js module bridge sets window.__getDefaultTokens asynchronously,
+  // so we poll until it arrives (modulepreload makes this near-instant, but the
+  // poll guards against slow connections).
+  const afterReady = (fn) => {
+    const t0 = Date.now();
+    const check = () => {
+      if (typeof window.__getDefaultTokens === 'function' || Date.now() - t0 > 4000) {
+        fn();
+      } else {
+        setTimeout(check, 20);
+      }
+    };
+    setTimeout(check, 80); // always wait at least 80ms for layout
+  };
+
+  afterReady(() => {
     syncCanvas();
     if (sharedBoard && state.tokenPositions.length) {
       renderTokensFromState();
@@ -3196,7 +3205,7 @@ function init() {
       buildTokens();
     }
     if (!sharedBoard && !state.isPro && !state.freeCourt) openCourtPicker();
-  }, 120);
+  });
   // PWA
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(()=>{});

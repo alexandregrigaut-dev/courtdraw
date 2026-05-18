@@ -383,6 +383,7 @@
       clearMessages();
       handlingAuth = true;
       try {
+        await setPersistence(auth, rememberMe() ? browserLocalPersistence : browserSessionPersistence);
         const newUser = await registerUser(
           document.getElementById('signup-email').value,
           document.getElementById('signup-password').value

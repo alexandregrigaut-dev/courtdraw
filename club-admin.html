@@ -818,19 +818,27 @@ header {
     return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  // Lightweight court-ID → display-name map (mirrors courtdraw-app.html COURTS array)
+  // Court-ID → display-name map — exact IDs from courtdraw-app.html COURTS array
   const COURT_NAMES = {
-    tennis_singles:'Tennis (Singles)',tennis_doubles:'Tennis (Doubles)',
-    padel:'Padel',pickleball:'Pickleball',squash:'Squash',badminton:'Badminton',
-    table_tennis:'Table Tennis',
-    basketball:'Basketball',volleyball:'Volleyball',handball:'Handball',
-    futsal:'Futsal',netball:'Netball',
-    soccer:'Football (Soccer)',american_football:'American Football',
-    rugby:'Rugby',field_hockey:'Field Hockey',lacrosse:'Lacrosse',
-    baseball:'Baseball',softball:'Softball',cricket:'Cricket',
-    ice_hockey:'Ice Hockey',
-    beach_volleyball:'Beach Volleyball',beach_soccer:'Beach Soccer',
+    tennis_singles:'Tennis (Singles)', tennis_doubles:'Tennis (Doubles)',
+    padel:'Padel', pickleball:'Pickleball',
+    badminton_singles:'Badminton (Singles)', badminton_doubles:'Badminton (Doubles)',
+    squash:'Squash', table_tennis:'Table Tennis', racquetball:'Racquetball',
     beach_tennis:'Beach Tennis',
+    handball:'Handball', futsal:'Futsal',
+    basketball_full:'Basketball (Full)', basketball_half:'Basketball (Half)',
+    volleyball:'Volleyball', floorball:'Floorball', korfball:'Korfball',
+    netball:'Netball', futsal_mini:'Futsal Mini / 5-a-side',
+    football_full:'Football / Soccer (Full)', football_half:'Football / Soccer (Half)',
+    rugby_union:'Rugby Union', rugby_league:'Rugby League',
+    field_hockey:'Field Hockey', gaelic_football:'Gaelic Football',
+    hurling:'Hurling / Camogie', american_football:'American Football',
+    australian_rules:'Australian Rules Football',
+    ice_hockey:'Ice Hockey', roller_hockey:'Roller Hockey',
+    beach_volleyball:'Beach Volleyball', beach_handball:'Beach Handball',
+    beach_soccer:'Beach Soccer',
+    padbol:'Padbol', indoor_hockey:'Indoor Hockey',
+    lacrosse:'Lacrosse', water_polo:'Water Polo',
   };
   function courtName(id) { return COURT_NAMES[id] || (id ? id.replace(/_/g,' ') : '—'); }
 </script>
