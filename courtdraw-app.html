@@ -2209,7 +2209,7 @@ function openCourtPicker() {
 function renderCourtGrid(filter) {
   const container = document.getElementById('court-grid-container');
   container.innerHTML = '';
-  if (!state.isPro && !state.freeCourt) {
+  if (!state.isPro && !state.isClub && !state.freeCourt) {
     const banner = document.createElement('div');
     banner.style.cssText = 'background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:var(--accent);line-height:1.45;';
     banner.innerHTML = '<strong>Pick your one free court.</strong> It\'s yours forever — unlock all 37+ with Pro.';
@@ -2234,7 +2234,7 @@ function renderCourtGrid(filter) {
     for (const c of grouped[cat]) {
       const card = document.createElement('div');
       const isActive = c.id === state.courtId;
-      const isLocked = !state.isPro && !!state.freeCourt && c.id !== state.freeCourt;
+      const isLocked = !state.isPro && !state.isClub && !!state.freeCourt && c.id !== state.freeCourt;
       const isFree = c.id === state.freeCourt;
       card.className = `court-card${isActive?' active':''}${isLocked?' locked':''}`;
       card.innerHTML = `${c.icon}<div class="court-card-name">${c.name}</div>${isFree?'<span class="free-pill">FREE</span>':''}`;
@@ -2259,7 +2259,7 @@ function switchCourt(id, locked) {
     openPaywall(`You're on the free plan with ${freeName} as your court. Upgrade to Pro to access all 37+ courts.`);
     return;
   }
-  if (!state.isPro && !state.freeCourt) {
+  if (!state.isPro && !state.isClub && !state.freeCourt) {
     state.freeCourt = id;
     saveToStorage();
   }
