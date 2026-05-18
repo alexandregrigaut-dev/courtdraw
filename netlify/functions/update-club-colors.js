@@ -12,7 +12,8 @@ const db = admin.firestore();
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
-  const token = (event.headers.authorization || '').replace('Bearer ', '');
+  const authHeader = event.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
   if (!token) return { statusCode: 401, body: 'Unauthorized' };
   let uid;
   try { uid = (await admin.auth().verifyIdToken(token)).uid; }

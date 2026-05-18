@@ -306,6 +306,7 @@
         );
         window.location.href = nextUrl;
       } catch (err) {
+        handlingAuth = false;
         showError(friendlyError(err.code));
         btn.disabled = false; btn.textContent = 'Sign in';
       }
@@ -318,7 +319,7 @@
       clearMessages();
       handlingAuth = true;
       try {
-        await registerUser(
+        const newUser = await registerUser(
           document.getElementById('signup-email').value,
           document.getElementById('signup-password').value
         );
@@ -326,9 +327,10 @@
         // Await the email send before redirecting — avoids navigation cancelling
         // the request. Errors are silently ignored so signup always completes.
         try {
+          const idToken = await newUser.getIdToken();
           await fetch('/api/send-email', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
             body: JSON.stringify({
               template: 'welcome',
               email: document.getElementById('signup-email').value
@@ -338,6 +340,7 @@
 
         window.location.href = nextUrl;
       } catch (err) {
+        handlingAuth = false;
         showError(friendlyError(err.code));
         btn.disabled = false; btn.textContent = 'Create account';
       }

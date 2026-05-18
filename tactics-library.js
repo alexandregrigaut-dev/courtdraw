@@ -247,7 +247,7 @@ window.TACTICS_LIBRARY = [
     id: 'padel_smash_counter',
     sport: 'Padel',
     courtId: 'padel',
-    name: 'Smash Counter — Byke',
+    name: 'Smash Counter — Bike',
     category: 'Defense',
     tier: 'pro',
     description: 'Absorb a smash off the back wall and launch a counter-attack lob.',
@@ -2417,7 +2417,7 @@ window.TACTICS_LIBRARY = [
     objects: [
       { type: 'arrow', color: '#60a5fa', lineWidth: 4, points: [[700, 200], [820, 200]] },
       { type: 'arrow', color: '#60a5fa', lineWidth: 4, points: [[820, 200], [870, 300]] },
-      { type: 'dashed-arrow', color: '#fbbf24', lineWidth: 3, points: [[870, 300], [870, 300]] },
+      { type: 'dashed-arrow', color: '#fbbf24', lineWidth: 3, points: [[870, 300], [910, 300]] },
       { type: 'arrow', color: '#fbbf24', lineWidth: 4, points: [[650, 250], [800, 260]] },
       { type: 'arrow', color: '#60a5fa', lineWidth: 3, points: [[800, 350], [870, 310]] },
     ],

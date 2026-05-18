@@ -12,7 +12,8 @@ const db = admin.firestore();
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
-  const token = (event.headers.authorization || '').replace('Bearer ', '');
+  const authHeader = event.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
   if (!token) return { statusCode: 401, body: 'Unauthorized' };
   let uid;
   try { uid = (await admin.auth().verifyIdToken(token)).uid; }
@@ -20,7 +21,9 @@ exports.handler = async (event) => {
   const userSnap = await db.collection('users').doc(uid).get();
   if (!userSnap.exists || userSnap.data().plan !== 'club')
     return { statusCode: 403, body: 'Club plan required' };
-  const { clubName } = JSON.parse(event.body);
+  let body;
+  try { body = JSON.parse(event.body || '{}'); } catch { return { statusCode: 400, body: 'Bad JSON' }; }
+  const { clubName } = body;
   if (!clubName || clubName.length > 60) return { statusCode: 400, body: 'Invalid name' };
   const clubId = userSnap.data().clubId || ('club_' + uid);
   await db.collection('users').doc(uid).update({ clubName });

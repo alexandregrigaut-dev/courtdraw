@@ -1,4 +1,16 @@
 const { Resend } = require('resend');
+const admin = require('firebase-admin');
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId:   process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey:  process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+    })
+  });
+}
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM = 'CourtDraw <hello@courtdraw.app>';
@@ -194,9 +206,27 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  const { template, email } = JSON.parse(event.body);
+  // Auth: accept either an internal shared secret (server-to-server calls from webhook.js)
+  // or a valid Firebase ID token (client-side calls, restricted to the 'welcome' template only).
+  const secret = process.env.INTERNAL_SECRET;
+  const hasValidSecret = secret && event.headers['x-internal-secret'] === secret;
+
+  let body;
+  try { body = JSON.parse(event.body || '{}'); } catch { return { statusCode: 400, body: 'Bad JSON' }; }
+  const { template, email } = body;
   if (!templates[template]) return { statusCode: 400, body: 'Unknown template' };
   if (!email) return { statusCode: 400, body: 'Missing email' };
+
+  if (!hasValidSecret) {
+    // Fallback: require a valid Firebase ID token for client-side calls,
+    // and restrict to the 'welcome' template only to prevent abuse.
+    if (template !== 'welcome') return { statusCode: 401, body: 'Unauthorized' };
+    const authHeader = event.headers.authorization || '';
+    const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!idToken) return { statusCode: 401, body: 'Unauthorized' };
+    try { await admin.auth().verifyIdToken(idToken); }
+    catch { return { statusCode: 401, body: 'Invalid token' }; }
+  }
 
   try {
     await resend.emails.send(templates[template](email));

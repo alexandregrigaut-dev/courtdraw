@@ -16,7 +16,8 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  const token = (event.headers.authorization || '').replace('Bearer ', '');
+  const authHeader = event.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
   if (!token) return { statusCode: 401, body: 'Unauthorized' };
 
   let uid;

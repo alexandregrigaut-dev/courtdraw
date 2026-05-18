@@ -1616,8 +1616,16 @@ function drawObject(ctx, obj, preview) {
       break;
     }
     case 'line': {
-      const a = n2c(obj.x1, obj.y1), b = n2c(obj.x2, obj.y2);
-      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      // Support both {x1,y1,x2,y2} (drawn) and {points:[...]} (library polyline)
+      if (obj.points && obj.points.length >= 2) {
+        const pts = obj.points.map(p => n2c(p[0], p[1]));
+        ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.stroke();
+      } else {
+        const a = n2c(obj.x1, obj.y1), b = n2c(obj.x2, obj.y2);
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      }
       break;
     }
     case 'arc': {
@@ -1648,13 +1656,21 @@ function drawObject(ctx, obj, preview) {
       break;
     }
     case 'rect': {
-      const a = n2c(obj.x1, obj.y1), b = n2c(obj.x2, obj.y2);
-      const x = Math.min(a.x,b.x), y = Math.min(a.y,b.y);
-      const w = Math.abs(b.x-a.x), h = Math.abs(b.y-a.y);
+      // Support both {x1,y1,x2,y2} (drawn) and {x,y,w,h} (library)
+      let rx, ry, rw, rh;
+      if (obj.x !== undefined) {
+        rx = n2c(obj.x, obj.y).x; ry = n2c(obj.x, obj.y).y;
+        const br = n2c(obj.x + obj.w, obj.y + obj.h);
+        rw = br.x - rx; rh = br.y - ry;
+      } else {
+        const a = n2c(obj.x1, obj.y1), b = n2c(obj.x2, obj.y2);
+        rx = Math.min(a.x,b.x); ry = Math.min(a.y,b.y);
+        rw = Math.abs(b.x-a.x); rh = Math.abs(b.y-a.y);
+      }
       ctx.globalAlpha = 0.2;
-      ctx.fillRect(x,y,w,h);
+      ctx.fillRect(rx,ry,rw,rh);
       ctx.globalAlpha = 1;
-      ctx.strokeRect(x,y,w,h);
+      ctx.strokeRect(rx,ry,rw,rh);
       break;
     }
     case 'text': {
@@ -1812,9 +1828,25 @@ function objectNearPoint(obj, nx, ny, r) {
     case 'arrow': case 'dashed-arrow':
       if (obj.points) return obj.points.some(p => dist2(p[0],p[1],nx,ny) < r*r);
       return dist2(obj.x1,obj.y1,nx,ny)<r*r || dist2(obj.x2,obj.y2,nx,ny)<r*r;
-    case 'line': return distToSeg(nx,ny,obj.x1,obj.y1,obj.x2,obj.y2) < r;
+    case 'line': {
+      // Support both {x1,y1,x2,y2} (drawn) and {points} (library)
+      if (obj.points && obj.points.length >= 2) {
+        for (let i = 0; i < obj.points.length - 1; i++) {
+          if (distToSeg(nx, ny, obj.points[i][0], obj.points[i][1], obj.points[i+1][0], obj.points[i+1][1]) < r) return true;
+        }
+        return false;
+      }
+      return distToSeg(nx, ny, obj.x1, obj.y1, obj.x2, obj.y2) < r;
+    }
     case 'circle': return Math.abs(dist2(obj.cx,obj.cy,nx,ny)**0.5 - obj.r) < r;
-    case 'rect': return nx>Math.min(obj.x1,obj.x2)-r && nx<Math.max(obj.x1,obj.x2)+r && ny>Math.min(obj.y1,obj.y2)-r && ny<Math.max(obj.y1,obj.y2)+r;
+    case 'rect': {
+      // Support both {x1,y1,x2,y2} (drawn) and {x,y,w,h} (library)
+      const rMinX = obj.x !== undefined ? obj.x : Math.min(obj.x1, obj.x2);
+      const rMaxX = obj.x !== undefined ? obj.x + obj.w : Math.max(obj.x1, obj.x2);
+      const rMinY = obj.x !== undefined ? obj.y : Math.min(obj.y1, obj.y2);
+      const rMaxY = obj.x !== undefined ? obj.y + obj.h : Math.max(obj.y1, obj.y2);
+      return nx > rMinX - r && nx < rMaxX + r && ny > rMinY - r && ny < rMaxY + r;
+    }
     case 'text': return dist2(obj.nx,obj.ny,nx,ny) < r*r*2;
     case 'arc': return dist2(obj.cpx,obj.cpy,nx,ny)<r*r || dist2(obj.x1,obj.y1,nx,ny)<r*r;
     default: return false;
@@ -3100,8 +3132,12 @@ function renderTacticThumb(t) {
 
 function objToLibSvg(o) {
   if (o.type === 'arrow' || o.type === 'dashed-arrow' || o.type === 'line') {
-    if (!o.points || o.points.length < 2) return '';
-    const pts = o.points;
+    // Build points array from either {points} or {x1,y1,x2,y2} format
+    let pts = o.points;
+    if (!pts || pts.length < 2) {
+      if (o.x1 !== undefined) pts = [[o.x1, o.y1], [o.x2, o.y2]];
+      else return '';
+    }
     const dashAttr = o.type === 'dashed-arrow' ? 'stroke-dasharray="20,12"' : '';
     let d = `M${pts[0][0]},${pts[0][1]}`;
     for (let i = 1; i < pts.length; i++) d += ` L${pts[i][0]},${pts[i][1]}`;
@@ -3115,10 +3151,18 @@ function objToLibSvg(o) {
     return `<circle cx="${o.cx}" cy="${o.cy}" r="${o.r}" stroke="${o.color||'#fff'}" stroke-width="${o.lineWidth||2}" fill="none"/>`;
   }
   if (o.type === 'rect') {
-    return `<rect x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" stroke="${o.color||'#fff'}" stroke-width="${o.lineWidth||2}" fill="none"/>`;
+    // Support both {x,y,w,h} (library) and {x1,y1,x2,y2} (drawn)
+    const rx = o.x !== undefined ? o.x : Math.min(o.x1, o.x2);
+    const ry = o.x !== undefined ? o.y : Math.min(o.y1, o.y2);
+    const rw = o.x !== undefined ? o.w : Math.abs(o.x2 - o.x1);
+    const rh = o.x !== undefined ? o.h : Math.abs(o.y2 - o.y1);
+    return `<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" stroke="${o.color||'#fff'}" stroke-width="${o.lineWidth||2}" fill="none"/>`;
   }
   if (o.type === 'text') {
-    return `<text x="${o.x}" y="${o.y}" fill="${o.color||'#fff'}" font-size="${o.fontSize||28}" font-weight="700">${o.text||''}</text>`;
+    // Text objects use {nx, ny} (normalized coords) — library preview uses raw 1000×600 space
+    const tx = o.nx !== undefined ? o.nx : (o.x || 0);
+    const ty = o.ny !== undefined ? o.ny : (o.y || 0);
+    return `<text x="${tx}" y="${ty}" fill="${o.color||'#fff'}" font-size="${o.fontSize||28}" font-weight="700">${(o.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</text>`;
   }
   return '';
 }
@@ -3148,8 +3192,8 @@ function loadLibTactic(t) {
     setTimeout(syncCanvas, 80);
   }
   const src = (t.phases && t.phases.length > 0) ? t.phases[0] : t;
-  state.objects = JSON.parse(JSON.stringify(src.objects || []));
-  state.tokens  = JSON.parse(JSON.stringify(src.tokens  || []));
+  state.objects        = JSON.parse(JSON.stringify(src.objects || []));
+  state.tokenPositions = JSON.parse(JSON.stringify(src.tokens  || []));
   if (t.phases && t.phases.length > 1) {
     state.phases = t.phases.map(p => ({ objects: JSON.parse(JSON.stringify(p.objects||[])), tokens: JSON.parse(JSON.stringify(p.tokens||[])) }));
     state.currentPhase = 0;

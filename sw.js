@@ -1,8 +1,9 @@
-const CACHE_NAME = 'courtdraw-v5';
+const CACHE_NAME = 'courtdraw-v6';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/assets/icons/icon-192.png',
-  '/assets/icons/icon-512.png'
+  '/assets/icons/icon-512.png',
+  '/tactics-library.js'
 ];
 
 self.addEventListener('install', event => {

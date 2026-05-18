@@ -11,7 +11,9 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 exports.handler = async (event) => {
-  const token = (event.headers.authorization || '').replace('Bearer ', '');
+  if (event.httpMethod !== 'GET') return { statusCode: 405, body: 'Method Not Allowed' };
+  const authHeader = event.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
   if (!token) return { statusCode: 401, body: 'Unauthorized' };
   let uid;
   try { uid = (await admin.auth().verifyIdToken(token)).uid; }

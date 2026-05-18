@@ -28,9 +28,11 @@ function generateClubCode() {
 }
 
 async function sendEmail(template, email) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (process.env.INTERNAL_SECRET) headers['x-internal-secret'] = process.env.INTERNAL_SECRET;
   await fetch(`${process.env.PUBLIC_URL}/.netlify/functions/send-email`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ template, email })
   });
 }
