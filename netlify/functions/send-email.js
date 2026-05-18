@@ -13,8 +13,9 @@ if (!admin.apps.length) {
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM = 'CourtDraw <hello@courtdraw.app>';
-const APP_URL = process.env.PUBLIC_URL || 'https://courtdraw.app';
+const FROM     = 'CourtDraw <hello@courtdraw.app>';
+const REPLY_TO = 'hello@courtdraw.app';
+const APP_URL  = process.env.PUBLIC_URL || 'https://courtdraw.app';
 
 // ─── Shared layout helpers ────────────────────────────────────────────────────
 
@@ -87,11 +88,11 @@ function layout({ label, labelColor = '#3b82f6', title, body, ctaText, ctaUrl, f
         <!-- Footer -->
         <tr><td align="center" style="padding-top:28px;">
           <p style="margin:0 0 6px;font-size:12px;color:#475569;">
-            Questions? Reply to this email or reach us at
+            Questions? Reply to this email or contact us at
             <a href="mailto:hello@courtdraw.app" style="color:#3b82f6;text-decoration:none;">hello@courtdraw.app</a>
           </p>
           <p style="margin:0;font-size:11px;color:#334155;">
-            © 2026 CourtDraw · ${footerNote}
+            &copy; 2026 CourtDraw &middot; ${footerNote}
           </p>
         </td></tr>
 
@@ -102,39 +103,67 @@ function layout({ label, labelColor = '#3b82f6', title, body, ctaText, ctaUrl, f
 </html>`;
 }
 
+// Strip HTML tags for the plain-text alternative.
+// Sending only HTML with no text part is a strong spam signal.
+function toPlainText({ title, body, ctaText, ctaUrl, features, footerNote }) {
+  const bodyText = body
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<strong>(.*?)<\/strong>/gi, '$1')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  const featureText = features
+    ? '\n\n' + features.map(f => `  ${f.icon}  ${f.label}`).join('\n')
+    : '';
+  return [
+    title,
+    '─'.repeat(48),
+    bodyText,
+    featureText,
+    '',
+    `${ctaText}: ${ctaUrl}`,
+    '',
+    '─'.repeat(48),
+    footerNote,
+    'CourtDraw · hello@courtdraw.app',
+  ].join('\n').trim();
+}
+
 // ─── Templates ────────────────────────────────────────────────────────────────
 
 const templates = {
 
-  welcome: (email) => ({
-    from: FROM,
-    to: email,
-    subject: 'Welcome to CourtDraw 🏀',
-    html: layout({
+  welcome: (email) => {
+    const data = {
       label: 'Account created',
-      title: 'Welcome to CourtDraw!',
+      title: 'Welcome to CourtDraw',
       body: `Your account is ready. Start building your tactics library — draw plays, annotate courts, and save diagrams for every sport.`,
-      ctaText: 'Open the app →',
+      ctaText: 'Open the app',
       ctaUrl: `${APP_URL}/courtdraw-app.html`,
       features: [
         { icon: '🏀', label: '37+ courts' },
         { icon: '✏️', label: 'Draw & annotate' },
         { icon: '📤', label: 'Export PNG' },
       ],
-      footerNote: "You're receiving this because you created an account."
-    })
-  }),
+      footerNote: "You're receiving this because you created a CourtDraw account."
+    };
+    return {
+      from: FROM,
+      reply_to: REPLY_TO,
+      to: email,
+      subject: 'Welcome to CourtDraw',
+      html: layout(data),
+      text: toPlainText(data),
+    };
+  },
 
-  paymentConfirmed: (email) => ({
-    from: FROM,
-    to: email,
-    subject: "You're now CourtDraw Pro ✦",
-    html: layout({
+  paymentConfirmed: (email) => {
+    const data = {
       label: 'Pro plan activated',
       labelColor: '#f59e0b',
-      title: 'Welcome to Pro!',
-      body: `Your subscription is now active. Every court, unlimited saves, multi-phase plays, and clean PNG exports are all unlocked — go build something great.`,
-      ctaText: 'Open the app →',
+      title: 'Your Pro subscription is active',
+      body: `Every court, unlimited saves, multi-phase plays, and clean PNG exports are all unlocked. Go build something great.`,
+      ctaText: 'Open the app',
       ctaUrl: `${APP_URL}/courtdraw-app.html`,
       features: [
         { icon: '🏟', label: '37+ courts' },
@@ -142,20 +171,25 @@ const templates = {
         { icon: '📐', label: 'Multi-phase plays' },
       ],
       footerNote: "You're receiving this because you subscribed to CourtDraw Pro."
-    })
-  }),
+    };
+    return {
+      from: FROM,
+      reply_to: REPLY_TO,
+      to: email,
+      subject: 'CourtDraw Pro is now active',
+      html: layout(data),
+      text: toPlainText(data),
+    };
+  },
 
-  clubWelcome: (email) => ({
-    from: FROM,
-    to: email,
-    subject: 'CourtDraw Club is ready 🏟',
-    html: layout({
+  clubWelcome: (email) => {
+    const data = {
       label: 'Club plan activated',
       labelColor: '#8b5cf6',
-      title: 'Your club is live!',
+      title: 'Your CourtDraw Club is live',
       body: `All Pro features are unlocked, plus your shared team library, club branding on exports, and the coaching staff admin dashboard.<br><br>
              Head to Club Admin to set your club name and invite your coaches.`,
-      ctaText: 'Open Club Admin →',
+      ctaText: 'Open Club Admin',
       ctaUrl: `${APP_URL}/club-admin.html`,
       features: [
         { icon: '👥', label: 'Invite coaches' },
@@ -163,55 +197,78 @@ const templates = {
         { icon: '🏷', label: 'Club branding' },
       ],
       footerNote: "You're receiving this because you subscribed to CourtDraw Club."
-    })
-  }),
+    };
+    return {
+      from: FROM,
+      reply_to: REPLY_TO,
+      to: email,
+      subject: 'Your CourtDraw Club is ready',
+      html: layout(data),
+      text: toPlainText(data),
+    };
+  },
 
-  paymentFailed: (email) => ({
-    from: FROM,
-    to: email,
-    subject: 'Action needed — payment issue ⚠️',
-    html: layout({
+  paymentFailed: (email) => {
+    const data = {
       label: 'Payment failed',
       labelColor: '#ef4444',
-      title: "We couldn't process your payment.",
+      title: 'We could not process your payment',
       body: `Your Pro access is at risk. Please update your billing details to keep everything running — it only takes a moment.`,
-      ctaText: 'Update billing →',
+      ctaText: 'Update billing',
       ctaUrl: `${APP_URL}/courtdraw-app.html`,
       footerNote: "You're receiving this because of a billing issue on your CourtDraw account."
-    })
-  }),
+    };
+    return {
+      from: FROM,
+      reply_to: REPLY_TO,
+      to: email,
+      subject: 'CourtDraw — payment could not be processed',
+      html: layout(data),
+      text: toPlainText(data),
+    };
+  },
 
-  cancellation: (email) => ({
-    from: FROM,
-    to: email,
-    subject: 'Your CourtDraw subscription has been cancelled',
-    html: layout({
+  cancellation: (email) => {
+    const data = {
       label: 'Subscription cancelled',
       labelColor: '#64748b',
-      title: "You've been downgraded to Free.",
-      body: `Your subscription has been cancelled and your account is now on the Free plan. You'll keep access to one court of your choice and up to 3 saved tactics.<br><br>
+      title: 'Your subscription has been cancelled',
+      body: `Your account is now on the Free plan. You will keep access to one court and up to 3 saved tactics.<br><br>
              Changed your mind? You can resubscribe at any time — all your saved tactics will still be there.`,
-      ctaText: 'Resubscribe →',
+      ctaText: 'Resubscribe',
       ctaUrl: `${APP_URL}/#pricing`,
       footerNote: "You're receiving this because your CourtDraw subscription was cancelled."
-    })
-  }),
+    };
+    return {
+      from: FROM,
+      reply_to: REPLY_TO,
+      to: email,
+      subject: 'Your CourtDraw subscription has been cancelled',
+      html: layout(data),
+      text: toPlainText(data),
+    };
+  },
 
-  cancellationScheduled: (email, endDate) => ({
-    from: FROM,
-    to: email,
-    subject: 'Your CourtDraw subscription will end soon',
-    html: layout({
+  cancellationScheduled: (email, endDate) => {
+    const data = {
       label: 'Cancellation confirmed',
       labelColor: '#64748b',
-      title: 'Your cancellation is confirmed.',
-      body: `We've received your cancellation request. Your Pro access will remain active until <strong>${endDate}</strong>, after which your account will move to the Free plan.<br><br>
-             Changed your mind? You can reactivate your subscription at any time before that date — just log in and visit billing.`,
-      ctaText: 'Reactivate subscription →',
+      title: 'Your cancellation is confirmed',
+      body: `We have received your cancellation request. Your Pro access will remain active until <strong>${endDate}</strong>, after which your account will move to the Free plan.<br><br>
+             Changed your mind? You can reactivate your subscription at any time before that date.`,
+      ctaText: 'Manage subscription',
       ctaUrl: `${APP_URL}/courtdraw-app.html`,
       footerNote: "You're receiving this because you cancelled your CourtDraw subscription."
-    })
-  })
+    };
+    return {
+      from: FROM,
+      reply_to: REPLY_TO,
+      to: email,
+      subject: 'Your CourtDraw subscription will end soon',
+      html: layout(data),
+      text: toPlainText(data),
+    };
+  }
 
 };
 
