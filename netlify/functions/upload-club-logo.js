@@ -5,8 +5,7 @@ if (!admin.apps.length) {
       projectId:   process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       privateKey:  process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-    }),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'courtdraw.firebasestorage.app'
+    })
   });
 }
 const db = admin.firestore();
@@ -33,26 +32,22 @@ exports.handler = async (event) => {
 
   const { imageData, mimeType } = body;
   if (!imageData || !mimeType) return { statusCode: 400, body: 'Missing imageData or mimeType' };
-  if (imageData.length > 1400000) return { statusCode: 413, body: 'Image too large (max 1 MB)' };
+  // ~1 MB base64 limit (base64 inflates ~33%, so 1MB raw ≈ 1.33MB base64)
+  if (imageData.length > 1400000) return { statusCode: 413, body: 'Image too large (max ~1 MB)' };
 
-  const ext = mimeType === 'image/png' ? 'png' : mimeType === 'image/svg+xml' ? 'svg' : 'jpg';
   const clubId = userData.clubId || ('club_' + uid);
-  const filePath = `club-logos/${clubId}/logo.${ext}`;
+  // Store as a data URL directly in Firestore — no external storage bucket needed
+  const logoUrl = `data:${mimeType};base64,${imageData}`;
 
   try {
-    const bucket = admin.storage().bucket();
-    const file = bucket.file(filePath);
-    await file.save(Buffer.from(imageData, 'base64'), {
-      metadata: { contentType: mimeType },
-      public: true,
-      resumable: false
-    });
-    const logoUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}?v=${Date.now()}`;
-
     await db.collection('clubs').doc(clubId).set({ logoUrl }, { merge: true });
     await db.collection('users').doc(uid).set({ clubLogoUrl: logoUrl }, { merge: true });
 
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ logoUrl }) };
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ logoUrl })
+    };
   } catch (e) {
     console.error('upload-club-logo error:', e.message);
     return { statusCode: 500, body: 'Upload failed: ' + e.message };
