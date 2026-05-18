@@ -1705,7 +1705,15 @@
       pillClass: 'plan-club',
       cardClass: 'plan-club',
       features: ['Everything in Pro', 'Up to 10 coaching staff seats', 'Shared team library', 'Custom team colors', 'Club presentation mode', 'Branded PDF export', 'Club Admin dashboard'],
-      cta: `<button class="acct-btn-primary purple" onclick="landingOpenBilling()">Manage billing</button>`
+      cta: `<a href="/club-admin.html" class="acct-btn-primary purple">🏟 Open Club Admin →</a>
+            <button class="acct-btn-ghost" onclick="landingOpenBilling()">Manage billing</button>`
+    },
+    clubMember: {
+      label: 'Club Member',
+      pillClass: 'plan-club',
+      cardClass: 'plan-club',
+      features: ['Full access to all courts', 'Shared team library', 'Club team colors', 'Club presentation mode', 'Branded PDF export'],
+      cta: `<a href="/courtdraw-app.html" class="acct-btn-primary purple">Open CourtDraw →</a>`
     }
   };
 
@@ -1745,9 +1753,8 @@
 
   // ── Account section update ────────────────────────────────────────────────
 
-  function showAccountSection(user, plan) {
+  function showAccountSection(user, plan, data = {}) {
     const cfg = PLAN_CONFIG[plan] || PLAN_CONFIG.free;
-    const isPaidPlan = plan === 'pro' || plan === 'club';
 
     // Reveal section, hide skeleton, show content
     document.getElementById('acct-section').style.display = 'block';
@@ -1758,9 +1765,15 @@
     document.querySelectorAll('[data-marketing]').forEach(el => el.style.display = 'none');
     document.getElementById('start-drawing-section').style.display = 'block';
 
-    // Personalised heading
+    // Personalised heading — show club name for club owners/members
     const name = user.email ? user.email.split('@')[0] : 'Coach';
-    document.getElementById('acct-heading').textContent = `Welcome back, ${name}!`;
+    const clubName = data.clubName || '';
+    if ((plan === 'club' || plan === 'clubMember') && clubName) {
+      document.getElementById('acct-heading').textContent = clubName;
+      document.querySelector('.acct-kicker').textContent  = plan === 'club' ? 'Club Admin' : 'Your Club';
+    } else {
+      document.getElementById('acct-heading').textContent = `Welcome back, ${name}!`;
+    }
 
     // Plan card
     const card = document.getElementById('acct-plan-card');
@@ -1768,7 +1781,7 @@
 
     document.getElementById('acct-plan-label').textContent = cfg.label;
     const planPill = document.getElementById('acct-plan-pill');
-    planPill.textContent = plan === 'club' ? 'Club' : plan === 'pro' ? 'Pro' : 'Free';
+    planPill.textContent = (plan === 'club' || plan === 'clubMember') ? 'Club' : plan === 'pro' ? 'Pro' : 'Free';
     planPill.className = 'nav-plan-pill ' + cfg.pillClass;
 
     // Features list
@@ -1783,7 +1796,8 @@
 
     // Tactics count
     const count = getTacticsCount(user.uid);
-    const limit = plan === 'free' ? 3 : null;
+    const isFreePlan = plan === 'free';
+    const limit = isFreePlan ? 3 : null;
     document.getElementById('acct-tactics-val').textContent = count;
     document.getElementById('acct-tactics-sub').textContent =
       limit ? `${limit - count} slot${limit - count !== 1 ? 's' : ''} remaining on Free` : 'Unlimited saves';
@@ -1857,14 +1871,19 @@
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
       const data = snap.exists() ? snap.data() : {};
-      const plan = data.plan || 'free';
+      const rawPlan = data.plan || 'free';
 
-      showLoggedInNav(user, plan);
-      showAccountSection(user, plan);
+      // Detect club members (invited coaches): their plan stays 'free' or 'pro'
+      // but they have clubMember:true and a clubId
+      const isClubMember = rawPlan !== 'club' && data.clubMember === true && !!data.clubId;
+      const planKey = isClubMember ? 'clubMember' : rawPlan;
+
+      showLoggedInNav(user, rawPlan === 'club' ? 'club' : (isClubMember ? 'club' : rawPlan));
+      showAccountSection(user, planKey, data);
     } catch {
       // Firestore unreachable — still show nav with free defaults
       showLoggedInNav(user, 'free');
-      showAccountSection(user, 'free');
+      showAccountSection(user, 'free', {});
     }
   });
 </script>

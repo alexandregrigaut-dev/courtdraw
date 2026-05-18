@@ -375,9 +375,8 @@ header {
 }
 </script>
 <script type="module">
-  import { auth, db } from '/src/firebase.js';
+  import { auth } from '/src/firebase.js';
   import { onAuthStateChanged } from 'firebase/auth';
-  import { doc, getDoc } from 'firebase/firestore';
 
   let currentUser = null;
   let userClubId  = null;
@@ -387,50 +386,57 @@ header {
     if (!user) { showAuthGate('Sign in to access Club Admin.'); return; }
     currentUser = user;
     try {
-      const snap = await getDoc(doc(db, 'users', user.uid));
-      const data = snap.exists() ? snap.data() : {};
-      if (data.plan !== 'club') { showAuthGate('Club plan required.'); return; }
+      const token = await user.getIdToken();
 
-      userClubId = data.clubId || ('club_' + user.uid);
+      // Use the server function to load club data — bypasses Firestore security rules
+      const res = await fetch('/api/get-club-data', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+
+      if (res.status === 401) { showAuthGate('Session expired — please sign in again.'); return; }
+      if (res.status === 403) { showAuthGate('Club plan required to access Club Admin.'); return; }
+      if (!res.ok) throw new Error('server error ' + res.status);
+
+      const club = await res.json();
+      userClubId = club.clubId;
 
       // Show admin UI
-      document.getElementById('auth-gate').style.display   = 'none';
+      document.getElementById('auth-gate').style.display    = 'none';
       document.getElementById('admin-content').style.display = 'block';
 
-      // Page title
-      if (data.clubName) {
-        document.getElementById('page-title').textContent = data.clubName + ' — Admin';
-        document.getElementById('club-name-field').value  = data.clubName;
-      }
+      // Page title + club name field
+      const displayName = club.clubName || 'My Club';
+      document.getElementById('page-title').textContent     = displayName + ' — Admin';
+      document.getElementById('club-name-field').value      = club.clubName || '';
 
       // Invite link
       document.getElementById('invite-link').value =
         location.origin + '/join-club.html?c=' + userClubId;
 
-      // Logo
-      if (data.clubLogoUrl) {
-        showLogoPreview(data.clubLogoUrl);
-        document.getElementById('club-logo-url').value = data.clubLogoUrl;
-      }
-
-      // Load club doc for code and colors
-      const clubSnap = await getDoc(doc(db, 'clubs', userClubId));
-      const clubData = clubSnap.exists() ? clubSnap.data() : {};
-      if (clubData.clubCode) {
-        setCodeDisplay(clubData.clubCode);
+      // Club code
+      if (club.clubCode) {
+        setCodeDisplay(club.clubCode);
       } else {
-        // Existing clubs created before this feature: generate one on first load
+        // First load after purchase: generate one
         regenCode();
       }
-      // Pre-populate team color pickers from saved club data
-      if (clubData.teamColorA) document.getElementById('color-team-a').value = clubData.teamColorA;
-      if (clubData.teamColorB) document.getElementById('color-team-b').value = clubData.teamColorB;
+
+      // Logo
+      if (club.logoUrl) {
+        showLogoPreview(club.logoUrl);
+        document.getElementById('club-logo-url').value = club.logoUrl;
+      }
+
+      // Team colors
+      if (club.teamColorA) document.getElementById('color-team-a').value = club.teamColorA;
+      if (club.teamColorB) document.getElementById('color-team-b').value = club.teamColorB;
 
       // Parallel data loads
       loadRoster();
       loadTactics();
     } catch (e) {
-      showAuthGate('Error loading club data.');
+      console.error('Club admin load error:', e);
+      showAuthGate('Error loading club data. Please refresh and try again.');
     }
   });
 
