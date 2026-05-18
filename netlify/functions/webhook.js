@@ -27,13 +27,13 @@ function generateClubCode() {
   ).join('');
 }
 
-async function sendEmail(template, email) {
+async function sendEmail(template, email, templateData) {
   const headers = { 'Content-Type': 'application/json' };
   if (process.env.INTERNAL_SECRET) headers['x-internal-secret'] = process.env.INTERNAL_SECRET;
   await fetch(`${process.env.PUBLIC_URL}/.netlify/functions/send-email`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ template, email })
+    body: JSON.stringify({ template, email, ...(templateData ? { templateData } : {}) })
   });
 }
 
@@ -74,6 +74,30 @@ exports.handler = async (event) => {
     }
     await db.collection('users').doc(userId).update(update);
     await sendEmail(plan === 'club' ? 'clubWelcome' : 'paymentConfirmed', session.customer_email);
+  }
+
+  // Fires immediately when user cancels via billing portal (cancel_at_period_end = true)
+  if (stripeEvent.type === 'customer.subscription.updated') {
+    const sub = stripeEvent.data.object;
+    const prev = stripeEvent.data.previous_attributes || {};
+    // Only act when cancel_at_period_end just flipped to true
+    if (sub.cancel_at_period_end === true && prev.cancel_at_period_end === false) {
+      const customerId = sub.customer;
+      const snap = await db.collection('users')
+        .where('stripeCustomerId', '==', customerId)
+        .limit(1)
+        .get();
+      if (!snap.empty) {
+        const userEmail = snap.docs[0].data().email;
+        if (userEmail) {
+          const endTs = sub.cancel_at || sub.current_period_end;
+          const endDate = endTs
+            ? new Date(endTs * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+            : 'the end of your billing period';
+          await sendEmail('cancellationScheduled', userEmail, { endDate });
+        }
+      }
+    }
   }
 
   if (stripeEvent.type === 'customer.subscription.deleted') {

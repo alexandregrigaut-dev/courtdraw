@@ -195,6 +195,22 @@ const templates = {
       ctaUrl: `${APP_URL}/#pricing`,
       footerNote: "You're receiving this because your CourtDraw subscription was cancelled."
     })
+  }),
+
+  cancellationScheduled: (email, endDate) => ({
+    from: FROM,
+    to: email,
+    subject: 'Your CourtDraw subscription will end soon',
+    html: layout({
+      label: 'Cancellation confirmed',
+      labelColor: '#64748b',
+      title: 'Your cancellation is confirmed.',
+      body: `We've received your cancellation request. Your Pro access will remain active until <strong>${endDate}</strong>, after which your account will move to the Free plan.<br><br>
+             Changed your mind? You can reactivate your subscription at any time before that date — just log in and visit billing.`,
+      ctaText: 'Reactivate subscription →',
+      ctaUrl: `${APP_URL}/courtdraw-app.html`,
+      footerNote: "You're receiving this because you cancelled your CourtDraw subscription."
+    })
   })
 
 };
@@ -213,7 +229,7 @@ exports.handler = async (event) => {
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch { return { statusCode: 400, body: 'Bad JSON' }; }
-  const { template, email } = body;
+  const { template, email, templateData } = body;
   if (!templates[template]) return { statusCode: 400, body: 'Unknown template' };
   if (!email) return { statusCode: 400, body: 'Missing email' };
 
@@ -229,7 +245,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    await resend.emails.send(templates[template](email));
+    await resend.emails.send(templates[template](email, ...(templateData ? Object.values(templateData) : [])));
     return { statusCode: 200, body: JSON.stringify({ sent: true }) };
   } catch (err) {
     return { statusCode: 500, body: `Email error: ${err.message}` };
