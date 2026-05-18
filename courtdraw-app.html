@@ -432,6 +432,68 @@ body.presentation-mode #presentation-overlay { display: flex; }
   .app-title { display: none; }
   #court-name-chip { max-width: 110px; }
 }
+/* ── Pro Library Modal ──────────────────────────────────── */
+#pro-library-modal {
+  display: none; position: fixed; inset: 0; z-index: 9000;
+  background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+  flex-direction: column; align-items: center; justify-content: center;
+}
+#pro-library-modal.open { display: flex; }
+#pro-lib-panel {
+  background: var(--surface); border-radius: 16px; border: 1px solid var(--border);
+  width: min(900px, 96vw); max-height: 88vh; display: flex; flex-direction: column;
+  overflow: hidden;
+}
+#pro-lib-header {
+  display: flex; align-items: center; gap: 12px; padding: 16px 20px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+#pro-lib-header h2 { flex: 1; font-size: 17px; font-weight: 700; margin: 0; }
+#pro-lib-sport-tabs {
+  display: flex; gap: 6px; padding: 12px 20px; overflow-x: auto;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+  scrollbar-width: none;
+}
+#pro-lib-sport-tabs::-webkit-scrollbar { display: none; }
+.lib-sport-tab {
+  flex-shrink: 0; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+  background: transparent; color: var(--text2); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; font-family: inherit;
+}
+.lib-sport-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+#pro-lib-filter-bar {
+  display: flex; gap: 6px; padding: 10px 20px; flex-shrink: 0; flex-wrap: wrap;
+}
+.lib-filter-btn {
+  padding: 4px 12px; border-radius: 16px; border: 1px solid var(--border);
+  background: transparent; color: var(--text2); font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.lib-filter-btn.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+#pro-lib-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px; padding: 16px 20px; overflow-y: auto; flex: 1;
+}
+.lib-card {
+  background: var(--surface2); border-radius: 12px; border: 1px solid var(--border);
+  overflow: hidden; cursor: pointer; transition: transform 0.15s, border-color 0.15s;
+  display: flex; flex-direction: column;
+}
+.lib-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.lib-card-thumb {
+  width: 100%; aspect-ratio: 5/3; background: #1a3a1a; position: relative; overflow: hidden;
+}
+.lib-card-thumb svg { width: 100%; height: 100%; display: block; }
+.lib-card-body { padding: 10px 12px; }
+.lib-card-name { font-weight: 700; font-size: 13px; margin-bottom: 3px; }
+.lib-card-meta { font-size: 11px; color: var(--text2); }
+.lib-card-pro-badge {
+  position: absolute; top: 6px; right: 6px;
+  background: rgba(251,191,36,0.9); color: #1a1a00; font-size: 10px;
+  font-weight: 800; padding: 2px 7px; border-radius: 10px;
+}
+.lib-card.locked .lib-card-thumb { filter: brightness(0.5); }
+.lib-empty { grid-column: 1/-1; text-align: center; color: var(--text2); padding: 40px 20px; }
 </style>
 </head>
 <body>
@@ -551,6 +613,9 @@ body.presentation-mode #presentation-overlay { display: flex; }
   </button>
   <button class="tb-btn" title="Export PNG" onclick="exportPNG()">
     <span class="icon">🖼</span><span>PNG</span>
+  </button>
+  <button class="tb-btn" id="btn-pro-library" title="Tactics Library" aria-label="Tactics Library" onclick="openProLibrary()">
+    <span class="icon">🗂</span><span>Plays</span>
   </button>
   <button class="tb-btn" title="Print / Export PDF" onclick="exportPDF()">
     <span class="icon">🖨</span><span>Print</span>
@@ -2935,6 +3000,167 @@ function updateAccountUI(user, isPro, isClub, isClubOwner) {
 // ══════════════════════════════════════════════
 // KEYBOARD SHORTCUTS
 // ══════════════════════════════════════════════
+// ── Pro Tactics Library ──────────────────────────────────
+let proLibState = { sport: null, filter: 'All' };
+
+function openProLibrary() {
+  if (!window.TACTICS_LIBRARY) {
+    showToast('Tactics library not loaded.'); return;
+  }
+  const modal = document.getElementById('pro-library-modal');
+  modal.classList.add('open');
+  const sports = [...new Set(window.TACTICS_LIBRARY.map(t => t.sport))];
+  if (!proLibState.sport) proLibState.sport = sports[0];
+  renderProLibSportTabs(sports);
+  renderProLibFilterBar();
+  renderProLibGrid();
+  const badge = document.getElementById('pro-lib-tier-badge');
+  if (badge) badge.textContent = state.isPro || state.isClub ? '✓ Pro Access' : 'Free Preview';
+}
+
+function closeProLibrary() {
+  document.getElementById('pro-library-modal').classList.remove('open');
+}
+
+function renderProLibSportTabs(sports) {
+  const el = document.getElementById('pro-lib-sport-tabs');
+  el.innerHTML = sports.map(s =>
+    `<button class="lib-sport-tab${s === proLibState.sport ? ' active' : ''}" onclick="proLibSelectSport('${s}')">${s}</button>`
+  ).join('');
+}
+
+function proLibSelectSport(sport) {
+  proLibState.sport = sport;
+  proLibState.filter = 'All';
+  document.querySelectorAll('.lib-sport-tab').forEach(b => b.classList.toggle('active', b.textContent === sport));
+  renderProLibFilterBar();
+  renderProLibGrid();
+}
+
+function renderProLibFilterBar() {
+  const tactics = window.TACTICS_LIBRARY.filter(t => t.sport === proLibState.sport);
+  const cats = ['All', ...new Set(tactics.map(t => t.category))];
+  const el = document.getElementById('pro-lib-filter-bar');
+  el.innerHTML = cats.map(c =>
+    `<button class="lib-filter-btn${c === proLibState.filter ? ' active' : ''}" onclick="proLibSetFilter('${c}')">${c}</button>`
+  ).join('');
+}
+
+function proLibSetFilter(cat) {
+  proLibState.filter = cat;
+  document.querySelectorAll('.lib-filter-btn').forEach(b => b.classList.toggle('active', b.textContent === cat));
+  renderProLibGrid();
+}
+
+function renderProLibGrid() {
+  const grid = document.getElementById('pro-lib-grid');
+  let tactics = window.TACTICS_LIBRARY.filter(t => t.sport === proLibState.sport);
+  if (proLibState.filter !== 'All') tactics = tactics.filter(t => t.category === proLibState.filter);
+  if (!tactics.length) {
+    grid.innerHTML = '<div class="lib-empty">No tactics found for this filter.</div>';
+    return;
+  }
+  const hasPro = state.isPro || state.isClub;
+  grid.innerHTML = tactics.map(t => {
+    const locked = t.tier === 'pro' && !hasPro;
+    return `<div class="lib-card${locked ? ' locked' : ''}" onclick="handleLibTacticClick('${t.id}')">
+      <div class="lib-card-thumb">
+        ${renderTacticThumb(t)}
+        ${locked ? '<div class="lib-card-pro-badge">PRO</div>' : ''}
+      </div>
+      <div class="lib-card-body">
+        <div class="lib-card-name">${t.name}</div>
+        <div class="lib-card-meta">${t.category}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderTacticThumb(t) {
+  const court = COURTS.find(c => c.id === t.courtId);
+  const courtSvg = court ? court.svg() : '';
+  const objSvgs = (t.objects || []).map(o => objToLibSvg(o)).join('');
+  const tokenSvgs = (t.tokens || []).map(tk => {
+    const cx = tk.pct[0] * 1000;
+    const cy = tk.pct[1] * 600;
+    const fill = tk.team === 'red' ? (state.teamColorB || '#dc2626') : (state.teamColorA || '#60a5fa');
+    return `<circle cx="${cx}" cy="${cy}" r="22" fill="${fill}" stroke="#fff" stroke-width="4"/>
+            <text x="${cx}" y="${cy+8}" text-anchor="middle" fill="#fff" font-size="18" font-weight="700">${tk.label}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+    ${courtSvg}
+    ${objSvgs}
+    ${tokenSvgs}
+  </svg>`;
+}
+
+function objToLibSvg(o) {
+  if (o.type === 'arrow' || o.type === 'dashed-arrow' || o.type === 'line') {
+    if (!o.points || o.points.length < 2) return '';
+    const pts = o.points;
+    const dashAttr = o.type === 'dashed-arrow' ? 'stroke-dasharray="20,12"' : '';
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 1; i < pts.length; i++) d += ` L${pts[i][0]},${pts[i][1]}`;
+    const isArrow = o.type !== 'line';
+    const markerId = `ah_${Math.random().toString(36).slice(2,7)}`;
+    const markerDef = isArrow ? `<defs><marker id="${markerId}" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="${o.color||'#fff'}"/></marker></defs>` : '';
+    const markerEnd = isArrow ? `marker-end="url(#${markerId})"` : '';
+    return `${markerDef}<path d="${d}" stroke="${o.color||'#fff'}" stroke-width="${o.lineWidth||3}" fill="none" ${dashAttr} ${markerEnd} stroke-linecap="round"/>`;
+  }
+  if (o.type === 'circle') {
+    return `<circle cx="${o.cx}" cy="${o.cy}" r="${o.r}" stroke="${o.color||'#fff'}" stroke-width="${o.lineWidth||2}" fill="none"/>`;
+  }
+  if (o.type === 'rect') {
+    return `<rect x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}" stroke="${o.color||'#fff'}" stroke-width="${o.lineWidth||2}" fill="none"/>`;
+  }
+  if (o.type === 'text') {
+    return `<text x="${o.x}" y="${o.y}" fill="${o.color||'#fff'}" font-size="${o.fontSize||28}" font-weight="700">${o.text||''}</text>`;
+  }
+  return '';
+}
+
+function handleLibTacticClick(id) {
+  const t = window.TACTICS_LIBRARY.find(x => x.id === id);
+  if (!t) return;
+  if (t.tier === 'pro' && !state.isPro && !state.isClub) {
+    openPaywall('Unlock the full Tactics Library with Pro — ' + t.sport + ' tactics, all sports, all formations.');
+    return;
+  }
+  closeProLibrary();
+  loadLibTactic(t);
+}
+
+function loadLibTactic(t) {
+  const courtEntry = COURTS.find(c => c.id === t.courtId);
+  if (courtEntry) {
+    state.courtId = t.courtId;
+    document.getElementById('court-name-chip').textContent = courtEntry.name;
+    const svg = document.getElementById('court-svg');
+    svg.innerHTML = courtEntry.svg();
+    setTimeout(syncCanvas, 80);
+  }
+  const src = (t.phases && t.phases.length > 0) ? t.phases[0] : t;
+  state.objects = JSON.parse(JSON.stringify(src.objects || []));
+  state.tokens  = JSON.parse(JSON.stringify(src.tokens  || []));
+  if (t.phases && t.phases.length > 1) {
+    state.phases = t.phases.map(p => ({ objects: JSON.parse(JSON.stringify(p.objects||[])), tokens: JSON.parse(JSON.stringify(p.tokens||[])) }));
+    state.currentPhase = 0;
+  } else {
+    state.phases = [{ objects: state.objects, tokens: state.tokens }];
+    state.currentPhase = 0;
+  }
+  updatePhaseUI();
+  syncCanvas();
+  renderTokensFromState();
+  showToast('Loaded: ' + t.name);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('pro-library-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeProLibrary();
+  });
+});
+
 document.addEventListener('keydown', e => {
   // Never intercept while typing in an input or textarea
   const tag = document.activeElement?.tagName;
@@ -2945,6 +3171,8 @@ document.addEventListener('keydown', e => {
   // Escape closes account menu or any open modal
   if (e.key === 'Escape') {
     if (document.body.classList.contains('presentation-mode')) { exitPresentation(); return; }
+    const proLib = document.getElementById('pro-library-modal');
+    if (proLib?.classList.contains('open')) { closeProLibrary(); return; }
     const acctMenu = document.getElementById('account-menu');
     if (acctMenu?.classList.contains('open')) { closeAccountMenu(); return; }
     if (anyModal) anyModal.classList.remove('open');
@@ -3003,6 +3231,22 @@ document.addEventListener('DOMContentLoaded', init);
     <button class="pres-btn" id="pres-play-btn" onclick="toggleAnimation()">▶ Play</button>
     <span id="pres-phase-label">Phase 1 / 1</span>
     <button class="pres-btn" onclick="stopAnimation(); nextPhase();">▶</button>
+  </div>
+</div>
+
+<script src="tactics-library.js"></script>
+
+<!-- Pro Library Modal -->
+<div id="pro-library-modal" role="dialog" aria-modal="true" aria-label="Tactics Library">
+  <div id="pro-lib-panel">
+    <div id="pro-lib-header">
+      <h2>📚 Tactics Library</h2>
+      <span id="pro-lib-tier-badge" style="font-size:11px;background:rgba(251,191,36,0.15);color:#fbbf24;padding:3px 10px;border-radius:10px;font-weight:700;"></span>
+      <button onclick="closeProLibrary()" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;" aria-label="Close">✕</button>
+    </div>
+    <div id="pro-lib-sport-tabs"></div>
+    <div id="pro-lib-filter-bar"></div>
+    <div id="pro-lib-grid"></div>
   </div>
 </div>
 
