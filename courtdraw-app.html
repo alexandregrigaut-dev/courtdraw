@@ -432,6 +432,63 @@ body.presentation-mode #presentation-overlay { display: flex; }
   .app-title { display: none; }
   #court-name-chip { max-width: 110px; }
 }
+/* ── Landscape mobile: full-screen court with floating overlays ─────────── */
+/* In landscape the header + toolbar eat most of the available height, leaving
+   the court only ~222 px tall. Fix: give #board-area the full viewport and
+   float the chrome as translucent overlays so the court uses 100 % of height. */
+@media (max-width: 900px) and (orientation: landscape) {
+  /* Compact chrome heights */
+  :root { --header-h: 40px; --toolbar-h: 52px; --phase-bar-h: 34px; }
+
+  /* Court gets the full screen */
+  #board-area {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  }
+
+  /* Glass header */
+  #app-header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+    background: rgba(29, 78, 216, 0.86);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(255,255,255,0.13);
+    padding-left:  calc(12px + env(safe-area-inset-left));
+    padding-right: calc(12px + env(safe-area-inset-right));
+  }
+  [data-theme="light"] #app-header {
+    background: rgba(239, 246, 255, 0.88);
+    border-bottom: 1px solid rgba(29,78,216,0.18);
+  }
+
+  /* Glass phase bar */
+  #phase-bar {
+    position: fixed; left: 0; right: 0; z-index: 20;
+    bottom: calc(var(--toolbar-h) + env(safe-area-inset-bottom));
+    background: rgba(29, 78, 216, 0.86);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(255,255,255,0.10);
+  }
+  [data-theme="light"] #phase-bar {
+    background: rgba(239, 246, 255, 0.88);
+    border-top: 1px solid rgba(29,78,216,0.18);
+  }
+
+  /* Glass toolbar */
+  #toolbar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+    background: rgba(29, 78, 216, 0.86);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(255,255,255,0.10);
+    padding-left:  calc(8px + env(safe-area-inset-left));
+    padding-right: calc(8px + env(safe-area-inset-right));
+  }
+  [data-theme="light"] #toolbar {
+    background: rgba(239, 246, 255, 0.88);
+    border-top: 1px solid rgba(29,78,216,0.18);
+  }
+
+  /* Hide title text to keep the compact header uncluttered */
+  .app-title { display: none; }
+}
 /* Portrait mobile: court fills board-area naturally (no rotation needed) */
 /* ── Pro Library Modal ──────────────────────────────────── */
 #pro-library-modal {
