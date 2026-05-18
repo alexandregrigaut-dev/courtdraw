@@ -151,6 +151,19 @@
     }
     .forgot-link a:hover { color: var(--accent); }
 
+    .remember-row {
+      display: flex; align-items: center; gap: 9px;
+      margin-bottom: 18px;
+    }
+    .remember-row input[type="checkbox"] {
+      width: 16px; height: 16px;
+      accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
+    }
+    .remember-row label {
+      font-size: 0.85rem; color: var(--muted); cursor: pointer;
+      user-select: none;
+    }
+
     .error-msg {
       background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
       color: var(--red); border-radius: 8px; padding: 10px 14px;
@@ -215,6 +228,10 @@
       <div class="forgot-link">
         <a href="#" onclick="handleReset(event)">Forgot password?</a>
       </div>
+      <div class="remember-row">
+        <input type="checkbox" id="remember-me" checked>
+        <label for="remember-me">Stay signed in</label>
+      </div>
       <button type="submit" class="btn-submit" id="signin-btn">Sign in</button>
     </form>
 
@@ -268,7 +285,8 @@
   <script type="module">
     import { loginUser, registerUser } from '/src/auth.js';
     import { auth, db } from '/src/firebase.js';
-    import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+    import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup,
+             setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
     import { doc, getDoc } from 'firebase/firestore';
 
     const params = new URLSearchParams(location.search);
@@ -334,6 +352,10 @@
       }
     };
 
+    function rememberMe() {
+      return document.getElementById('remember-me')?.checked !== false;
+    }
+
     window.handleSignin = async (e) => {
       e.preventDefault();
       const btn = document.getElementById('signin-btn');
@@ -341,6 +363,7 @@
       clearMessages();
       handlingAuth = true;
       try {
+        await setPersistence(auth, rememberMe() ? browserLocalPersistence : browserSessionPersistence);
         const credential = await loginUser(
           document.getElementById('signin-email').value,
           document.getElementById('signin-password').value
@@ -393,6 +416,7 @@
       clearMessages();
       handlingAuth = true;
       try {
+        await setPersistence(auth, rememberMe() ? browserLocalPersistence : browserSessionPersistence);
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
         await resolveRedirect(result.user);

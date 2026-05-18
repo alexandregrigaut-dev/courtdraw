@@ -2555,40 +2555,83 @@ function exportPDF() {
       oc.font = 'bold 22px system-ui'; oc.textAlign = 'center'; oc.textBaseline = 'middle';
       oc.fillText(t.label, x, y);
     }
-    const pdfWatermark = (state.isClub && state.clubName)
-      ? state.clubName
-      : (state.isPro || state.isClub) ? null : 'courtdraw.app';
-    if (pdfWatermark) {
-      oc.save(); oc.globalAlpha = 0.25; oc.fillStyle = '#ffffff';
-      oc.font = 'bold 24px system-ui'; oc.textAlign = 'right'; oc.textBaseline = 'bottom';
-      oc.fillText(pdfWatermark, W - 20, H - 16); oc.restore();
-    }
-    canvasW = savedW; canvasH = savedH;
-    const dataUrl = off.toDataURL('image/png');
-    const win = window.open('', '_blank');
-    if (!win) { showToast('Allow pop-ups to use Print / PDF'); return; }
-    const hasClubBrand = state.isClub && (state.clubLogoUrl || state.clubName);
-    const clubBrandHtml = hasClubBrand ? `
-      <div class="club-header">
-        ${state.clubLogoUrl ? `<img class="club-logo" src="${state.clubLogoUrl}" alt="">` : ''}
-        <span class="club-label">${(state.clubName || 'CourtDraw').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
-        <span class="court-label">${court.name.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
-      </div>` : '';
-    win.document.write(`<!DOCTYPE html><html><head><title>${hasClubBrand ? (state.clubName + ' — ') : 'CourtDraw — '}${court.name}</title>
+    // ── Branding footer drawn directly onto the canvas ──────────────────────
+    // Free users: subtle watermark centre. Club: logo BL + name BR. Pro: clean.
+    const FOOT_H   = 90;          // footer bar height in px (at W×H resolution)
+    const FOOT_PAD = 36;
+
+    const openPrintWindow = (dataUrl) => {
+      canvasW = savedW; canvasH = savedH;
+      const win = window.open('', '_blank');
+      if (!win) { showToast('Allow pop-ups to use Print / PDF'); return; }
+      const title = (state.isClub && state.clubName)
+        ? `${state.clubName} — ${court.name}`
+        : `CourtDraw — ${court.name}`;
+      win.document.write(`<!DOCTYPE html><html><head><title>${title.replace(/</g,'&lt;')}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#fff}
-.club-header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:#1d4ed8;color:#fff}
-.club-logo{height:36px;max-width:140px;object-fit:contain;border-radius:3px}
-.club-label{font-family:system-ui,sans-serif;font-weight:700;font-size:18px}
-.court-label{font-family:system-ui,sans-serif;font-size:13px;opacity:0.65;margin-left:auto}
-img.court-img{max-width:100%;height:auto;display:block}
-@media print{body{margin:0}.club-header{-webkit-print-color-adjust:exact;print-color-adjust:exact}img.court-img{width:100%;height:auto}@page{margin:0;size:landscape}}
+img.court-img{width:100%;height:auto;display:block}
+@media print{img.court-img{width:100%;height:auto}@page{margin:0;size:landscape}}
 </style>
-</head><body>${clubBrandHtml}<img class="court-img" src="${dataUrl}"></body></html>`);
-    win.document.close();
-    win.addEventListener('load', () => { win.focus(); win.print(); });
-    showToast('Print dialog opened.');
+</head><body><img class="court-img" src="${dataUrl}"></body></html>`);
+      win.document.close();
+      win.addEventListener('load', () => { win.focus(); win.print(); });
+      showToast('Print dialog opened.');
+    };
+
+    const finalizePdf = () => {
+      const dataUrl = off.toDataURL('image/png');
+      openPrintWindow(dataUrl);
+    };
+
+    if (!state.isPro && !state.isClub) {
+      // Free watermark
+      oc.save(); oc.globalAlpha = 0.22; oc.fillStyle = '#ffffff';
+      oc.font = 'bold 36px system-ui'; oc.textAlign = 'center'; oc.textBaseline = 'middle';
+      oc.fillText('courtdraw.app', W / 2, H / 2); oc.restore();
+      canvasW = savedW; canvasH = savedH;
+      finalizePdf();
+    } else if (state.isClub && (state.clubLogoUrl || state.clubName)) {
+      // Club branding: semi-transparent footer bar
+      oc.save();
+      oc.fillStyle = 'rgba(0,0,0,0.55)';
+      oc.fillRect(0, H - FOOT_H, W, FOOT_H);
+      // Club name — bottom right
+      if (state.clubName) {
+        oc.font = `bold ${Math.round(FOOT_H * 0.38)}px system-ui`;
+        oc.fillStyle = '#ffffff';
+        oc.globalAlpha = 0.95;
+        oc.textAlign = 'right';
+        oc.textBaseline = 'middle';
+        oc.fillText(
+          state.clubName,
+          W - FOOT_PAD,
+          H - FOOT_H / 2
+        );
+      }
+      oc.restore();
+      // Club logo — bottom left (load async since it's a base64 data URL)
+      if (state.clubLogoUrl) {
+        const logoImg = new Image();
+        logoImg.onload = () => {
+          const logoH = FOOT_H - 20;
+          const logoW = Math.min(logoImg.naturalWidth * (logoH / logoImg.naturalHeight), 320);
+          oc.drawImage(logoImg, FOOT_PAD, H - FOOT_H + 10, logoW, logoH);
+          canvasW = savedW; canvasH = savedH;
+          finalizePdf();
+        };
+        logoImg.onerror = () => { canvasW = savedW; canvasH = savedH; finalizePdf(); };
+        logoImg.src = state.clubLogoUrl;
+      } else {
+        canvasW = savedW; canvasH = savedH;
+        finalizePdf();
+      }
+    } else {
+      // Pro — clean, no watermark
+      canvasW = savedW; canvasH = savedH;
+      finalizePdf();
+    }
   };
   img.src = url;
 }
