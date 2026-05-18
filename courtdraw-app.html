@@ -2004,16 +2004,18 @@ function clearBoard() {
 // PLAYER TOKENS
 // ══════════════════════════════════════════════
 const DEFAULT_TOKENS = [
-  { team:'blue', label:'A1', pct:[0.20,0.20] },
-  { team:'blue', label:'A2', pct:[0.20,0.42] },
-  { team:'blue', label:'A3', pct:[0.20,0.63] },
-  { team:'blue', label:'A4', pct:[0.20,0.82] },
-  { team:'blue', label:'A5', pct:[0.35,0.35] },
-  { team:'red',  label:'B1', pct:[0.80,0.20] },
-  { team:'red',  label:'B2', pct:[0.80,0.42] },
-  { team:'red',  label:'B3', pct:[0.80,0.63] },
-  { team:'red',  label:'B4', pct:[0.80,0.82] },
-  { team:'red',  label:'B5', pct:[0.65,0.35] },
+  { team:'blue', label:'A1', pct:[0.20,0.15] },
+  { team:'blue', label:'A2', pct:[0.20,0.33] },
+  { team:'blue', label:'A3', pct:[0.20,0.51] },
+  { team:'blue', label:'A4', pct:[0.20,0.69] },
+  { team:'blue', label:'A5', pct:[0.20,0.85] },
+  { team:'blue', label:'A6', pct:[0.35,0.40] },
+  { team:'red',  label:'B1', pct:[0.80,0.15] },
+  { team:'red',  label:'B2', pct:[0.80,0.33] },
+  { team:'red',  label:'B3', pct:[0.80,0.51] },
+  { team:'red',  label:'B4', pct:[0.80,0.69] },
+  { team:'red',  label:'B5', pct:[0.80,0.85] },
+  { team:'red',  label:'B6', pct:[0.65,0.40] },
 ];
 
 function buildTokens() {
@@ -3419,6 +3421,10 @@ document.addEventListener('DOMContentLoaded', init);
 
   // Expose sign-out globally so the account menu button can call it
   window.__signOut = async () => {
+    // Wipe plan flags from localStorage immediately so if the user navigates
+    // back without signing in they get the free tier, not a stale Pro session.
+    localStorage.removeItem('courtdraw_pro');
+    localStorage.removeItem('courtdraw_club_name');
     try { await signOut(auth); } catch {}
     window.__currentUser = null;
     window.location.href = '/login.html';
@@ -3431,8 +3437,14 @@ document.addEventListener('DOMContentLoaded', init);
       updateAccountUI(user, false, false, false);
     }
     if (!user) {
-      // Clear in-memory tactics so a signed-out visitor doesn't see previous user's saves
+      // Downgrade to free tier immediately — clear localStorage flags so a page
+      // reload after sign-out doesn't restore a stale Pro/Club session.
+      localStorage.removeItem('courtdraw_pro');
+      localStorage.removeItem('courtdraw_club_name');
       if (typeof state !== 'undefined') state.savedTactics = [];
+      // Reset all plan state and UI to free
+      if (typeof window.__updatePro === 'function')
+        window.__updatePro(false, false, null, '', false, null, null, null);
       return;
     }
     try {
