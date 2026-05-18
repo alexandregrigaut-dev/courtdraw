@@ -488,6 +488,36 @@ body.presentation-mode #presentation-overlay { display: flex; }
 
   /* Hide title text to keep the compact header uncluttered */
   .app-title { display: none; }
+
+  /* ── Immersive mode: chrome slides off by default ── */
+  #app-header {
+    transform: translateY(-100%);
+    transition: transform 0.22s ease;
+  }
+  #phase-bar {
+    transform: translateY(150px);
+    transition: transform 0.22s ease;
+  }
+  #toolbar {
+    transform: translateY(150px);
+    transition: transform 0.22s ease;
+  }
+
+  /* Chrome revealed on demand */
+  body.ls-chrome-visible #app-header { transform: translateY(0); }
+  body.ls-chrome-visible #phase-bar  { transform: translateY(0); }
+  body.ls-chrome-visible #toolbar    { transform: translateY(0); }
+
+  /* Touch-hint strips — invisible tap zones at top & bottom edges */
+  #ls-top-hint, #ls-bottom-hint {
+    display: block;
+    position: fixed;
+    left: 0; right: 0;
+    z-index: 30;
+    pointer-events: auto;
+  }
+  #ls-top-hint    { top: 0;    height: 22px; }
+  #ls-bottom-hint { bottom: 0; height: 28px; }
 }
 /* Portrait mobile: court fills board-area naturally (no rotation needed) */
 /* ── Pro Library Modal ──────────────────────────────────── */
@@ -607,6 +637,10 @@ body.presentation-mode #presentation-overlay { display: flex; }
   <div class="acct-divider" id="acct-div2" style="display:none"></div>
   <button class="acct-btn danger" onclick="signOutUser()">Sign out</button>
 </div>
+
+<!-- Landscape immersive-mode tap-hint strips (hidden in portrait/desktop via CSS) -->
+<div id="ls-top-hint"    style="display:none;" aria-hidden="true"></div>
+<div id="ls-bottom-hint" style="display:none;" aria-hidden="true"></div>
 
 <!-- Board -->
 <main id="board-area">
@@ -3483,6 +3517,64 @@ document.addEventListener('DOMContentLoaded', init);
       }
     }
   });
+
+  // ── Landscape immersive mode ─────────────────────────────────────────────
+  // Chrome (header / phase-bar / toolbar) is hidden by default in landscape.
+  // It slides in when the user touches near the top or bottom edge, then
+  // auto-hides after 3 s of inactivity.
+  (function() {
+    const HIDE_DELAY  = 3000;   // ms before chrome auto-hides
+    const TOP_ZONE    = 55;     // px from top that triggers show
+    const BOTTOM_ZONE = 65;     // px from bottom that triggers show
+    let   hideTimer   = null;
+
+    function isLandscapeMobile() {
+      return window.innerWidth  <= 900 &&
+             window.innerWidth  >  window.innerHeight;
+    }
+
+    function showChrome() {
+      document.body.classList.add('ls-chrome-visible');
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(hideChrome, HIDE_DELAY);
+    }
+
+    function hideChrome() {
+      document.body.classList.remove('ls-chrome-visible');
+      clearTimeout(hideTimer);
+    }
+
+    // Touch handler: edge zones reveal chrome; chrome touches extend the timer.
+    document.addEventListener('touchstart', function(e) {
+      if (!isLandscapeMobile()) return;
+      const y = e.touches[0].clientY;
+      const h = window.innerHeight;
+
+      if (y < TOP_ZONE || y > h - BOTTOM_ZONE) {
+        showChrome();
+        return;
+      }
+      // Touch on a chrome element while visible → extend timer only
+      if (e.target.closest('#app-header, #phase-bar, #toolbar')) {
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(hideChrome, HIDE_DELAY);
+      }
+      // Mid-screen drawing touch → no chrome action (let timer run out naturally)
+    }, { passive: true });
+
+    // On orientation/resize change: teardown when leaving landscape
+    window.addEventListener('resize', function() {
+      if (!isLandscapeMobile()) {
+        hideChrome();
+      }
+    });
+
+    // Brief welcome reveal on first load in landscape so the user sees the UI
+    if (isLandscapeMobile()) {
+      document.body.classList.add('ls-chrome-visible');
+      hideTimer = setTimeout(hideChrome, 2500);
+    }
+  })();
 </script>
 </body>
 </html>
