@@ -1754,11 +1754,9 @@
     document.getElementById('acct-skeleton').style.display = 'none';
     document.getElementById('acct-content').style.display = 'grid';
 
-    // For Pro/Club users: hide the marketing page, show only dashboard + Start Drawing CTA
-    if (isPaidPlan) {
-      document.querySelectorAll('[data-marketing]').forEach(el => el.style.display = 'none');
-      document.getElementById('start-drawing-section').style.display = 'block';
-    }
+    // All logged-in users: hide the marketing page, show only dashboard + Start Drawing CTA
+    document.querySelectorAll('[data-marketing]').forEach(el => el.style.display = 'none');
+    document.getElementById('start-drawing-section').style.display = 'block';
 
     // Personalised heading
     const name = user.email ? user.email.split('@')[0] : 'Coach';
