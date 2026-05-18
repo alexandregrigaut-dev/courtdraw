@@ -724,8 +724,18 @@
   </div>
 </section>
 
+<!-- ════ START DRAWING (Pro/Club only) ════ -->
+<section id="start-drawing-section" style="display:none;padding:48px 24px 64px;text-align:center;border-top:1px solid var(--border);">
+  <div class="container" style="max-width:560px;">
+    <p style="font-size:0.78rem;font-weight:700;letter-spacing:.1em;color:var(--accent);text-transform:uppercase;margin-bottom:12px;">Ready to coach?</p>
+    <h2 style="font-size:clamp(1.6rem,4vw,2.2rem);font-weight:800;margin-bottom:16px;line-height:1.2;">Open CourtDraw</h2>
+    <p style="color:var(--muted);font-size:1rem;margin-bottom:32px;">Jump straight into your board — all your courts, tactics and team settings are waiting.</p>
+    <a href="/courtdraw-app.html" class="btn btn-primary btn-lg" style="font-size:1.05rem;padding:14px 36px;">Start Drawing →</a>
+  </div>
+</section>
+
 <!-- ════ HERO ════ -->
-<section class="hero">
+<section class="hero" data-marketing>
   <div class="container">
     <div class="hero-badge fade-up">
       <span class="badge"><span class="badge-dot"></span>Free to start — no account needed</span>
@@ -877,7 +887,7 @@
 </div>
 
 <!-- ════ SPORTS GRID ════ -->
-<section class="section" id="sports">
+<section class="section" id="sports" data-marketing>
   <div class="container">
     <div class="section-header">
       <span class="badge">Every Sport</span>
@@ -932,7 +942,7 @@
 </section>
 
 <!-- ════ PROBLEM / SOLUTION ════ -->
-<section class="section" style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+<section class="section" data-marketing style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
   <div class="container">
     <div class="section-header">
       <span class="badge">Why CourtDraw</span>
@@ -967,7 +977,7 @@
 </section>
 
 <!-- ════ FEATURES ════ -->
-<section class="section" id="features">
+<section class="section" id="features" data-marketing>
   <div class="container">
     <div class="section-header">
       <span class="badge">Features</span>
@@ -1035,7 +1045,7 @@
 </section>
 
 <!-- ════ HOW IT WORKS ════ -->
-<section class="section" style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)" id="how">
+<section class="section" id="how" data-marketing style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
   <div class="container">
     <div class="section-header">
       <span class="badge">Quick Start</span>
@@ -1071,7 +1081,7 @@
 </section>
 
 <!-- ── Tactics Library Section ───────────────────────────── -->
-<section id="tactics-library" style="padding: 80px 24px; background: var(--bg2);">
+<section id="tactics-library" data-marketing style="padding: 80px 24px; background: var(--bg2);">
   <div style="max-width:900px;margin:0 auto;text-align:center;">
     <div style="font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;">Tactics Library</div>
     <h2 style="font-family:'Cabinet Grotesk',system-ui,sans-serif;font-size:clamp(26px,4vw,40px);font-weight:900;margin-bottom:16px;">Ready-made plays for every sport</h2>
@@ -1249,7 +1259,7 @@
 </section>
 
 <!-- ════ CLUB FEATURES ════ -->
-<section class="section" id="club-features" style="background:linear-gradient(135deg,rgba(88,28,135,0.08) 0%,rgba(29,78,216,0.06) 100%);border-top:1px solid rgba(168,85,247,0.2);border-bottom:1px solid rgba(168,85,247,0.2);">
+<section class="section" id="club-features" data-marketing style="background:linear-gradient(135deg,rgba(88,28,135,0.08) 0%,rgba(29,78,216,0.06) 100%);border-top:1px solid rgba(168,85,247,0.2);border-bottom:1px solid rgba(168,85,247,0.2);">
   <div class="container">
     <div class="section-header">
       <span class="badge" style="background:rgba(168,85,247,0.15);color:#a855f7;border-color:rgba(168,85,247,0.3);">Club Plan</span>
@@ -1296,7 +1306,7 @@
 </section>
 
 <!-- ════ PRICING ════ -->
-<section class="section pricing" id="pricing">
+<section class="section pricing" id="pricing" data-marketing>
   <div class="container">
     <div class="section-header">
       <span class="badge">Pricing</span>
@@ -1375,7 +1385,7 @@
 </section>
 
 <!-- ════ TESTIMONIALS ════ -->
-<section class="section">
+<section class="section" data-marketing>
   <div class="container">
     <div class="section-header">
       <span class="badge">Coaches Love It</span>
@@ -1421,7 +1431,7 @@
 </section>
 
 <!-- ════ FAQ ════ -->
-<section class="section faq" id="faq">
+<section class="section faq" id="faq" data-marketing>
   <div class="container">
     <div class="section-header">
       <span class="badge">FAQ</span>
@@ -1515,7 +1525,7 @@
 </section>
 
 <!-- ════ FINAL CTA ════ -->
-<section class="final-cta">
+<section class="final-cta" data-marketing>
   <div class="container">
     <span class="badge" style="margin-bottom:24px">Get Started Today</span>
     <h2>The Best Tactics Board<br /><span class="gradient-text">Is the One You'll Actually Use</span></h2>
@@ -1737,11 +1747,18 @@
 
   function showAccountSection(user, plan) {
     const cfg = PLAN_CONFIG[plan] || PLAN_CONFIG.free;
+    const isPaidPlan = plan === 'pro' || plan === 'club';
 
     // Reveal section, hide skeleton, show content
     document.getElementById('acct-section').style.display = 'block';
     document.getElementById('acct-skeleton').style.display = 'none';
     document.getElementById('acct-content').style.display = 'grid';
+
+    // For Pro/Club users: hide the marketing page, show only dashboard + Start Drawing CTA
+    if (isPaidPlan) {
+      document.querySelectorAll('[data-marketing]').forEach(el => el.style.display = 'none');
+      document.getElementById('start-drawing-section').style.display = 'block';
+    }
 
     // Personalised heading
     const name = user.email ? user.email.split('@')[0] : 'Coach';
