@@ -2056,25 +2056,27 @@ function clearBoard() {
 // ══════════════════════════════════════════════
 // PLAYER TOKENS
 // ══════════════════════════════════════════════
-const DEFAULT_TOKENS = [
-  { team:'blue', label:'A1', pct:[0.20,0.15] },
-  { team:'blue', label:'A2', pct:[0.20,0.33] },
-  { team:'blue', label:'A3', pct:[0.20,0.51] },
-  { team:'blue', label:'A4', pct:[0.20,0.69] },
-  { team:'blue', label:'A5', pct:[0.20,0.85] },
-  { team:'blue', label:'A6', pct:[0.35,0.40] },
-  { team:'red',  label:'B1', pct:[0.80,0.15] },
-  { team:'red',  label:'B2', pct:[0.80,0.33] },
-  { team:'red',  label:'B3', pct:[0.80,0.51] },
-  { team:'red',  label:'B4', pct:[0.80,0.69] },
-  { team:'red',  label:'B5', pct:[0.80,0.85] },
-  { team:'red',  label:'B6', pct:[0.65,0.40] },
-];
+
+// Returns sport-specific default tokens for the given courtId.
+// Falls back to a generic 5v5 layout if the config hasn't loaded yet.
+function getDefaultTokensForCourt(courtId) {
+  if (typeof window.__getDefaultTokens === 'function') {
+    return window.__getDefaultTokens(courtId);
+  }
+  // Fallback: generic 5v5 while module loads (should never be seen in practice)
+  const fallback = [];
+  const ys = [0.20, 0.38, 0.56, 0.74, 0.88];
+  ys.forEach((y, i) => {
+    fallback.push({ team:'blue', label:`A${i+1}`, pct:[0.20, y] });
+    fallback.push({ team:'red',  label:`B${i+1}`, pct:[0.80, y] });
+  });
+  return fallback;
+}
 
 function buildTokens() {
   const layer = document.getElementById('token-layer');
   layer.innerHTML = '';
-  state.tokenPositions = DEFAULT_TOKENS.map(t => ({ ...t }));
+  state.tokenPositions = getDefaultTokensForCourt(state.courtId);
   for (let i = 0; i < state.tokenPositions.length; i++) {
     createTokenEl(i);
   }
@@ -2083,6 +2085,20 @@ function buildTokens() {
     state.currentPhase = 0;
     updatePhaseUI();
   }
+}
+
+// Reset players to sport-default positions for the current court.
+// Called on court switch. Does NOT affect saved tactics (those restore their own positions).
+function resetTokensToDefaults() {
+  const layer = document.getElementById('token-layer');
+  layer.innerHTML = '';
+  state.tokenPositions = getDefaultTokensForCourt(state.courtId);
+  for (let i = 0; i < state.tokenPositions.length; i++) createTokenEl(i);
+  repositionTokens();
+  // Reset phases to a single phase with the new default positions
+  state.phases = [{ objects: JSON.parse(JSON.stringify(state.objects)), tokens: JSON.parse(JSON.stringify(state.tokenPositions)) }];
+  state.currentPhase = 0;
+  updatePhaseUI();
 }
 
 function createTokenEl(i) {
@@ -2286,7 +2302,7 @@ function renderCourtGrid(filter) {
 
 function filterCourts(q) { renderCourtGrid(q); }
 
-function switchCourt(id, locked) {
+function switchCourt(id, locked, skipReset) {
   if (locked) {
     closeModal('modal-court-picker');
     const freeName = COURTS.find(c => c.id === state.freeCourt)?.name || 'your free court';
@@ -2299,6 +2315,8 @@ function switchCourt(id, locked) {
   }
   // Dismiss any lingering rename inputs before switching
   document.querySelectorAll('.token-rename-input').forEach(el => el.remove());
+
+  const prevCourtId = state.courtId;
   state.courtId = id;
   const court = COURTS.find(c => c.id === id);
   if (!court) return;
@@ -2308,7 +2326,19 @@ function switchCourt(id, locked) {
   setTimeout(() => {
     svg.innerHTML = court.svg();
     svg.classList.remove('switching');
-    setTimeout(syncCanvas, 80);
+    setTimeout(() => {
+      syncCanvas();
+      // Reset players to sport-specific defaults whenever the court changes,
+      // unless the caller is restoring a saved tactic (skipReset = true).
+      if (!skipReset && id !== prevCourtId) {
+        state.objects = [];
+        redrawAll();
+        resetTokensToDefaults();
+      } else if (!skipReset) {
+        // Same court re-selected: just re-position existing tokens
+        repositionTokens();
+      }
+    }, 80);
   }, 150);
   closeModal('modal-court-picker');
 }
@@ -2387,7 +2417,8 @@ function loadTactic(i) {
   state.phases = t.phases ? JSON.parse(JSON.stringify(t.phases))
     : [{ objects: JSON.parse(JSON.stringify(t.objects)), tokens: JSON.parse(JSON.stringify(t.tokens)) }];
   state.currentPhase = t.currentPhase || 0;
-  switchCourt(t.courtId, false);
+  // skipReset=true: restores saved positions, does not reset to sport defaults
+  switchCourt(t.courtId, false, true);
   closeModal('modal-library');
   setTimeout(() => { syncCanvas(); renderTokensFromState(); updatePhaseUI(); }, 350);
   showToast(`"${t.name}" loaded.`);
@@ -2843,7 +2874,8 @@ function loadClubTactic(t) {
     ? JSON.parse(JSON.stringify(t.phases))
     : [{ objects: JSON.parse(JSON.stringify(t.objects || [])), tokens: JSON.parse(JSON.stringify(t.tokens || [])) }];
   state.currentPhase = t.currentPhase || 0;
-  switchCourt(t.courtId, false);
+  // skipReset=true: restores saved positions, does not reset to sport defaults
+  switchCourt(t.courtId, false, true);
   closeModal('modal-library');
   setTimeout(() => { syncCanvas(); renderTokensFromState(); updatePhaseUI(); }, 350);
   showToast(`"${t.name}" loaded from club.`);
@@ -3460,6 +3492,12 @@ document.addEventListener('keydown', e => {
 });
 
 document.addEventListener('DOMContentLoaded', init);
+</script>
+
+<!-- Expose sport token config to the non-module main script -->
+<script type="module">
+  import { getDefaultTokens } from '/src/sports-config.js';
+  window.__getDefaultTokens = getDefaultTokens;
 </script>
 
 <!-- Presentation Mode Overlay -->
