@@ -61,8 +61,10 @@ exports.handler = async (event) => {
   const resolvedClubName = clubSnap.data().clubName || clubSnap.data().name || '';
   const update = { clubId };
   if (resolvedClubName) update.clubName = resolvedClubName; // denormalize so app can show club name
-  if (!userData.plan || userData.plan === 'free') {
-    // Grant club-member access (read/write to shared library) without full club plan billing
+  if (!userData.plan || userData.plan === 'free' || userData.plan === 'pro') {
+    // Grant club-member access (read/write to shared library) without full club plan billing.
+    // This must include 'pro' users — the backend gates (save-club-tactic, get-club-tactics)
+    // check clubMember === true, so without this a Pro joiner gets a 403 on all club endpoints.
     update.clubMember = true;
   }
 

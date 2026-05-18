@@ -2190,7 +2190,7 @@ function renameToken(idx, el) {
 // TOOL SELECTION
 // ══════════════════════════════════════════════
 function setTool(t) {
-  if ((t === 'ball') && !state.isPro) { openPaywall('Custom ball token is a Pro feature.'); return; }
+  if ((t === 'ball') && !state.isPro && !state.isClub) { openPaywall('Custom ball token is a Pro feature.'); return; }
   state.tool = t;
   document.querySelectorAll('.tb-btn[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
   canvas.style.cursor = t === 'eraser' ? 'cell' : t === 'text' ? 'text' : 'crosshair';
@@ -2357,7 +2357,7 @@ function openSaveDialog() { renderLibrary(); openModal('modal-library'); documen
 function saveTactic() {
   const name = document.getElementById('tactic-name-input').value.trim();
   if (!name) { showToast('Give this play a name first.'); return; }
-  if (!state.isPro && state.savedTactics.length >= FREE_SAVES) {
+  if (!state.isPro && !state.isClub && state.savedTactics.length >= FREE_SAVES) {
     closeModal('modal-library');
     openPaywall(`You've used all ${FREE_SAVES} free saves. Upgrade to Pro for unlimited saves.`);
     return;
@@ -2597,7 +2597,7 @@ img.court-img{max-width:100%;height:auto;display:block}
 // SHARE BOARD
 // ══════════════════════════════════════════════
 function shareBoard() {
-  if (!state.isPro) { openPaywall('Shareable board links are a Pro feature.'); return; }
+  if (!state.isPro && !state.isClub) { openPaywall('Shareable board links are a Pro feature.'); return; }
   saveCurrentPhase();
   const payload = {
     courtId: state.courtId,
@@ -2835,10 +2835,18 @@ async function shareToClub(tacticIdx) {
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...t, authorName: user.displayName || user.email || 'Coach' })
     });
-    if (!res.ok) throw new Error('server error');
+    if (!res.ok) {
+      const msg = await res.text().catch(() => '');
+      console.error('shareToClub failed', res.status, msg);
+      showToast(`Could not share (${res.status}) — try again.`);
+      return;
+    }
     loadClubLibrary();
     showToast(`"${t.name}" shared to club library!`);
-  } catch { showToast('Could not share — try again.'); }
+  } catch (err) {
+    console.error('shareToClub error', err);
+    showToast('Could not share — check your connection.');
+  }
 }
 
 async function saveClubName() {
@@ -2884,7 +2892,7 @@ function loadPhase(idx) {
 }
 
 function addPhase() {
-  if (!state.isPro) { openPaywall('Phase-by-phase animation is a Pro feature.'); return; }
+  if (!state.isPro && !state.isClub) { openPaywall('Phase-by-phase animation is a Pro feature.'); return; }
   saveCurrentPhase();
   const newPhase = {
     objects: [],

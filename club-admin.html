@@ -708,6 +708,7 @@ header {
       const res   = await fetch('/.netlify/functions/get-club-tactics', {
         headers: { 'Authorization': 'Bearer ' + token }
       });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const { tactics } = await res.json();
       document.getElementById('stat-tactics').textContent = tactics.length;
 
@@ -729,7 +730,7 @@ header {
         row.innerHTML = `
           <div class="tactic-info">
             <div class="tactic-name">${esc(t.name)}</div>
-            <div class="tactic-meta">${esc(t.courtId) || '—'} · ${esc(t.authorName) || 'Coach'} · ${date}</div>
+            <div class="tactic-meta">${esc(courtName(t.courtId))} · ${esc(t.authorName) || 'Coach'} · ${date}</div>
           </div>
           <button class="btn btn-danger btn-sm">Delete</button>`;
         row.querySelector('.btn-danger').addEventListener('click', () => deleteTactic(t._firestoreId, row));
@@ -816,6 +817,22 @@ header {
   function esc(s) {
     return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
+
+  // Lightweight court-ID → display-name map (mirrors courtdraw-app.html COURTS array)
+  const COURT_NAMES = {
+    tennis_singles:'Tennis (Singles)',tennis_doubles:'Tennis (Doubles)',
+    padel:'Padel',pickleball:'Pickleball',squash:'Squash',badminton:'Badminton',
+    table_tennis:'Table Tennis',
+    basketball:'Basketball',volleyball:'Volleyball',handball:'Handball',
+    futsal:'Futsal',netball:'Netball',
+    soccer:'Football (Soccer)',american_football:'American Football',
+    rugby:'Rugby',field_hockey:'Field Hockey',lacrosse:'Lacrosse',
+    baseball:'Baseball',softball:'Softball',cricket:'Cricket',
+    ice_hockey:'Ice Hockey',
+    beach_volleyball:'Beach Volleyball',beach_soccer:'Beach Soccer',
+    beach_tennis:'Beach Tennis',
+  };
+  function courtName(id) { return COURT_NAMES[id] || (id ? id.replace(/_/g,' ') : '—'); }
 </script>
 </body>
 </html>
