@@ -554,6 +554,8 @@ body.presentation-mode #presentation-overlay { display: flex; }
 }
 /* In landscape immersive mode, toolbar-collapsed must not conflict with slide transforms */
 @media (max-width: 900px) and (orientation: landscape) {
+  /* Toggle button has no function in landscape — hide it */
+  #toolbar-toggle-btn { display: none !important; }
   body.toolbar-collapsed #toolbar {
     transform: translateY(150px); /* keep landscape default (hidden via immersive) */
   }
@@ -1644,6 +1646,7 @@ const state = {
   phases: null,       // array of {objects, tokens}
   currentPhase: 0,
   zoom: 1, panX: 0, panY: 0,
+  pinching: false, _pinchCooldown: null,
 };
 
 const COLORS = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#ffffff','#111827','#a855f7','#f97316'];
@@ -1938,6 +1941,8 @@ canvas.addEventListener('pointercancel', () => {
 
 function onDown(e) {
   e.preventDefault();
+  // Suppress drawing during pinch-to-zoom
+  if (state.pinching) return;
   if (state.tool === 'text') { handleTextTool(e); return; }
   const { nx, ny } = getPos(e);
   state.isDrawing = true;
@@ -1950,6 +1955,8 @@ function onDown(e) {
 
 function onMove(e) {
   if (!state.isDrawing) return;
+  // Cancel drawing if a pinch started mid-stroke
+  if (state.pinching) { state.isDrawing = false; previewObj = null; redrawAll(); return; }
   e.preventDefault();
   const { nx, ny } = getPos(e);
   state.points.push([nx, ny]);
@@ -3743,6 +3750,13 @@ function applyZoom() {
     if (ts.length === 2) {
       e.preventDefault();
       pinching = true; panning = false;
+      state.pinching = true; // tell canvas event handlers to suppress drawing
+      // Cancel any drawing stroke that may have started on the first touch
+      if (state.isDrawing) {
+        state.isDrawing = false;
+        previewObj = null;
+        redrawAll();
+      }
       pinchStartDist = dist(ts[0], ts[1]);
       pinchStartZoom = state.zoom;
       const m = mid(ts[0], ts[1]);
@@ -3795,7 +3809,13 @@ function applyZoom() {
   }, { passive: false });
 
   container.addEventListener('touchend', (e) => {
-    if (e.touches.length < 2) pinching = false;
+    if (e.touches.length < 2) {
+      pinching = false;
+      // Brief cooldown: keep state.pinching true for 80ms so the pointer events
+      // fired by the lifting finger don't start a new drawing stroke
+      clearTimeout(state._pinchCooldown);
+      state._pinchCooldown = setTimeout(() => { state.pinching = false; }, 80);
+    }
     if (e.touches.length < 1) panning = false;
   });
 })();
