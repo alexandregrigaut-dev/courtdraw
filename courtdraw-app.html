@@ -2206,6 +2206,7 @@ function clearBoard() {
   // Reset all phases to empty, stay on phase 0
   state.phases = [{ objects: [], tokens: JSON.parse(JSON.stringify(state.tokenPositions)) }];
   state.currentPhase = 0;
+  clearAuthorCredit();
   updatePhaseUI();
   redrawAll();
 }
