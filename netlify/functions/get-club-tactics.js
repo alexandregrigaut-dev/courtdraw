@@ -56,6 +56,7 @@ exports.handler = async (event) => {
         authorUid:    data.authorUid    || '',
         authorName:   data.authorName   || '',
         authorEmail:  data.authorEmail  || '',
+        viewCount:    data.viewCount    || 0,
         sharedAt,
         objects:      safeJsonParse(data.objectsJson, []),
         tokens:       safeJsonParse(data.tokensJson,  []),

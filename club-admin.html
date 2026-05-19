@@ -742,9 +742,13 @@ header {
           : '—';
         const row = document.createElement('div');
         row.className = 'tactic-row';
+        const views = t.viewCount || 0;
+        const viewBadge = views > 0
+          ? `<span style="font-size:11px;color:var(--muted);white-space:nowrap;">👁 ${views}</span>`
+          : '';
         row.innerHTML = `
           <div class="tactic-info">
-            <div class="tactic-name">${esc(t.name)}</div>
+            <div class="tactic-name" style="display:flex;align-items:center;gap:6px;">${esc(t.name)} ${viewBadge}</div>
             <div class="tactic-meta">${esc(courtName(t.courtId))} · ${esc(t.authorName) || 'Coach'} · ${date}</div>
           </div>
           <button class="btn btn-danger btn-sm">Delete</button>`;

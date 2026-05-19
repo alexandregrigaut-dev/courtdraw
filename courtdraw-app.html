@@ -371,6 +371,28 @@ button {
   min-height: 32px; cursor: pointer; transition: all 0.15s;
 }
 #btn-cumulative.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+#btn-loop {
+  font-size: 12px; font-weight: 600; color: var(--text2);
+  padding: 4px 8px; border-radius: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  min-height: 32px; cursor: pointer; transition: all 0.15s;
+}
+#btn-loop.active { background: rgba(34,197,94,0.12); color: #22c55e; border-color: #22c55e; }
+/* Attribution chip — shows author of currently loaded club tactic */
+#author-credit {
+  display: none; align-items: center; gap: 4px;
+  background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.28);
+  border-radius: 20px; padding: 3px 6px 3px 10px;
+  font-size: 11px; font-weight: 600; color: var(--purple);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;
+  flex-shrink: 0;
+}
+#author-credit.visible { display: flex; }
+#author-credit-dismiss {
+  background: none; border: none; color: var(--purple); opacity: 0.7;
+  font-size: 14px; line-height: 1; cursor: pointer; padding: 0; flex-shrink: 0;
+}
+#author-credit-dismiss:hover { opacity: 1; }
 #drawing-canvas, #token-layer { transition: opacity 0.25s ease; }
 /* ── Presentation mode ── */
 body.presentation-mode #app-header,
@@ -445,10 +467,12 @@ body.presentation-mode #presentation-overlay { display: flex; }
 @media (max-width: 480px) {
   .app-title { display: none; }
   #court-name-chip { max-width: 110px; }
-  /* On very small screens the cumulative toggle doesn't fit in the phase bar */
-  #btn-cumulative { display: none !important; }
+  /* On very small screens the cumulative/loop toggles don't fit in the phase bar */
+  #btn-cumulative, #btn-loop { display: none !important; }
   /* Compact speed selector */
   #anim-speed-select { font-size: 11px; padding: 2px 4px; }
+  /* Hide attribution chip on very small screens */
+  #author-credit { display: none !important; }
 }
 /* ── Landscape mobile: full-screen court with floating overlays ─────────── */
 /* In landscape the header + toolbar eat most of the available height, leaving
@@ -683,6 +707,10 @@ body.presentation-mode #presentation-overlay { display: flex; }
     <img id="club-header-logo" src="" alt="" style="display:none;height:28px;max-width:110px;object-fit:contain;border-radius:4px;">
   </div>
   <button id="court-name-chip" onclick="openCourtPicker()">Tennis (Singles)</button>
+  <span id="author-credit" role="status" aria-live="polite">
+    by <span id="author-credit-name"></span>
+    <button id="author-credit-dismiss" aria-label="Dismiss" onclick="clearAuthorCredit()">×</button>
+  </span>
   <div class="header-right">
     <button class="hdr-btn" id="btn-undo" title="Undo" aria-label="Undo" onclick="undo()">↩</button>
     <button class="hdr-btn" id="btn-redo" title="Redo" aria-label="Redo" onclick="redo()">↪</button>
@@ -742,6 +770,7 @@ body.presentation-mode #presentation-overlay { display: flex; }
     <option value="5000">5s</option>
   </select>
   <button id="btn-cumulative" title="Toggle cumulative phase display" aria-label="Toggle cumulative phase display" onclick="toggleCumulative()" style="display:none;">👁 All</button>
+  <button id="btn-loop" title="Loop animation" aria-label="Loop animation" onclick="toggleLoop()" style="display:none;">↺ Loop</button>
   <button id="btn-add-phase" title="Add new phase" aria-label="Add new phase" onclick="addPhase()">+ Phase</button>
 </div>
 
@@ -1669,6 +1698,7 @@ const state = {
   phases: null,       // array of {objects, tokens}
   currentPhase: 0,
   cumulativePhases: false,  // show prior phase drawings with decreasing opacity
+  loopAnimation:   false,  // restart from phase 1 after the last phase
   zoom: 1, panX: 0, panY: 0,
   pinching: false, _pinchCooldown: null,
 };
@@ -2584,6 +2614,7 @@ function saveTactic() {
   };
   state.savedTactics.push(tactic);
   saveToStorage();
+  clearAuthorCredit();
   document.getElementById('tactic-name-input').value = '';
   renderLibrary();
   if (state.isClub) {
@@ -2601,6 +2632,7 @@ function saveTactic() {
 }
 
 function loadTactic(i) {
+  clearAuthorCredit();
   const t = state.savedTactics[i];
   state.objects = JSON.parse(JSON.stringify(t.objects || []));
   // Fall back to sport-specific defaults if saved tactic has no tokens (old save format)
@@ -3148,11 +3180,35 @@ function loadClubTactic(t) {
     ? JSON.parse(JSON.stringify(t.phases))
     : [{ objects: JSON.parse(JSON.stringify(t.objects || [])), tokens: JSON.parse(JSON.stringify(state.tokenPositions)) }];
   state.currentPhase = t.currentPhase || 0;
-  // skipReset=true: restores saved positions, does not reset to sport defaults
   switchCourt(t.courtId, false, true);
   closeModal('modal-library');
   setTimeout(() => { syncCanvas(); renderTokensFromState(); updatePhaseUI(); }, 350);
   showToast(`"${t.name}" loaded from club.`);
+  // Show attribution chip
+  showAuthorCredit(t.authorName || 'Coach');
+  // Increment view count fire-and-forget
+  if (t._firestoreId && window.__currentUser) {
+    window.__currentUser.getIdToken().then(tok =>
+      fetch('/.netlify/functions/increment-tactic-views', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tacticId: t._firestoreId })
+      })
+    ).catch(() => {});
+  }
+}
+
+function showAuthorCredit(name) {
+  const chip = document.getElementById('author-credit');
+  const nameEl = document.getElementById('author-credit-name');
+  if (!chip || !nameEl) return;
+  nameEl.textContent = name;
+  chip.classList.add('visible');
+}
+
+function clearAuthorCredit() {
+  const chip = document.getElementById('author-credit');
+  if (chip) chip.classList.remove('visible');
 }
 
 async function deleteClubTactic(firestoreId) {
@@ -3266,16 +3322,21 @@ function updatePhaseUI() {
     d.onclick = () => loadPhase(i);
     dotsEl.appendChild(d);
   }
-  // Show speed selector + cumulative toggle only when multi-phase (Pro/Club)
+  // Show speed selector + cumulative/loop toggles only when multi-phase (Pro/Club)
   const hasMulti = total > 1 && (state.isPro || state.isClub);
   const speedSel = document.getElementById('anim-speed-select');
   const cumBtn   = document.getElementById('btn-cumulative');
+  const loopBtn  = document.getElementById('btn-loop');
   if (speedSel) speedSel.style.display = hasMulti ? '' : 'none';
   if (cumBtn) {
     cumBtn.style.display = hasMulti ? '' : 'none';
     cumBtn.classList.toggle('active', !!state.cumulativePhases);
     cumBtn.title = state.cumulativePhases ? 'Show current phase only' : 'Show all phases (cumulative)';
     cumBtn.textContent = state.cumulativePhases ? '👁 Layers' : '👁 All';
+  }
+  if (loopBtn) {
+    loopBtn.style.display = hasMulti ? '' : 'none';
+    loopBtn.classList.toggle('active', !!state.loopAnimation);
   }
   // Keep presentation overlay in sync
   const presLabel = document.getElementById('pres-phase-label');
@@ -3318,15 +3379,20 @@ function startAnimation() {
   if (state.currentPhase >= state.phases.length - 1) loadPhase(0);
 
   animInterval = setInterval(() => {
-    if (state.currentPhase < state.phases.length - 1) {
-      loadPhase(state.currentPhase + 1);
-      // Brief flash transition
-      const tokenLayer = document.getElementById('token-layer');
+    const tokenLayer = document.getElementById('token-layer');
+    const flash = () => {
       if (tokenLayer) {
         tokenLayer.style.transition = 'opacity 0.18s';
         tokenLayer.style.opacity = '0.4';
         setTimeout(() => { tokenLayer.style.opacity = '1'; tokenLayer.style.transition = ''; }, 180);
       }
+    };
+    if (state.currentPhase < state.phases.length - 1) {
+      loadPhase(state.currentPhase + 1);
+      flash();
+    } else if (state.loopAnimation) {
+      loadPhase(0);
+      flash();
     } else {
       stopAnimation();
     }
@@ -3348,6 +3414,15 @@ function toggleCumulative() {
   const btn = document.getElementById('btn-cumulative');
   if (btn) btn.classList.toggle('active', state.cumulativePhases);
   redrawAll();
+}
+
+function toggleLoop() {
+  state.loopAnimation = !state.loopAnimation;
+  const btn = document.getElementById('btn-loop');
+  if (btn) {
+    btn.classList.toggle('active', state.loopAnimation);
+    btn.title = state.loopAnimation ? 'Stop looping' : 'Loop animation';
+  }
 }
 
 // ── Presentation Mode ─────────────────────────────────────────────────────
