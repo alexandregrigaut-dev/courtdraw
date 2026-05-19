@@ -27,7 +27,14 @@ exports.handler = async (event) => {
     return { statusCode: 403, body: 'Club access required' };
   const snap = await db.collection('clubs').doc(clubId).collection('tactics')
     .orderBy('sharedAt', 'desc').limit(100).get();
-  const tactics = snap.docs.map(d => ({ ...d.data(), _clubShared: true, _firestoreId: d.id }));
+  const tactics = snap.docs.map(d => {
+    const data = d.data();
+    // Convert Firestore Timestamp → ISO string so the client can use new Date(sharedAt)
+    if (data.sharedAt && typeof data.sharedAt.toDate === 'function') {
+      data.sharedAt = data.sharedAt.toDate().toISOString();
+    }
+    return { ...data, _clubShared: true, _firestoreId: d.id };
+  });
   return { statusCode: 200, headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tactics, clubId }) };
 };

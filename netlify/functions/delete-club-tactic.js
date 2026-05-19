@@ -28,12 +28,12 @@ exports.handler = async (event) => {
   const userSnap = await db.collection('users').doc(uid).get();
   const userData = userSnap.exists ? userSnap.data() : {};
 
-  // Must be a club owner or a club member
-  const isOwner  = userData.plan === 'club' && !!userData.clubId;
-  const isMember = userData.clubMember === true && !!userData.clubId;
-  if (!isOwner && !isMember) return { statusCode: 403, body: 'Club access required' };
-
-  const clubId = userData.clubId;
+  // Resolve which club this user belongs to (mirrors save-club-tactic / get-club-tactics)
+  const clubId = userData.memberOfClubId || userData.clubId;
+  // isOwner: user owns THIS specific club (not just any club)
+  const isOwner  = userData.plan === 'club' && userData.clubId === clubId && !userData.memberOfClubId;
+  const isMember = userData.clubMember === true || isOwner;
+  if (!isMember || !clubId) return { statusCode: 403, body: 'Club access required' };
   let tacticId;
   try { ({ tacticId } = JSON.parse(event.body || '{}')); }
   catch { return { statusCode: 400, body: 'Bad JSON' }; }
