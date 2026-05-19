@@ -2588,13 +2588,17 @@ function saveTactic() {
   saveToStorage();
   document.getElementById('tactic-name-input').value = '';
   renderLibrary();
-  showToast(`"${name}" saved!`);
-  // Auto-share to club library for all club users (fire-and-forget)
   if (state.isClub) {
-    shareToClubTactic(tactic).catch(err => {
+    // For club users: show "saving…" while syncing, then confirm or report failure
+    showToast(`"${name}" saved — syncing to club…`);
+    shareToClubTactic(tactic).then(() => {
+      showToast(`"${name}" saved & shared to club library!`);
+    }).catch(err => {
       console.warn('Auto-share to club failed:', err);
-      showToast('Saved locally. Club sync failed — tap ↑ Club to retry.');
+      showToast(`Saved locally. Club sync failed (${err.message || 'network error'}) — tap ↑ Club to retry.`, 5000);
     });
+  } else {
+    showToast(`"${name}" saved!`);
   }
 }
 
@@ -3430,12 +3434,12 @@ document.querySelectorAll('.modal-backdrop').forEach(m => {
 // TOAST
 // ══════════════════════════════════════════════
 let toastTimer;
-function showToast(msg) {
+function showToast(msg, ms = 2400) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 }
 
 // ══════════════════════════════════════════════

@@ -29,9 +29,10 @@ exports.handler = async (event) => {
   const userData = userSnap.exists ? userSnap.data() : {};
 
   // Resolve which club this user belongs to (mirrors save-club-tactic / get-club-tactics)
-  const clubId = userData.memberOfClubId || userData.clubId;
-  // isOwner: user owns THIS specific club (not just any club)
-  const isOwner  = userData.plan === 'club' && userData.clubId === clubId && !userData.memberOfClubId;
+  const clubId = userData.memberOfClubId || userData.clubId ||
+                 (userData.plan === 'club' ? 'club_' + uid : null);
+  // isOwner: has club plan AND is not acting as a member of another club
+  const isOwner  = userData.plan === 'club' && !userData.memberOfClubId;
   const isMember = userData.clubMember === true || isOwner;
   if (!isMember || !clubId) return { statusCode: 403, body: 'Club access required' };
   let tacticId;

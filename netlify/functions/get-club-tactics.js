@@ -21,10 +21,14 @@ exports.handler = async (event) => {
   const userSnap = await db.collection('users').doc(uid).get();
   const userData = userSnap.exists ? userSnap.data() : {};
   const hasClubAccess = userData.plan === 'club' || userData.clubMember === true;
-  // memberOfClubId is set when a club owner joins a second club as a member
-  const clubId = userData.memberOfClubId || userData.clubId;
-  if (!hasClubAccess || !clubId)
+  // memberOfClubId is set when a club owner joins a second club as a member.
+  // Fall back to 'club_' + uid for owners whose webhook may not have written clubId.
+  const clubId = userData.memberOfClubId || userData.clubId ||
+                 (userData.plan === 'club' ? 'club_' + uid : null);
+  if (!hasClubAccess || !clubId) {
+    console.error('get-club-tactics: access denied', { uid, plan: userData.plan, clubId, hasClubAccess });
     return { statusCode: 403, body: 'Club access required' };
+  }
   const snap = await db.collection('clubs').doc(clubId).collection('tactics')
     .orderBy('sharedAt', 'desc').limit(100).get();
   const tactics = snap.docs.map(d => {
