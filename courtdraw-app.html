@@ -3103,7 +3103,7 @@ async function loadClubLibrary() {
     if (!res.ok) throw new Error('server error');
     const { tactics } = await res.json();
     if (!tactics.length) {
-      body.innerHTML = '<p style="font-size:12px;color:var(--text2);padding:8px 0;">No tactics shared yet — save one and share it to the club.</p>';
+      body.innerHTML = '<p style="font-size:12px;color:var(--text2);padding:8px 0;">No tactics yet — plays are added automatically every time you save.</p>';
       return;
     }
     body.innerHTML = '';
@@ -3117,7 +3117,7 @@ async function loadClubLibrary() {
       const safeName = t.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const courtName = court ? court.name : (t.courtId || '—');
       const authorName = (t.authorName || 'Coach').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      const sharedDate = new Date(t.sharedAt).toLocaleDateString();
+      const sharedDate = t.sharedAt ? new Date(t.sharedAt).toLocaleDateString() : '—';
       row.innerHTML = `
         <div class="tactic-info">
           <div class="tactic-name">${safeName} <span style="font-size:10px;background:rgba(59,130,246,0.15);color:var(--accent);border-radius:4px;padding:1px 5px;font-weight:700;">Club</span></div>
@@ -3132,8 +3132,9 @@ async function loadClubLibrary() {
       if (delBtn) delBtn.addEventListener('click', () => deleteClubTactic(t._firestoreId));
       body.appendChild(row);
     }
-  } catch {
-    body.innerHTML = '<p style="font-size:12px;color:var(--text2);padding:8px 0;">Could not load club tactics. Check your connection.</p>';
+  } catch (err) {
+    const msg = err && err.message ? err.message : 'Check your connection.';
+    body.innerHTML = `<p style="font-size:12px;color:var(--text2);padding:8px 0;">Could not load club tactics — ${msg}</p>`;
   }
 }
 
@@ -3186,20 +3187,6 @@ async function shareToClubTactic(t) {
     throw new Error(`${res.status}: ${msg}`);
   }
   loadClubLibrary();
-}
-
-async function shareToClub(tacticIdx) {
-  const user = window.__currentUser;
-  if (!user || !state.isClub) { showToast('Club plan required to share tactics.'); return; }
-  const t = state.savedTactics[tacticIdx];
-  if (!t) return;
-  try {
-    await shareToClubTactic(t);
-    showToast(`"${t.name}" shared to club library!`);
-  } catch (err) {
-    console.error('shareToClub error', err);
-    showToast(`Could not share — ${err.message || 'check your connection.'}`);
-  }
 }
 
 async function saveClubName() {
