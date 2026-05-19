@@ -2483,6 +2483,8 @@ function switchCourt(id, locked, skipReset) {
     openPaywall(`You're on the free plan with ${freeName} as your court. Upgrade to Pro to access all 37+ courts.`);
     return;
   }
+  // Clear attribution whenever the court changes (user is leaving the loaded tactic)
+  if (!skipReset) clearAuthorCredit();
   // Dismiss any lingering rename inputs before switching
   document.querySelectorAll('.token-rename-input').forEach(el => el.remove());
 
