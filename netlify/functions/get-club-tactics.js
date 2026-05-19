@@ -10,6 +10,10 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
+function safeJsonParse(str, fallback) {
+  try { return str ? JSON.parse(str) : fallback; } catch { return fallback; }
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') return { statusCode: 405, body: 'Method Not Allowed' };
   const authHeader = event.headers.authorization || '';
@@ -37,7 +41,16 @@ exports.handler = async (event) => {
     if (data.sharedAt && typeof data.sharedAt.toDate === 'function') {
       data.sharedAt = data.sharedAt.toDate().toISOString();
     }
-    return { ...data, _clubShared: true, _firestoreId: d.id };
+    // Parse JSON-serialised drawing fields (stored as strings to avoid Firestore
+    // nested-array rejection on point tuples like [[x,y],[x,y],...]).
+    return {
+      ...data,
+      objects:      safeJsonParse(data.objectsJson, []),
+      tokens:       safeJsonParse(data.tokensJson,  []),
+      phases:       safeJsonParse(data.phasesJson,  []),
+      _clubShared:  true,
+      _firestoreId: d.id
+    };
   });
   return { statusCode: 200, headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tactics, clubId }) };

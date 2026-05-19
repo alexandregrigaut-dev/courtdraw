@@ -45,15 +45,17 @@ exports.handler = async (event) => {
     if (!Array.isArray(body.objects) || !Array.isArray(body.tokens))
       return { statusCode: 400, body: 'Invalid tactic data' };
 
-    // Use Firestore auto-generated ID to avoid timestamp collisions and prevent
-    // a re-share from silently overwriting the previous entry.
+    // Firestore does not allow nested arrays (arrays-of-arrays) which drawing
+    // objects use for point tuples [[x,y],[x,y],...].  Serialize complex drawing
+    // data as JSON strings; only scalar metadata is stored as indexed fields.
     const docRef = db.collection('clubs').doc(clubId).collection('tactics').doc();
     await docRef.set({
       name:         body.name.trim(),
-      courtId:      body.courtId      || '',
-      objects:      body.objects      || [],
-      tokens:       body.tokens       || [],
-      phases:       body.phases       || [],
+      courtId:      body.courtId || '',
+      // JSON-serialised drawing data — avoids Firestore nested-array rejection
+      objectsJson:  JSON.stringify(body.objects      || []),
+      tokensJson:   JSON.stringify(body.tokens       || []),
+      phasesJson:   JSON.stringify(body.phases       || []),
       currentPhase: body.currentPhase || 0,
       authorUid:    uid,
       authorName:   body.authorName   || '',

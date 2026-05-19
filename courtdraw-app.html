@@ -2525,11 +2525,9 @@ function renderLibrary() {
       </div>
       <div class="tactic-actions">
         <button class="tac-btn load" data-idx="${i}">Load</button>
-        ${state.isClub ? `<button class="tac-btn club-share" data-idx="${i}" style="background:rgba(59,130,246,0.1);color:var(--accent);border:1px solid var(--accent);">↑ Club</button>` : ''}
         <button class="tac-btn del" data-idx="${i}">Del</button>
       </div>`;
     row.querySelector('.tac-btn.load').addEventListener('click', () => loadTactic(i));
-    if (state.isClub) row.querySelector('.tac-btn.club-share').addEventListener('click', () => shareToClub(i));
     row.querySelector('.tac-btn.del').addEventListener('click', () => deleteTactic(i));
     body.appendChild(row);
   }
@@ -2595,7 +2593,7 @@ function saveTactic() {
       showToast(`"${name}" saved & shared to club library!`);
     }).catch(err => {
       console.warn('Auto-share to club failed:', err);
-      showToast(`Saved locally. Club sync failed (${err.message || 'network error'}) — tap ↑ Club to retry.`, 5000);
+      showToast(`Saved locally. Club sync failed — ${err.message || 'check your connection.'}`, 5000);
     });
   } else {
     showToast(`"${name}" saved!`);
