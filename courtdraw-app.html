@@ -2499,7 +2499,7 @@ function switchCourt(id, locked, skipReset) {
 // ══════════════════════════════════════════════
 // TACTIC LIBRARY
 // ══════════════════════════════════════════════
-function openLibrary() { renderLibrary(); openModal('modal-library'); }
+function openLibrary() { renderLibrary(); if (state.isClub) loadClubLibrary(); openModal('modal-library'); }
 
 function renderLibrary() {
   const body = document.getElementById('library-body');
@@ -2537,6 +2537,7 @@ function renderLibrary() {
 
 function openSaveDialog() {
   renderLibrary();
+  if (state.isClub) loadClubLibrary();
   openModal('modal-library');
   const inp = document.getElementById('tactic-name-input');
   if (inp && !inp.value.trim()) {
@@ -2590,7 +2591,10 @@ function saveTactic() {
   showToast(`"${name}" saved!`);
   // Auto-share to club library for all club users (fire-and-forget)
   if (state.isClub) {
-    shareToClubTactic(tactic).catch(() => {});
+    shareToClubTactic(tactic).catch(err => {
+      console.warn('Auto-share to club failed:', err);
+      showToast('Saved locally. Club sync failed — tap ↑ Club to retry.');
+    });
   }
 }
 
