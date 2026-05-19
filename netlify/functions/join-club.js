@@ -57,6 +57,17 @@ exports.handler = async (event) => {
     };
   }
 
+  // Enforce 10-seat cap (skip if already a member — idempotent re-join)
+  if (userData.clubId !== clubId) {
+    const membersSnap = await db.collection('clubs').doc(clubId).collection('members').get();
+    if (membersSnap.size >= 10) {
+      return {
+        statusCode: 403,
+        body: JSON.stringify({ error: 'This club has reached its 10-coach limit. Ask your Club Admin to remove a coach before joining.' })
+      };
+    }
+  }
+
   // Link user to club (member role — keeps whatever plan they have, adds clubId)
   const resolvedClubName = clubSnap.data().clubName || clubSnap.data().name || '';
   const update = { clubId };

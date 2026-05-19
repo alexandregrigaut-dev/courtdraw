@@ -81,6 +81,15 @@ exports.handler = async (event) => {
 
   // Club-plan owners can be members of another club, but we don't overwrite their primary clubId
   const isClubOwner = userData.plan === 'club' && userData.clubId && userData.clubId !== clubId;
+
+  // Enforce 10-seat cap (owners joining as cross-club members also count toward the cap)
+  const membersSnap = await db.collection('clubs').doc(clubId).collection('members').get();
+  if (membersSnap.size >= 10) {
+    return {
+      statusCode: 403,
+      body: JSON.stringify({ error: 'This club has reached its 10-coach limit. Ask your Club Admin to remove a coach before joining.' })
+    };
+  }
   const resolvedClubName = clubData.clubName || clubData.name || '';
 
   const update = isClubOwner
