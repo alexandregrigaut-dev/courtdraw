@@ -24,10 +24,11 @@ exports.handler = async (event) => {
 
   // Grant access to club owners AND any user marked as a club member
   const hasClubAccess = userData.plan === 'club' || userData.clubMember === true;
-  if (!hasClubAccess || !userData.clubId)
+  // memberOfClubId is set when a club owner joins a second club as a member;
+  // plain clubId covers both owners and regular invited members
+  const clubId = userData.memberOfClubId || userData.clubId;
+  if (!hasClubAccess || !clubId)
     return { statusCode: 403, body: 'Club access required' };
-
-  const clubId = userData.clubId;
   let body;
   try { body = JSON.parse(event.body); } catch { return { statusCode: 400, body: 'Bad JSON' }; }
 

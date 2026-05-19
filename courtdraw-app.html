@@ -359,6 +359,18 @@ button {
 }
 #btn-play-anim.playing { background: rgba(239,68,68,0.15); color: #ef4444; border-color: #ef4444; }
 #btn-play-anim:hover { filter: brightness(1.1); }
+#anim-speed-select {
+  font-size: 12px; font-weight: 600; color: var(--text2);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 6px; height: 32px; cursor: pointer;
+}
+#btn-cumulative {
+  font-size: 12px; font-weight: 600; color: var(--text2);
+  padding: 4px 8px; border-radius: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  min-height: 32px; cursor: pointer; transition: all 0.15s;
+}
+#btn-cumulative.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
 #drawing-canvas, #token-layer { transition: opacity 0.25s ease; }
 /* ── Presentation mode ── */
 body.presentation-mode #app-header,
@@ -433,6 +445,10 @@ body.presentation-mode #presentation-overlay { display: flex; }
 @media (max-width: 480px) {
   .app-title { display: none; }
   #court-name-chip { max-width: 110px; }
+  /* On very small screens the cumulative toggle doesn't fit in the phase bar */
+  #btn-cumulative { display: none !important; }
+  /* Compact speed selector */
+  #anim-speed-select { font-size: 11px; padding: 2px 4px; }
 }
 /* ── Landscape mobile: full-screen court with floating overlays ─────────── */
 /* In landscape the header + toolbar eat most of the available height, leaving
@@ -719,6 +735,13 @@ body.presentation-mode #presentation-overlay { display: flex; }
   <span id="phase-label" aria-live="polite">Phase 1 / 1</span>
   <button class="phase-nav" id="btn-phase-next" title="Next phase" aria-label="Next phase" onclick="nextPhase()" disabled>▶</button>
   <button id="btn-play-anim" title="Play animation" aria-label="Play animation" onclick="toggleAnimation()">▶</button>
+  <select id="anim-speed-select" title="Auto-play speed" aria-label="Auto-play speed" onchange="setAnimSpeed(this.value)" style="display:none;">
+    <option value="1000">1s</option>
+    <option value="2000" selected>2s</option>
+    <option value="3000">3s</option>
+    <option value="5000">5s</option>
+  </select>
+  <button id="btn-cumulative" title="Toggle cumulative phase display" aria-label="Toggle cumulative phase display" onclick="toggleCumulative()" style="display:none;">👁 All</button>
   <button id="btn-add-phase" title="Add new phase" aria-label="Add new phase" onclick="addPhase()">+ Phase</button>
 </div>
 
@@ -1645,6 +1668,7 @@ const state = {
   tokenPositions: [],
   phases: null,       // array of {objects, tokens}
   currentPhase: 0,
+  cumulativePhases: false,  // show prior phase drawings with decreasing opacity
   zoom: 1, panX: 0, panY: 0,
   pinching: false, _pinchCooldown: null,
 };
@@ -1755,6 +1779,8 @@ function syncCanvas() {
 
 const resizeObs = new ResizeObserver(() => { setTimeout(syncCanvas, 50); });
 resizeObs.observe(container);
+// Also sync on orientation change — iOS doesn't always fire resize
+window.addEventListener('orientationchange', () => { setTimeout(syncCanvas, 120); });
 
 function n2c(nx, ny) {
   return { x: nx / 1000 * canvasW, y: ny / 600 * canvasH };
@@ -1924,6 +1950,21 @@ function drawArrowhead(ctx, x1, y1, x2, y2, color, lw) {
 
 function redrawAll() {
   ctx.clearRect(0, 0, canvasW, canvasH);
+
+  // Cumulative phase display: render prior phases at decreasing opacity (drawings only, not tokens)
+  if (state.cumulativePhases && state.phases && state.currentPhase > 0) {
+    const opacities = [0.50, 0.32, 0.20]; // phase-1, phase-2, phase-3 opacity
+    const start = Math.max(0, state.currentPhase - opacities.length);
+    for (let i = start; i < state.currentPhase; i++) {
+      const alpha = opacities[state.currentPhase - 1 - i] ?? 0.15;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      const ph = state.phases[i];
+      if (ph && ph.objects) for (const obj of ph.objects) drawObject(ctx, obj);
+      ctx.restore();
+    }
+  }
+
   for (const obj of state.objects) drawObject(ctx, obj);
   if (previewObj) drawObject(ctx, previewObj);
 }
@@ -2547,6 +2588,10 @@ function saveTactic() {
   document.getElementById('tactic-name-input').value = '';
   renderLibrary();
   showToast(`"${name}" saved!`);
+  // Auto-share to club library for all club users (fire-and-forget)
+  if (state.isClub) {
+    shareToClubTactic(tactic).catch(() => {});
+  }
 }
 
 function loadTactic(i) {
@@ -2649,52 +2694,77 @@ async function openBillingPortal() {
 // EXPORT PNG
 // ══════════════════════════════════════════════
 function exportPNG() {
+  const W = 1200, H = 720;
   const off = document.createElement('canvas');
-  off.width = 1200; off.height = 720;
+  off.width = W; off.height = H;
   const oc = off.getContext('2d');
   const court = COURTS.find(c => c.id === state.courtId) || COURTS[0];
-  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" width="1200" height="720">${court.svg()}</svg>`;
+  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" width="${W}" height="${H}">${court.svg()}</svg>`;
   const blob = new Blob([svgStr], {type:'image/svg+xml'});
   const url = URL.createObjectURL(blob);
   const img = new Image();
   img.onerror = () => { URL.revokeObjectURL(url); showToast('Export failed — could not render court.'); };
   img.onload = () => {
-    oc.drawImage(img, 0, 0, 1200, 720);
+    oc.drawImage(img, 0, 0, W, H);
     URL.revokeObjectURL(url);
     const savedW = canvasW, savedH = canvasH;
-    canvasW = 1200; canvasH = 720;
-    const savedObjs = state.objects;
-    for (const obj of savedObjs) drawObject(oc, obj);
+    canvasW = W; canvasH = H;
+    for (const obj of state.objects) drawObject(oc, obj);
     for (const t of state.tokenPositions) {
-      const x = t.pct[0] * 1200, y = t.pct[1] * 720;
-      oc.beginPath();
-      oc.arc(x, y, 24, 0, Math.PI*2);
+      const x = t.pct[0] * W, y = t.pct[1] * H;
+      oc.beginPath(); oc.arc(x, y, 24, 0, Math.PI*2);
       oc.fillStyle = t.team === 'red' ? (state.teamColorB || '#dc2626') : (state.teamColorA || '#60a5fa');
-      oc.fill();
-      oc.strokeStyle = 'rgba(255,255,255,0.8)';
-      oc.lineWidth = 3;
-      oc.stroke();
-      oc.fillStyle = 'white';
-      oc.font = 'bold 18px system-ui';
-      oc.textAlign = 'center';
-      oc.textBaseline = 'middle';
+      oc.fill(); oc.strokeStyle = 'rgba(255,255,255,0.8)'; oc.lineWidth = 3; oc.stroke();
+      oc.fillStyle = 'white'; oc.font = 'bold 18px system-ui';
+      oc.textAlign = 'center'; oc.textBaseline = 'middle';
       oc.fillText(t.label, x, y);
     }
-    // Watermark priority: 1) Club branding, 2) No mark for Pro/Club, 3) courtdraw.app for free
-    const watermark = (state.isClub && state.clubName)
-      ? state.clubName
-      : (state.isPro || state.isClub) ? null : 'courtdraw.app';
-    if (watermark) {
+    canvasW = savedW; canvasH = savedH;
+
+    // ── Branding / watermark ────────────────────────────────────────────────
+    const FOOT_H = 48, FOOT_PAD = 16;
+    const finalizePng = () => {
+      const a = document.createElement('a');
+      a.download = `courtdraw-${state.courtId}.png`;
+      a.href = off.toDataURL('image/png');
+      a.click();
+      showToast('Play exported!');
+    };
+
+    if (state.isClub && (state.clubLogoUrl || state.clubName)) {
+      // Club branding: footer bar matching PDF style
+      oc.save();
+      oc.fillStyle = 'rgba(0,0,0,0.55)';
+      oc.fillRect(0, H - FOOT_H, W, FOOT_H);
+      if (state.clubName) {
+        oc.font = `bold ${Math.round(FOOT_H * 0.38)}px system-ui`;
+        oc.fillStyle = '#ffffff'; oc.globalAlpha = 0.95;
+        oc.textAlign = 'right'; oc.textBaseline = 'middle';
+        oc.fillText(state.clubName, W - FOOT_PAD, H - FOOT_H / 2);
+      }
+      oc.restore();
+      if (state.clubLogoUrl) {
+        const logoImg = new Image();
+        logoImg.onload = () => {
+          const logoH = FOOT_H - 14;
+          const logoW = Math.min(logoImg.naturalWidth * (logoH / logoImg.naturalHeight), 240);
+          oc.drawImage(logoImg, FOOT_PAD, H - FOOT_H + 7, logoW, logoH);
+          finalizePng();
+        };
+        logoImg.onerror = finalizePng;
+        logoImg.src = state.clubLogoUrl;
+      } else {
+        finalizePng();
+      }
+    } else if (!state.isPro && !state.isClub) {
+      // Free watermark
       oc.save(); oc.globalAlpha = 0.35; oc.fillStyle = '#ffffff';
       oc.font = 'bold 20px system-ui'; oc.textAlign = 'right'; oc.textBaseline = 'bottom';
-      oc.fillText(watermark, 1190, 710); oc.restore();
+      oc.fillText('courtdraw.app', W - 10, H - 10); oc.restore();
+      finalizePng();
+    } else {
+      finalizePng(); // Pro — no watermark
     }
-    canvasW = savedW; canvasH = savedH;
-    const a = document.createElement('a');
-    a.download = `courtdraw-${state.courtId}.png`;
-    a.href = off.toDataURL('image/png');
-    a.click();
-    showToast('Play exported!');
   };
   img.src = url;
 }
@@ -3095,29 +3165,34 @@ async function deleteClubTactic(firestoreId) {
   } catch { showToast('Could not delete — try again.'); }
 }
 
+// Core helper — accepts a tactic object; used by both auto-save and manual share
+async function shareToClubTactic(t) {
+  const user = window.__currentUser;
+  if (!user || !state.isClub) throw new Error('No club access');
+  const token = await user.getIdToken();
+  const res = await fetch('/.netlify/functions/save-club-tactic', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...t, authorName: user.displayName || user.email || 'Coach' })
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => '');
+    throw new Error(`${res.status}: ${msg}`);
+  }
+  loadClubLibrary();
+}
+
 async function shareToClub(tacticIdx) {
   const user = window.__currentUser;
   if (!user || !state.isClub) { showToast('Club plan required to share tactics.'); return; }
   const t = state.savedTactics[tacticIdx];
   if (!t) return;
   try {
-    const token = await user.getIdToken();
-    const res = await fetch('/.netlify/functions/save-club-tactic', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...t, authorName: user.displayName || user.email || 'Coach' })
-    });
-    if (!res.ok) {
-      const msg = await res.text().catch(() => '');
-      console.error('shareToClub failed', res.status, msg);
-      showToast(`Could not share (${res.status}) — try again.`);
-      return;
-    }
-    loadClubLibrary();
+    await shareToClubTactic(t);
     showToast(`"${t.name}" shared to club library!`);
   } catch (err) {
     console.error('shareToClub error', err);
-    showToast('Could not share — check your connection.');
+    showToast(`Could not share — ${err.message || 'check your connection.'}`);
   }
 }
 
@@ -3176,7 +3251,7 @@ function addPhase() {
 }
 
 function prevPhase() { stopAnimation(); if (state.currentPhase > 0) loadPhase(state.currentPhase - 1); }
-function nextPhase() { stopAnimation(); if (state.currentPhase < state.phases.length - 1) loadPhase(state.currentPhase + 1); }
+function nextPhase() { stopAnimation(); if (state.phases && state.currentPhase < state.phases.length - 1) loadPhase(state.currentPhase + 1); }
 
 function updatePhaseUI() {
   if (!state.phases) return;
@@ -3198,6 +3273,17 @@ function updatePhaseUI() {
     d.onclick = () => loadPhase(i);
     dotsEl.appendChild(d);
   }
+  // Show speed selector + cumulative toggle only when multi-phase (Pro/Club)
+  const hasMulti = total > 1 && (state.isPro || state.isClub);
+  const speedSel = document.getElementById('anim-speed-select');
+  const cumBtn   = document.getElementById('btn-cumulative');
+  if (speedSel) speedSel.style.display = hasMulti ? '' : 'none';
+  if (cumBtn) {
+    cumBtn.style.display = hasMulti ? '' : 'none';
+    cumBtn.classList.toggle('active', !!state.cumulativePhases);
+    cumBtn.title = state.cumulativePhases ? 'Show current phase only' : 'Show all phases (cumulative)';
+    cumBtn.textContent = state.cumulativePhases ? '👁 Layers' : '👁 All';
+  }
   // Keep presentation overlay in sync
   const presLabel = document.getElementById('pres-phase-label');
   if (presLabel) presLabel.textContent = `Phase ${cur + 1} / ${total}`;
@@ -3209,14 +3295,20 @@ function updatePhaseUI() {
 // ANIMATED PLAYBACK
 // ══════════════════════════════════════════════
 let animInterval = null;
-const ANIM_SPEED_MS = 1600; // ms per phase
+let animSpeedMs  = 2000; // ms per phase — configurable via speed selector
+
+function setAnimSpeed(val) {
+  animSpeedMs = parseInt(val, 10) || 2000;
+  // If animation is running, restart with new speed
+  if (animInterval) { stopAnimation(); startAnimation(); }
+}
 
 function toggleAnimation() {
   if (!state.isPro && !state.isClub) {
     openPaywall('Animated playback is a Pro feature. Watch your tactical sequence come to life automatically.');
     return;
   }
-  if (state.phases.length < 2) {
+  if (!state.phases || state.phases.length < 2) {
     showToast('Add at least 2 phases to animate (tap + Phase).');
     return;
   }
@@ -3226,23 +3318,26 @@ function toggleAnimation() {
 function startAnimation() {
   const btn = document.getElementById('btn-play-anim');
   if (btn) { btn.textContent = '⏹'; btn.classList.add('playing'); }
-  loadPhase(0);
+  const speedSel = document.getElementById('anim-speed-select');
+  if (speedSel) speedSel.style.display = '';
+
+  // Always start from beginning for auto-play
+  if (state.currentPhase >= state.phases.length - 1) loadPhase(0);
+
   animInterval = setInterval(() => {
-    const canvas = document.getElementById('drawing-canvas');
-    const tokenLayer = document.getElementById('token-layer');
-    canvas.style.opacity = '0.15';
-    tokenLayer.style.opacity = '0.15';
-    setTimeout(() => {
-      if (state.currentPhase < state.phases.length - 1) {
-        loadPhase(state.currentPhase + 1);
-      } else {
-        stopAnimation();
-        return;
+    if (state.currentPhase < state.phases.length - 1) {
+      loadPhase(state.currentPhase + 1);
+      // Brief flash transition
+      const tokenLayer = document.getElementById('token-layer');
+      if (tokenLayer) {
+        tokenLayer.style.transition = 'opacity 0.18s';
+        tokenLayer.style.opacity = '0.4';
+        setTimeout(() => { tokenLayer.style.opacity = '1'; tokenLayer.style.transition = ''; }, 180);
       }
-      canvas.style.opacity = '1';
-      tokenLayer.style.opacity = '1';
-    }, 220);
-  }, ANIM_SPEED_MS);
+    } else {
+      stopAnimation();
+    }
+  }, animSpeedMs);
 }
 
 function stopAnimation() {
@@ -3252,7 +3347,14 @@ function stopAnimation() {
   const canvas = document.getElementById('drawing-canvas');
   const tokenLayer = document.getElementById('token-layer');
   if (canvas) canvas.style.opacity = '1';
-  if (tokenLayer) tokenLayer.style.opacity = '1';
+  if (tokenLayer) { tokenLayer.style.opacity = '1'; tokenLayer.style.transition = ''; }
+}
+
+function toggleCumulative() {
+  state.cumulativePhases = !state.cumulativePhases;
+  const btn = document.getElementById('btn-cumulative');
+  if (btn) btn.classList.toggle('active', state.cumulativePhases);
+  redrawAll();
 }
 
 // ── Presentation Mode ─────────────────────────────────────────────────────
@@ -3263,27 +3365,36 @@ function enterPresentation() {
   // Set logo + club name
   const logo = document.getElementById('pres-logo');
   const nameEl = document.getElementById('pres-club-name');
+  const tacticNameEl = document.getElementById('pres-tactic-name');
   if (logo) {
     if (state.clubLogoUrl) { logo.src = state.clubLogoUrl; logo.style.display = 'block'; }
     else logo.style.display = 'none';
   }
   if (nameEl) nameEl.textContent = state.clubName || 'CourtDraw';
-
-  // Try fullscreen
-  if (document.documentElement.requestFullscreen) {
-    document.documentElement.requestFullscreen().catch(() => {});
+  if (tacticNameEl) {
+    const saved = state.savedTactics.find(t => t.courtId === state.courtId);
+    tacticNameEl.textContent = saved ? saved.name : '';
   }
-  syncCanvas();
+
+  // Request fullscreen; syncCanvas runs on fullscreenchange below
+  const el = document.documentElement;
+  if (el.requestFullscreen) el.requestFullscreen().catch(() => { syncCanvas(); });
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  else syncCanvas(); // no fullscreen API — resize sync immediately
 }
 
 function exitPresentation() {
   stopAnimation();
   document.body.classList.remove('presentation-mode');
-  if (document.fullscreenElement && document.exitFullscreen) {
-    document.exitFullscreen().catch(() => {});
+  if (document.fullscreenElement) {
+    (document.exitFullscreen || document.webkitExitFullscreen || (() => {})).call(document).catch(() => {});
   }
-  setTimeout(syncCanvas, 100);
+  setTimeout(syncCanvas, 80);
 }
+
+// Re-sync canvas whenever fullscreen state changes (enter OR exit)
+document.addEventListener('fullscreenchange', () => { setTimeout(syncCanvas, 60); });
+document.addEventListener('webkitfullscreenchange', () => { setTimeout(syncCanvas, 60); });
 
 // ══════════════════════════════════════════════
 // THEME
@@ -3735,14 +3846,17 @@ function applyZoom() {
   if (btn) btn.style.display = z > 1.01 ? 'flex' : 'none';
 }
 
-// ── Pinch-to-zoom & pan ──────────────────────────────────────────────────────
+// ── Pinch-to-zoom ────────────────────────────────────────────────────────────
+// Single finger ALWAYS draws (pointer events on canvas handle it at any zoom).
+// Two fingers = pinch-to-zoom; the midpoint shift also pans the viewport.
+// There is no single-finger pan mode — this keeps drawing reliable at all
+// zoom levels and matches the behaviour of Procreate / Adobe Fresco.
 (function() {
   const MIN_ZOOM = 1, MAX_ZOOM = 4;
-  let touches = {}, pinching = false, panning = false;
+  let pinching = false;
   let pinchStartDist = 0, pinchStartZoom = 1;
   let pinchMidX = 0, pinchMidY = 0;
-  let panStartX = 0, panStartY = 0, panStartPanX = 0, panStartPanY = 0;
-  // Double-tap detection
+  // Double-tap detection (2 rapid single-finger taps → reset zoom)
   let lastTapTime = 0;
 
   function dist(t1, t2) {
@@ -3751,17 +3865,14 @@ function applyZoom() {
   function mid(t1, t2) {
     return { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
   }
-  function getTouches(e) {
-    return Array.from(e.touches);
-  }
 
   container.addEventListener('touchstart', (e) => {
-    const ts = getTouches(e);
+    const ts = Array.from(e.touches);
     if (ts.length === 2) {
+      // Two-finger pinch starts — cancel any drawing stroke in progress
       e.preventDefault();
-      pinching = true; panning = false;
-      state.pinching = true; // tell canvas event handlers to suppress drawing
-      // Cancel any drawing stroke that may have started on the first touch
+      pinching = true;
+      state.pinching = true;
       if (state.isDrawing) {
         state.isDrawing = false;
         previewObj = null;
@@ -3770,12 +3881,12 @@ function applyZoom() {
       pinchStartDist = dist(ts[0], ts[1]);
       pinchStartZoom = state.zoom;
       const m = mid(ts[0], ts[1]);
-      // Midpoint in container space (accounting for current transform)
       const rect = container.getBoundingClientRect();
+      // Midpoint in un-transformed container coords
       pinchMidX = (m.x - rect.left) / state.zoom;
       pinchMidY = (m.y - rect.top)  / state.zoom;
     } else if (ts.length === 1) {
-      // Double-tap to reset
+      // Double-tap to reset zoom
       const now = Date.now();
       if (now - lastTapTime < 300) {
         e.preventDefault();
@@ -3785,48 +3896,36 @@ function applyZoom() {
         return;
       }
       lastTapTime = now;
-      // Pan mode only when zoomed in
-      if (state.zoom > 1.01) {
-        panning = true; pinching = false;
-        panStartX = ts[0].clientX; panStartY = ts[0].clientY;
-        panStartPanX = state.panX; panStartPanY = state.panY;
-      }
+      // Single finger — drawing is handled entirely by pointer events on the
+      // canvas; no panning logic needed here so pointer events flow through.
     }
   }, { passive: false });
 
   container.addEventListener('touchmove', (e) => {
-    const ts = getTouches(e);
+    const ts = Array.from(e.touches);
     if (pinching && ts.length === 2) {
       e.preventDefault();
       const d = dist(ts[0], ts[1]);
-      let newZoom = pinchStartZoom * (d / pinchStartDist);
-      newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
-      // Keep the pinch midpoint stationary in screen space
-      const boardArea = container.parentElement;
-      const boardRect = boardArea.getBoundingClientRect();
+      let newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, pinchStartZoom * (d / pinchStartDist)));
+      // Anchor the pinch midpoint in screen space to also pan during zoom
+      const boardRect = container.parentElement.getBoundingClientRect();
       const m = mid(ts[0], ts[1]);
       const mRelBoard = { x: m.x - boardRect.left, y: m.y - boardRect.top };
       state.panX = mRelBoard.x - pinchMidX * newZoom;
       state.panY = mRelBoard.y - pinchMidY * newZoom;
       state.zoom = newZoom;
       applyZoom();
-    } else if (panning && ts.length === 1 && state.zoom > 1.01) {
-      e.preventDefault();
-      state.panX = panStartPanX + (ts[0].clientX - panStartX);
-      state.panY = panStartPanY + (ts[0].clientY - panStartY);
-      applyZoom();
     }
+    // Single-finger move: do NOT preventDefault here — let pointer events reach canvas
   }, { passive: false });
 
   container.addEventListener('touchend', (e) => {
     if (e.touches.length < 2) {
       pinching = false;
-      // Brief cooldown: keep state.pinching true for 80ms so the pointer events
-      // fired by the lifting finger don't start a new drawing stroke
+      // 80 ms cooldown so the lift-off pointer event doesn't start a new stroke
       clearTimeout(state._pinchCooldown);
       state._pinchCooldown = setTimeout(() => { state.pinching = false; }, 80);
     }
-    if (e.touches.length < 1) panning = false;
   });
 })();
 
@@ -3954,25 +4053,28 @@ document.addEventListener('DOMContentLoaded', init);
     window.location.href = '/login.html';
   };
 
+  // Request counter: any Firestore response from a superseded auth state is ignored.
+  // This prevents a stale "Club" Firestore response from overwriting a clean logout.
+  let _authGen = 0;
+
   onAuthStateChanged(auth, async user => {
+    const myGen = ++_authGen;
     window.__currentUser = user;
-    // Always update the account button to reflect auth state
+    // Immediately reflect sign-in / sign-out in the account button
     if (typeof updateAccountUI === 'function') {
       updateAccountUI(user, false, false, false);
     }
     if (!user) {
-      // Downgrade to free tier immediately — clear localStorage flags so a page
-      // reload after sign-out doesn't restore a stale Pro/Club session.
+      // Signed out — clear stale plan data immediately
       localStorage.removeItem('courtdraw_pro');
       localStorage.removeItem('courtdraw_club_name');
-      if (typeof state !== 'undefined') state.savedTactics = [];
-      // Reset all plan state and UI to free
       if (typeof window.__updatePro === 'function')
         window.__updatePro(false, false, null, '', false, null, null, null);
       return;
     }
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
+      if (myGen !== _authGen) return; // auth state changed while we were fetching
       const data = snap.exists() ? snap.data() : {};
       const plan = data.plan || 'free';
       const isPro = plan === 'pro' || plan === 'club';
@@ -3993,6 +4095,7 @@ document.addEventListener('DOMContentLoaded', init);
           }
         } catch {}
       }
+      if (myGen !== _authGen) return; // guard again after inner club fetch
       if (typeof window.__updatePro === 'function')
         window.__updatePro(isPro, isClub, data.clubId || null, data.clubName || data.clubId || '', isClubOwner, clubLogoUrl, teamColorA, teamColorB);
     } catch {

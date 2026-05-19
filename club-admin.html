@@ -379,7 +379,7 @@ header {
     <div class="section">
       <div class="section-head">
         Shared tactic library
-        <button class="btn btn-ghost btn-sm" onclick="loadTactics()">↻ Refresh</button>
+        <span id="live-badge" style="display:none;font-size:11px;font-weight:700;background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.35);border-radius:100px;padding:2px 9px;letter-spacing:.04em;">● LIVE</span>
       </div>
       <div id="tactics-list" style="display:flex;flex-direction:column;gap:10px;">
         <div class="empty"><div class="skel" style="height:40px;border-radius:var(--radius)"></div></div>
@@ -399,11 +399,14 @@ header {
 }
 </script>
 <script type="module">
-  import { auth } from '/src/firebase.js';
+  import { auth, db } from '/src/firebase.js';
   import { onAuthStateChanged } from 'firebase/auth';
+  import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 
-  let currentUser = null;
-  let userClubId  = null;
+  let currentUser   = null;
+  let userClubId    = null;
+  let _unsubTactics = null;   // onSnapshot unsubscribe handle
+  let _rosterTimer  = null;   // periodic roster refresh
 
   // ── Auth state ────────────────────────────────────────────────────────────
   onAuthStateChanged(auth, async user => {
@@ -456,9 +459,12 @@ header {
       if (club.teamColorA) document.getElementById('color-team-a').value = club.teamColorA;
       if (club.teamColorB) document.getElementById('color-team-b').value = club.teamColorB;
 
-      // Parallel data loads
+      // Initial data loads + real-time subscriptions
       loadRoster();
-      loadTactics();
+      startRealtimeTactics(userClubId);
+      // Refresh roster every 60 s (members need server-side join of collections)
+      clearInterval(_rosterTimer);
+      _rosterTimer = setInterval(loadRoster, 60_000);
     } catch (e) {
       console.error('Club admin load error:', e);
       showAuthGate('Error loading club data. Please refresh and try again.');
@@ -699,47 +705,57 @@ header {
     }
   };
 
-  // ── Shared tactic library ─────────────────────────────────────────────────
-  window.loadTactics = async () => {
-    if (!currentUser) return;
-    const el = document.getElementById('tactics-list');
-    try {
-      const token = await currentUser.getIdToken();
-      const res   = await fetch('/.netlify/functions/get-club-tactics', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const { tactics } = await res.json();
-      document.getElementById('stat-tactics').textContent = tactics.length;
+  // ── Shared tactic library — real-time via onSnapshot ─────────────────────
+  function startRealtimeTactics(clubId) {
+    // Tear down any previous subscription first
+    if (_unsubTactics) { _unsubTactics(); _unsubTactics = null; }
+    document.getElementById('live-badge').style.display = 'none';
 
-      if (!tactics.length) {
+    const el  = document.getElementById('tactics-list');
+    const q   = query(
+      collection(db, 'clubs', clubId, 'tactics'),
+      orderBy('sharedAt', 'desc'),
+      limit(100)
+    );
+
+    _unsubTactics = onSnapshot(q, snapshot => {
+      document.getElementById('live-badge').style.display = '';
+      document.getElementById('stat-tactics').textContent = snapshot.size;
+
+      if (snapshot.empty) {
         el.innerHTML = `
           <div class="empty">
             <div class="empty-icon">📚</div>
             <strong>No shared tactics yet</strong>
-            <p style="margin-top:6px">Open the app, draw a play, save it, then tap <strong>↑ Club</strong> to share it here.</p>
+            <p style="margin-top:6px">Save a play in the app — it will appear here automatically.</p>
           </div>`;
         return;
       }
 
       el.innerHTML = '';
-      for (const t of tactics) {
-        const row = document.createElement('div');
+      snapshot.forEach(docSnap => {
+        const t    = docSnap.data();
+        const id   = docSnap.id;
+        // sharedAt is a Firestore Timestamp on client-side
+        const ts   = t.sharedAt?.toDate ? t.sharedAt.toDate() : (t.sharedAt ? new Date(t.sharedAt) : null);
+        const date = ts ? ts.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+        const row  = document.createElement('div');
         row.className = 'tactic-row';
-        const date = new Date(t.sharedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
         row.innerHTML = `
           <div class="tactic-info">
             <div class="tactic-name">${esc(t.name)}</div>
             <div class="tactic-meta">${esc(courtName(t.courtId))} · ${esc(t.authorName) || 'Coach'} · ${date}</div>
           </div>
           <button class="btn btn-danger btn-sm">Delete</button>`;
-        row.querySelector('.btn-danger').addEventListener('click', () => deleteTactic(t._firestoreId, row));
+        row.querySelector('.btn-danger').addEventListener('click', () => deleteTactic(id, row));
         el.appendChild(row);
-      }
-    } catch {
+      });
+    }, err => {
+      console.error('Tactics snapshot error:', err);
       el.innerHTML = `<div class="empty">Could not load tactics — check your connection.</div>`;
-    }
-  };
+      document.getElementById('live-badge').style.display = 'none';
+    });
+  }
 
   async function deleteTactic(id, row) {
     if (!confirm('Remove this tactic from the club library? All coaches will lose access.')) return;
@@ -813,6 +829,12 @@ header {
       alert('Could not remove member: ' + (e.message || 'Please try again.'));
     }
   }
+
+  // ── Cleanup on navigation ─────────────────────────────────────────────────
+  window.addEventListener('pagehide', () => {
+    if (_unsubTactics) { _unsubTactics(); _unsubTactics = null; }
+    clearInterval(_rosterTimer);
+  });
 
   function esc(s) {
     return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
