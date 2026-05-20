@@ -880,14 +880,14 @@ body.presentation-mode #presentation-overlay { display: flex; }
   <button class="tb-btn" title="Save tactic" onclick="openSaveDialog()">
     <span class="icon">💾</span><span>Save</span>
   </button>
-  <button class="tb-btn" title="Tactic library" onclick="openLibrary()">
-    <span class="icon">📚</span><span>Library</span>
+  <button class="tb-btn" title="My saved tactics" onclick="openLibrary()">
+    <span class="icon">💼</span><span>My Plays</span>
   </button>
   <button class="tb-btn" title="Export PNG" onclick="exportPNG()">
     <span class="icon">🖼</span><span>PNG</span>
   </button>
-  <button class="tb-btn" id="btn-pro-library" title="Tactics Library" aria-label="Tactics Library" onclick="openProLibrary()">
-    <span class="icon">🗂</span><span>Plays</span>
+  <button class="tb-btn" id="btn-pro-library" title="200+ pre-built tactics library" aria-label="Tactics Library" onclick="openProLibrary()">
+    <span class="icon">🗂</span><span>200+ Plays</span>
   </button>
   <button class="tb-btn" title="Print / Export PDF" onclick="exportPDF()">
     <span class="icon">🖨</span><span>Print</span>
@@ -924,7 +924,7 @@ body.presentation-mode #presentation-overlay { display: flex; }
 <div class="modal-backdrop" id="modal-library">
   <div class="modal-sheet">
     <div class="modal-header">
-      <span class="modal-title">Tactic Library</span>
+      <span class="modal-title">My Saved Plays</span>
       <button class="modal-close" aria-label="Close" onclick="closeModal('modal-library')">✕</button>
     </div>
     <div class="modal-body" id="library-body"></div>
