@@ -184,6 +184,11 @@ header {
 .tactic-info { flex: 1; min-width: 0; }
 .tactic-name { font-weight: 600; font-size: 14px; }
 .tactic-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.btn-open {
+  background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.35);
+  color: var(--accent); font-weight: 600;
+}
+.btn-open:hover { background: rgba(59,130,246,.25); }
 
 /* ── Logo preview ── */
 .logo-preview {
@@ -751,7 +756,11 @@ header {
             <div class="tactic-name" style="display:flex;align-items:center;gap:6px;">${esc(t.name)} ${viewBadge}</div>
             <div class="tactic-meta">${esc(courtName(t.courtId))} · ${esc(t.authorName) || 'Coach'} · ${date}</div>
           </div>
-          <button class="btn btn-danger btn-sm">Delete</button>`;
+          <div style="display:flex;gap:8px;flex-shrink:0;">
+            <button class="btn btn-open btn-sm">Open</button>
+            <button class="btn btn-danger btn-sm">Delete</button>
+          </div>`;
+        row.querySelector('.btn-open').addEventListener('click', () => openTacticInApp(t));
         row.querySelector('.btn-danger').addEventListener('click', () => deleteTactic(t._firestoreId, row));
         el.appendChild(row);
       }
@@ -761,6 +770,14 @@ header {
       document.getElementById('live-badge').style.display = 'none';
     }
   };
+
+  function openTacticInApp(tactic) {
+    // Stash the full tactic object so the app can load it on arrival
+    try {
+      localStorage.setItem('courtdraw_open_club_tactic', JSON.stringify(tactic));
+    } catch { /* storage full — navigate anyway */ }
+    window.location.href = '/courtdraw-app.html';
+  }
 
   async function deleteTactic(id, row) {
     if (!confirm('Remove this tactic from the club library? All coaches will lose access.')) return;
