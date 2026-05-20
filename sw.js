@@ -1,8 +1,14 @@
-const CACHE_NAME = 'courtdraw-v6';
+const CACHE_NAME = 'courtdraw-v7';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/assets/icons/icon-192.png',
-  '/assets/icons/icon-512.png',
+  '/assets/icons/icon-512.png'
+];
+
+// Assets that must always be fetched fresh from the network.
+// tactics-library.js is excluded from static cache so updates
+// (new tactics added) are never blocked by a stale cached copy.
+const NETWORK_FIRST_PATTERNS = [
   '/tactics-library.js'
 ];
 
@@ -26,13 +32,19 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Network-first for HTML pages — ensures users always get the latest code.
+  if (req.method !== 'GET') return;
+
+  // Network-first for HTML pages and tactics-library.js —
+  // ensures users always get the latest content.
   // Falls back to cache only when completely offline.
   const isNavigation = req.mode === 'navigate'
     || url.pathname.endsWith('.html')
     || url.pathname === '/';
 
-  if (isNavigation && req.method === 'GET') {
+  const isNetworkFirst = isNavigation
+    || NETWORK_FIRST_PATTERNS.some(p => url.pathname === p);
+
+  if (isNetworkFirst) {
     event.respondWith(
       fetch(req)
         .then(res => {

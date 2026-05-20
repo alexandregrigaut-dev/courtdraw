@@ -3110,7 +3110,7 @@ window.TACTICS_LIBRARY = [
   },
   // High Press Trigger
   {
-    id: 'football_high_press',
+    id: 'football_high_press_gk_trigger',
     sport: 'Football',
     courtId: 'football_full',
     name: 'High Press — GK Trigger',
@@ -3136,7 +3136,7 @@ window.TACTICS_LIBRARY = [
   },
   // Counter Attack
   {
-    id: 'football_counter_attack',
+    id: 'football_counter_attack_wide',
     sport: 'Football',
     courtId: 'football_full',
     name: 'Counter Attack — Wide Outlet',
@@ -3297,7 +3297,7 @@ window.TACTICS_LIBRARY = [
   },
   // Horns Set
   {
-    id: 'basketball_horns',
+    id: 'basketball_horns_elbow',
     sport: 'Basketball',
     courtId: 'basketball_half',
     name: 'Horns Set — Elbow Action',
@@ -3339,7 +3339,7 @@ window.TACTICS_LIBRARY = [
   },
   // Fast Break Transition
   {
-    id: 'basketball_fast_break',
+    id: 'basketball_fast_break_trail',
     sport: 'Basketball',
     courtId: 'basketball_full',
     name: 'Fast Break — 3-on-2',
@@ -3938,7 +3938,7 @@ window.TACTICS_LIBRARY = [
   },
   // Garryowen Defensive Kick
   {
-    id: 'rugby_garryowen',
+    id: 'rugby_garryowen_kick_chase',
     sport: 'Rugby',
     courtId: 'rugby_union',
     name: 'Garryowen — High Kick Chase',
@@ -4014,7 +4014,7 @@ window.TACTICS_LIBRARY = [
   },
   // Screen Pass
   {
-    id: 'amfootball_screen_pass',
+    id: 'amfootball_rb_screen',
     sport: 'American Football',
     courtId: 'american_football',
     name: 'Running Back Screen',
@@ -4180,7 +4180,7 @@ window.TACTICS_LIBRARY = [
     phases: null,
   },
   {
-    id: 'tennis_inside_out_forehand',
+    id: 'tennis_inside_out_forehand_open',
     sport: 'Tennis',
     courtId: 'tennis_singles',
     name: 'Inside-Out Forehand',
@@ -4242,7 +4242,7 @@ window.TACTICS_LIBRARY = [
   // ─────────────────────────────────────────────
 
   {
-    id: 'volleyball_pipe_attack',
+    id: 'volleyball_pipe_attack_backrow',
     sport: 'Volleyball',
     courtId: 'volleyball',
     name: 'Pipe Attack (Back-Row)',
@@ -4278,7 +4278,7 @@ window.TACTICS_LIBRARY = [
     phases: null,
   },
   {
-    id: 'volleyball_quick_set',
+    id: 'volleyball_quick_set_x_play',
     sport: 'Volleyball',
     courtId: 'volleyball',
     name: 'Quick Set (X Play)',
@@ -4416,7 +4416,7 @@ window.TACTICS_LIBRARY = [
     phases: null,
   },
   {
-    id: 'handball_6_0_defense',
+    id: 'handball_6_0_defense_compact',
     sport: 'Handball',
     courtId: 'handball',
     name: '6-0 Defense',
@@ -4728,7 +4728,7 @@ window.TACTICS_LIBRARY = [
   // ─────────────────────────────────────────────
 
   {
-    id: 'pickleball_erne',
+    id: 'pickleball_erne_wide',
     sport: 'Pickleball',
     courtId: 'pickleball',
     name: 'Erne Attack',
@@ -4748,7 +4748,7 @@ window.TACTICS_LIBRARY = [
     phases: null,
   },
   {
-    id: 'pickleball_atp',
+    id: 'pickleball_atp_sideline',
     sport: 'Pickleball',
     courtId: 'pickleball',
     name: 'Around-the-Post (ATP)',
