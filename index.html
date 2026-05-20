@@ -1034,10 +1034,25 @@
         <h3>Animated Playback <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
         <p>Hit Play and watch your tactical sequence unfold automatically — phase by phase, at your pace. Perfect for team talks and video analysis sessions.</p>
       </div>
+      <div class="feature-card" style="border-color:rgba(147,197,253,0.3);background:linear-gradient(135deg,rgba(147,197,253,0.08) 0%,transparent 100%);">
+        <div class="feature-icon">📹</div>
+        <h3>Video Overlay <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
+        <p>Upload match footage and draw plays directly on top, frame by frame. Annotate real match situations just like Hudl or Wyscout — now built right into your tactics board.</p>
+      </div>
+      <div class="feature-card" style="border-color:rgba(147,197,253,0.3);background:linear-gradient(135deg,rgba(147,197,253,0.08) 0%,transparent 100%);">
+        <div class="feature-icon">🗂️</div>
+        <h3>200+ Ready-Made Plays <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
+        <p>Start from a library of 200+ pre-built tactics — formations, set pieces, and plays across 12 sports including football, basketball, ice hockey, rugby, and more. Load and modify in one click.</p>
+      </div>
       <div class="feature-card" style="border-color:rgba(168,85,247,0.3);background:linear-gradient(135deg,rgba(168,85,247,0.08) 0%,transparent 100%);">
         <div class="feature-icon">📺</div>
         <h3>Club Presentation Mode <span style="font-size:11px;background:rgba(168,85,247,.15);color:#a855f7;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">CLUB</span></h3>
         <p>One tap to go full-screen. Toolbar and header are replaced by a clean overlay showing your club logo, tactic name, and phase controls — projector-ready for team meetings, parent evenings, and scouting sessions.</p>
+      </div>
+      <div class="feature-card" style="border-color:rgba(168,85,247,0.3);background:linear-gradient(135deg,rgba(168,85,247,0.08) 0%,transparent 100%);">
+        <div class="feature-icon">💬</div>
+        <h3>Coach Notes on Tactics <span style="font-size:11px;background:rgba(168,85,247,.15);color:#a855f7;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">CLUB</span></h3>
+        <p>Every play in the club library can carry coach notes — situational tips, when to use it, what it counters. Your shared library becomes a living coaching document, not just a folder of diagrams.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">📱</div>
@@ -1351,11 +1366,13 @@
         <p class="plan-tagline" id="pro-tagline">Billed annually at €49/yr. €6/mo billed monthly.</p>
         <a href="login.html?checkout=proYearly" class="btn btn-primary plan-btn" id="btn-pro-plan">Upgrade to Pro</a>
         <ul class="plan-features">
-          <li><span class="check">✓</span> <span><strong>All 37+ sport courts</strong></span></li>
+          <li><span class="check">✓</span> <span><strong>All 37+ sport courts</strong> + Whiteboard</span></li>
           <li><span class="check">✓</span> <span><strong>Unlimited saved tactics</strong></span></li>
           <li><span class="check">✓</span> <span><strong>PNG &amp; PDF export</strong> — no watermark</span></li>
-          <li><span class="check">✓</span> <span>Custom player names &amp; numbers</span></li>
+          <li><span class="check">✓</span> <span>Jersey numbers + custom player labels</span></li>
           <li><span class="check">✓</span> <span>Phase-by-phase animation + <strong>animated playback</strong></span></li>
+          <li><span class="check">✓</span> <span><strong>Video overlay</strong> — draw on match footage</span></li>
+          <li><span class="check">✓</span> <span><strong>200+ ready-made play templates</strong></span></li>
           <li><span class="check">✓</span> <span>Shareable board links</span></li>
           <li><span class="check">✓</span> <span>Offline (PWA) + dark &amp; light mode</span></li>
           <li><span class="check">✓</span> <span>Priority email support</span></li>
@@ -1371,9 +1388,9 @@
         <p class="plan-tagline">Up to 10 coaches. One flat rate. Billed annually.</p>
         <a href="login.html?checkout=club" class="btn btn-ghost plan-btn">Get Club Plan</a>
         <ul class="plan-features">
-          <li><span class="check">✓</span> <span><strong>Everything in Pro</strong></span></li>
+          <li><span class="check">✓</span> <span><strong>Everything in Pro</strong> (incl. video overlay)</span></li>
           <li><span class="check">✓</span> <span><strong>Up to 10 coaching staff</strong> seats</span></li>
-          <li><span class="check">✓</span> <span>Shared tactic library for the whole club</span></li>
+          <li><span class="check">✓</span> <span>Shared tactic library + <strong>coach notes on every play</strong></span></li>
           <li><span class="check">✓</span> <span><strong>Custom team colors</strong> — branded tokens across the club</span></li>
           <li><span class="check">✓</span> <span><strong>Club presentation mode</strong> — projector-ready full-screen slides</span></li>
           <li><span class="check">✓</span> <span><strong>Branded PDF export</strong> — club logo &amp; name in every export</span></li>
@@ -1701,7 +1718,7 @@
       label: 'Pro Plan',
       pillClass: 'plan-pro',
       cardClass: 'plan-pro',
-      features: ['All 37+ courts', 'Unlimited saves', 'Multi-phase plays + animated playback', 'Clean PNG & PDF export', 'Priority email support'],
+      features: ['All 37+ courts + Whiteboard', 'Unlimited saves', 'Multi-phase plays + animated playback', 'Video overlay — draw on match footage', '200+ ready-made play templates', 'Jersey numbers', 'Clean PNG & PDF export', 'Priority email support'],
       cta: `<button class="acct-btn-primary amber" onclick="landingOpenBilling()">Manage billing</button>
             <button class="acct-btn-ghost" onclick="landingUpgradeToClub()">Upgrade to Club</button>`
     },
@@ -1709,7 +1726,7 @@
       label: 'Club Plan',
       pillClass: 'plan-club',
       cardClass: 'plan-club',
-      features: ['Everything in Pro', 'Up to 10 coaching staff seats', 'Shared team library', 'Custom team colors', 'Club presentation mode', 'Branded PDF export', 'Club Admin dashboard'],
+      features: ['Everything in Pro (incl. video overlay)', 'Up to 10 coaching staff seats', 'Shared team library + coach notes', 'Custom team colors', 'Club presentation mode', 'Branded PDF export', 'Club Admin dashboard'],
       cta: `<a href="/club-admin.html" class="acct-btn-primary purple">🏟 Open Club Admin →</a>
             <button class="acct-btn-ghost" onclick="landingOpenBilling()">Manage billing</button>`
     },

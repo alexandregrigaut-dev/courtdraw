@@ -672,16 +672,21 @@ export const SPORT_TOKENS = {
     { team: 'red',  label: 'R2', pct: [0.68, 0.28] },
   ],
 
+  // ─── WHITEBOARD (blank canvas — no default tokens) ────────────────────────
+  whiteboard: [],
+
 };
 
 /**
  * Returns a deep copy of the default token list for the given court ID.
  * Falls back to basketball_full if the courtId is not recognised.
+ * Whiteboard intentionally has no tokens — coaches start fresh.
  *
  * @param {string} courtId
  * @returns {{ team: string, label: string, pct: [number, number] }[]}
  */
 export function getDefaultTokens(courtId) {
+  if (courtId === 'whiteboard') return [];
   return (SPORT_TOKENS[courtId] || SPORT_TOKENS['basketball_full'])
     .map(t => ({ ...t, pct: [...t.pct] }));
 }

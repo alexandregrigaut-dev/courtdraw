@@ -394,6 +394,39 @@ button {
 }
 #author-credit-dismiss:hover { opacity: 1; }
 #drawing-canvas, #token-layer { transition: opacity 0.25s ease; }
+/* ── Video overlay ── */
+#video-overlay {
+  position: absolute; z-index: 1; object-fit: contain;
+  opacity: 0.75; pointer-events: none; display: none;
+}
+#video-controls-bar {
+  display: none; position: absolute; bottom: 10px; left: 50%;
+  transform: translateX(-50%); z-index: 30;
+  background: rgba(10,17,32,0.93); backdrop-filter: blur(10px);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 7px 10px; gap: 6px; align-items: center;
+  width: calc(100% - 24px); max-width: 440px; flex-wrap: wrap;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+}
+#video-controls-bar.visible { display: flex; }
+.vc-btn {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); padding: 4px 9px; font-size: 12px; cursor: pointer;
+  font-family: inherit; font-weight: 700; white-space: nowrap; min-height: 28px;
+}
+.vc-btn:hover { background: var(--border); }
+#video-scrub { flex: 1; min-width: 60px; accent-color: var(--accent); cursor: pointer; }
+#video-opacity { width: 64px; accent-color: #a855f7; cursor: pointer; }
+#video-time { font-size: 11px; color: var(--text2); white-space: nowrap; font-family: monospace; min-width: 36px; }
+/* ── Comment section in club library ── */
+.tactic-comment-area { padding: 6px 0 4px; border-top: 1px solid var(--border); margin-top: 4px; }
+.tactic-comment-list { max-height: 120px; overflow-y: auto; margin-bottom: 6px; }
+.tactic-comment-item { font-size: 11px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text2); }
+.tactic-comment-item strong { color: var(--text); }
+.tactic-comment-row { display: flex; gap: 6px; }
+.tactic-comment-input { flex: 1; font-size: 12px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: inherit; }
+.tactic-comment-submit { font-size: 11px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent-dim); color: var(--accent); font-family: inherit; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.tactic-comment-submit:hover { background: var(--accent); color: #fff; }
 /* ── Presentation mode ── */
 body.presentation-mode #app-header,
 body.presentation-mode #toolbar,
@@ -745,9 +778,23 @@ body.presentation-mode #presentation-overlay { display: flex; }
 <main id="board-area">
   <div id="court-container">
     <svg id="court-svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
+    <video id="video-overlay" playsinline></video>
     <canvas id="drawing-canvas"></canvas>
     <div id="token-layer"></div>
+    <!-- Video controls bar (appears when a video is loaded) -->
+    <div id="video-controls-bar">
+      <button class="vc-btn" id="vc-play" title="Play/Pause">▶</button>
+      <button class="vc-btn" id="vc-prev" title="Previous frame">⏮</button>
+      <button class="vc-btn" id="vc-next" title="Next frame">⏭</button>
+      <input type="range" id="video-scrub" min="0" max="100" step="0.1" value="0" title="Seek">
+      <span id="video-time">0:00</span>
+      <span style="font-size:10px;color:var(--text2);white-space:nowrap;">Opacity</span>
+      <input type="range" id="video-opacity" min="10" max="100" value="75" title="Video opacity">
+      <button class="vc-btn" id="vc-close" title="Remove video" onclick="closeVideo()">✕ Video</button>
+    </div>
   </div>
+  <!-- Hidden video file input -->
+  <input type="file" id="video-file-input" accept="video/mp4,video/webm,video/quicktime,video/avi" style="display:none" onchange="loadVideoFile(this)">
   <button id="btn-reset-zoom" onclick="state.zoom=1;state.panX=0;state.panY=0;applyZoom()"
     style="display:none;position:absolute;bottom:12px;right:12px;z-index:25;
     background:rgba(29,78,216,0.85);color:#fff;border:none;border-radius:20px;
@@ -851,6 +898,12 @@ body.presentation-mode #presentation-overlay { display: flex; }
   <button class="tb-btn" title="Copy share link" onclick="shareBoard()">
     <span class="icon">🔗</span><span>Share</span>
   </button>
+  <button class="tb-btn" id="btn-jersey" title="Auto-number jerseys 1–N" onclick="autoNumberJerseys()">
+    <span class="icon">#</span><span>Jerseys</span>
+  </button>
+  <button class="tb-btn" id="btn-video" title="Video overlay — draw on top of match footage (Pro/Club)" onclick="openVideoUpload()">
+    <span class="icon">📹</span><span>Video</span>
+  </button>
 </div>
 
 <!-- Modal: Court Picker -->
@@ -950,13 +1003,15 @@ body.presentation-mode #presentation-overlay { display: flex; }
         <p id="paywall-reason">Upgrade to Pro to unlock all 37+ sport courts and unlimited saves.</p>
       </div>
       <ul class="pw-features">
-        <li>All 37+ sport courts unlocked</li>
+        <li>All 37+ sport courts + Whiteboard</li>
         <li>Unlimited tactic saves</li>
         <li>PNG &amp; PDF export — no watermark</li>
-        <li>Custom player names &amp; numbers</li>
+        <li>Jersey numbers &amp; custom player labels</li>
         <li>Phase-by-phase animation</li>
+        <li>📹 Video overlay — draw on match footage</li>
+        <li>200+ ready-made play templates</li>
         <li>Shareable board links</li>
-        <li>Club shared library (Club plan)</li>
+        <li>Club shared library &amp; coach notes (Club plan)</li>
         <li>Club branding on exports (Club plan)</li>
       </ul>
       <div class="pw-plans">
@@ -1656,6 +1711,18 @@ const COURTS = [
       <text x="140" y="572" text-anchor="start" font-family="system-ui" font-size="10" fill="rgba(255,255,255,0.4)">2m</text>
       <text x="268" y="572" text-anchor="middle" font-family="system-ui" font-size="10" fill="rgba(255,255,255,0.4)">5m</text>
       <text x="500" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">WATER POLO</text>`}
+  },
+
+  // ── WHITEBOARD ──
+  {
+    id:'whiteboard', name:'Whiteboard', category:'other', free:true,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#1e293b" rx="2" stroke="#334155" stroke-width="1.5"/><line x1="12" y1="2" x2="12" y2="28" stroke="rgba(255,255,255,0.06)" stroke-width="1"/><line x1="24" y1="2" x2="24" y2="28" stroke="rgba(255,255,255,0.06)" stroke-width="1"/><line x1="36" y1="2" x2="36" y2="28" stroke="rgba(255,255,255,0.06)" stroke-width="1"/><line x1="2" y1="10" x2="46" y2="10" stroke="rgba(255,255,255,0.06)" stroke-width="1"/><line x1="2" y1="20" x2="46" y2="20" stroke="rgba(255,255,255,0.06)" stroke-width="1"/><text x="24" y="19" text-anchor="middle" font-family="system-ui" font-size="8" fill="rgba(255,255,255,0.5)" font-weight="700">WB</text></svg>`,
+    svg(){return `
+      <rect width="1000" height="600" fill="#0f1724"/>
+      <rect x="30" y="30" width="940" height="540" fill="#1e293b" rx="6"/>
+      ${Array.from({length:10}, (_,i)=>`<line x1="${30+i*94}" y1="30" x2="${30+i*94}" y2="570" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`).join('')}
+      ${Array.from({length:6}, (_,i)=>`<line x1="30" y1="${30+i*90}" x2="970" y2="${30+i*90}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`).join('')}
+      <text x="500" y="590" text-anchor="middle" font-family="system-ui" font-size="12" fill="rgba(255,255,255,0.18)" font-weight="600">WHITEBOARD</text>`}
   }
 ];
 
@@ -1701,6 +1768,7 @@ const state = {
   loopAnimation:   false,  // restart from phase 1 after the last phase
   zoom: 1, panX: 0, panY: 0,
   pinching: false, _pinchCooldown: null,
+  videoObjectUrl: null,  // current video object URL (revoked on close)
 };
 
 const COLORS = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#ffffff','#111827','#a855f7','#f97316'];
@@ -1805,6 +1873,8 @@ function syncCanvas() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   redrawAll();
   repositionTokens();
+  // Keep video overlay sized to match the canvas whenever the board resizes
+  if (window.__videoResizeCb) window.__videoResizeCb();
 }
 
 const resizeObs = new ResizeObserver(() => { setTimeout(syncCanvas, 50); });
@@ -3153,6 +3223,7 @@ async function loadClubLibrary() {
       const courtName = court ? court.name : (t.courtId || '—');
       const authorName = (t.authorName || 'Coach').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       const sharedDate = t.sharedAt ? new Date(t.sharedAt).toLocaleDateString() : '—';
+      const canDelete = state.isClubOwner || (window.__currentUser && t.authorUid === window.__currentUser.uid);
       row.innerHTML = `
         <div class="tactic-info">
           <div class="tactic-name">${safeName} <span style="font-size:10px;background:rgba(59,130,246,0.15);color:var(--accent);border-radius:4px;padding:1px 5px;font-weight:700;">Club</span></div>
@@ -3160,11 +3231,25 @@ async function loadClubLibrary() {
         </div>
         <div class="tactic-actions">
           <button class="tac-btn load" data-club-id="${t._firestoreId}">Load</button>
-          ${(state.isClubOwner || (window.__currentUser && t.authorUid === window.__currentUser.uid)) ? `<button class="tac-btn del" data-del-club-id="${t._firestoreId}">Del</button>` : ''}
+          <button class="tac-btn" data-notes-id="${t._firestoreId}" title="Coach notes" style="background:rgba(168,85,247,0.12);border-color:rgba(168,85,247,0.3);color:var(--purple);">💬</button>
+          ${canDelete ? `<button class="tac-btn del" data-del-club-id="${t._firestoreId}">Del</button>` : ''}
+        </div>
+        <div class="tactic-comment-area" id="notes-${t._firestoreId}" style="display:none;">
+          <div class="tactic-comment-list" id="notes-list-${t._firestoreId}"><p style="font-size:11px;color:var(--text2);">Loading notes…</p></div>
+          <div class="tactic-comment-row">
+            <input class="tactic-comment-input" id="notes-input-${t._firestoreId}" placeholder="Add a note… (e.g. Works vs high press)" maxlength="200">
+            <button class="tactic-comment-submit" data-submit-id="${t._firestoreId}">Post</button>
+          </div>
         </div>`;
       row.querySelector('[data-club-id]').addEventListener('click', () => loadClubTactic(window.__clubTactics[t._firestoreId]));
       const delBtn = row.querySelector('[data-del-club-id]');
       if (delBtn) delBtn.addEventListener('click', () => deleteClubTactic(t._firestoreId));
+      // Notes toggle button
+      const notesBtn = row.querySelector('[data-notes-id]');
+      if (notesBtn) notesBtn.addEventListener('click', () => toggleTacticNotes(t._firestoreId));
+      // Post comment button
+      const submitBtn = row.querySelector('[data-submit-id]');
+      if (submitBtn) submitBtn.addEventListener('click', () => postTacticComment(t._firestoreId));
       body.appendChild(row);
     }
   } catch (err) {
@@ -3212,6 +3297,71 @@ function showAuthorCredit(name) {
 function clearAuthorCredit() {
   const chip = document.getElementById('author-credit');
   if (chip) chip.classList.remove('visible');
+}
+
+// ══════════════════════════════════════════════
+// CLUB TACTIC COMMENTS / NOTES
+// ══════════════════════════════════════════════
+const _loadedComments = {}; // cache: tacticId → true (already fetched)
+
+async function toggleTacticNotes(tacticId) {
+  const area = document.getElementById('notes-' + tacticId);
+  if (!area) return;
+  const wasOpen = area.style.display !== 'none';
+  area.style.display = wasOpen ? 'none' : '';
+  if (!wasOpen && !_loadedComments[tacticId]) {
+    await refreshTacticComments(tacticId);
+  }
+}
+
+async function refreshTacticComments(tacticId) {
+  const listEl = document.getElementById('notes-list-' + tacticId);
+  if (!listEl) return;
+  const user = window.__currentUser;
+  if (!user) { listEl.innerHTML = '<p style="font-size:11px;color:var(--text2);">Sign in to see notes.</p>'; return; }
+  try {
+    const token = await user.getIdToken();
+    const res = await fetch(`/.netlify/functions/get-tactic-comments?tacticId=${encodeURIComponent(tacticId)}`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) throw new Error('server');
+    const { comments } = await res.json();
+    _loadedComments[tacticId] = true;
+    if (!comments || !comments.length) {
+      listEl.innerHTML = '<p style="font-size:11px;color:var(--text2);margin:0;">No notes yet — be the first!</p>';
+      return;
+    }
+    listEl.innerHTML = comments.map(c => {
+      const safe = (c.text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const who  = (c.authorName || 'Coach').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const when = c.addedAt ? new Date(c.addedAt).toLocaleDateString() : '';
+      return `<div class="tactic-comment-item"><strong>${who}</strong>${when ? ' · ' + when : ''}: ${safe}</div>`;
+    }).join('');
+  } catch {
+    listEl.innerHTML = '<p style="font-size:11px;color:var(--text2);">Could not load notes.</p>';
+  }
+}
+
+async function postTacticComment(tacticId) {
+  const inp  = document.getElementById('notes-input-' + tacticId);
+  const text = inp ? inp.value.trim() : '';
+  if (!text) return;
+  const user = window.__currentUser;
+  if (!user) { showToast('Sign in to post notes.'); return; }
+  try {
+    const token = await user.getIdToken();
+    const res = await fetch('/.netlify/functions/add-tactic-comment', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tacticId, text })
+    });
+    if (!res.ok) throw new Error('server');
+    inp.value = '';
+    delete _loadedComments[tacticId]; // force re-fetch
+    await refreshTacticComments(tacticId);
+  } catch {
+    showToast('Could not post note — check your connection.', 4000);
+  }
 }
 
 async function deleteClubTactic(firestoreId) {
@@ -3426,6 +3576,129 @@ function toggleLoop() {
     btn.classList.toggle('active', state.loopAnimation);
     btn.title = state.loopAnimation ? 'Stop looping' : 'Loop animation';
   }
+}
+
+// ══════════════════════════════════════════════
+// JERSEY AUTO-NUMBERING
+// ══════════════════════════════════════════════
+function autoNumberJerseys() {
+  if (!state.tokenPositions.length) { showToast('No tokens on the board.'); return; }
+  saveUndo();
+  let blueN = 1, redN = 1;
+  state.tokenPositions.forEach(t => {
+    if (t.team === 'blue') t.label = String(blueN++);
+    else if (t.team === 'red')  t.label = String(redN++);
+  });
+  // Sync jersey numbers into all phases too
+  if (state.phases) {
+    state.phases.forEach(ph => {
+      if (ph.tokens) ph.tokens.forEach((pt, i) => {
+        if (state.tokenPositions[i]) pt.label = state.tokenPositions[i].label;
+      });
+    });
+  }
+  buildTokens();
+  showToast('Jerseys numbered 1–' + Math.max(blueN - 1, redN - 1) + '!');
+}
+
+// ══════════════════════════════════════════════
+// VIDEO OVERLAY (Pro / Club)
+// ══════════════════════════════════════════════
+function openVideoUpload() {
+  if (!state.isPro && !state.isClub) {
+    openPaywall('Load match footage and draw plays on top, frame by frame. Pro & Club feature.');
+    return;
+  }
+  document.getElementById('video-file-input').click();
+}
+
+function loadVideoFile(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  // Revoke any previous object URL to avoid memory leaks
+  if (state.videoObjectUrl) { URL.revokeObjectURL(state.videoObjectUrl); state.videoObjectUrl = null; }
+
+  const url = URL.createObjectURL(file);
+  state.videoObjectUrl = url;
+
+  const vid  = document.getElementById('video-overlay');
+  const bar  = document.getElementById('video-controls-bar');
+  const scrub   = document.getElementById('video-scrub');
+  const timeEl  = document.getElementById('video-time');
+  const playBtn = document.getElementById('vc-play');
+
+  vid.src = url;
+  vid.load();
+
+  // Position & size video to exactly match the drawing canvas
+  function positionVideo() {
+    if (!canvas) return;
+    const left = parseFloat(canvas.style.left) || 0;
+    const top  = parseFloat(canvas.style.top)  || 0;
+    vid.style.left   = left + 'px';
+    vid.style.top    = top  + 'px';
+    vid.style.width  = canvasW + 'px';
+    vid.style.height = canvasH + 'px';
+  }
+  positionVideo();
+  // Re-position whenever the canvas resizes
+  window.__videoResizeCb = positionVideo;
+
+  vid.style.display = '';
+  bar.classList.add('visible');
+
+  vid.addEventListener('timeupdate', () => {
+    if (!vid.duration) return;
+    scrub.value = (vid.currentTime / vid.duration) * 100;
+    const m = Math.floor(vid.currentTime / 60);
+    const s = Math.floor(vid.currentTime % 60).toString().padStart(2, '0');
+    timeEl.textContent = `${m}:${s}`;
+  });
+
+  scrub.oninput = () => {
+    if (vid.duration) vid.currentTime = (scrub.value / 100) * vid.duration;
+  };
+
+  playBtn.onclick = () => {
+    if (vid.paused) { vid.play(); playBtn.textContent = '⏸'; }
+    else            { vid.pause(); playBtn.textContent = '▶'; }
+  };
+  vid.onplay  = () => { playBtn.textContent = '⏸'; };
+  vid.onpause = () => { playBtn.textContent = '▶'; };
+
+  // Frame-step (≈1/30 s)
+  document.getElementById('vc-prev').onclick = () => {
+    vid.pause();
+    vid.currentTime = Math.max(0, vid.currentTime - 1 / 30);
+  };
+  document.getElementById('vc-next').onclick = () => {
+    vid.pause();
+    vid.currentTime = Math.min(vid.duration || 0, vid.currentTime + 1 / 30);
+  };
+
+  document.getElementById('video-opacity').oninput = function() {
+    vid.style.opacity = this.value / 100;
+  };
+
+  input.value = ''; // allow re-selecting the same file
+  showToast('Video loaded — draw over it to annotate!');
+}
+
+function closeVideo() {
+  const vid = document.getElementById('video-overlay');
+  const bar = document.getElementById('video-controls-bar');
+  vid.pause();
+  vid.src     = '';
+  vid.style.display = 'none';
+  bar.classList.remove('visible');
+  document.getElementById('vc-play').textContent = '▶';
+  document.getElementById('video-scrub').value   = 0;
+  document.getElementById('video-time').textContent = '0:00';
+  if (state.videoObjectUrl) {
+    URL.revokeObjectURL(state.videoObjectUrl);
+    state.videoObjectUrl = null;
+  }
+  window.__videoResizeCb = null;
 }
 
 // ── Presentation Mode ─────────────────────────────────────────────────────
