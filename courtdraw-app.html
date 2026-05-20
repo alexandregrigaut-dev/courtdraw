@@ -4458,6 +4458,7 @@ document.addEventListener('DOMContentLoaded', init);
       // Signed out — clear stale plan data immediately
       localStorage.removeItem('courtdraw_pro');
       localStorage.removeItem('courtdraw_club_name');
+      localStorage.removeItem('courtdraw_open_club_tactic'); // clean up any stale deep-link
       if (typeof window.__updatePro === 'function')
         window.__updatePro(false, false, null, '', false, null, null, null);
       return;
