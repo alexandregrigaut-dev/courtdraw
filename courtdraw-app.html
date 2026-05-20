@@ -3219,6 +3219,8 @@ async function loadMyClub() {
 async function loadClubLibrary() {
   const user = window.__currentUser;
   if (!user || !state.isClub) return;
+  // Clear comment cache so re-renders load fresh notes from the server
+  Object.keys(_loadedComments).forEach(k => delete _loadedComments[k]);
   const body = document.getElementById('club-library-body');
   body.innerHTML = '<p style="font-size:12px;color:var(--text2);padding:8px 0;">Loading…</p>';
   try {
