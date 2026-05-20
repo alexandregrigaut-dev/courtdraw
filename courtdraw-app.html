@@ -4106,6 +4106,20 @@ function objToLibSvg(o) {
     const rh = o.x !== undefined ? o.h : Math.abs(o.y2 - o.y1);
     return `<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" stroke="${o.color||'#fff'}" stroke-width="${o.lineWidth||2}" fill="none"/>`;
   }
+  if (o.type === 'arc') {
+    // Arc uses {points:[3 pts]} or {x1,y1,x2,y2,cpx,cpy}
+    let x1, y1, x2, y2, cpx, cpy;
+    if (o.points && o.points.length >= 3) {
+      [x1, y1] = o.points[0];
+      [x2, y2] = o.points[o.points.length - 1];
+      [cpx, cpy] = o.points[Math.floor(o.points.length / 2)];
+    } else {
+      x1 = o.x1; y1 = o.y1; x2 = o.x2; y2 = o.y2; cpx = o.cpx; cpy = o.cpy;
+    }
+    const markerId = `arc_${Math.random().toString(36).slice(2,7)}`;
+    return `<defs><marker id="${markerId}" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="${o.color||'#fff'}"/></marker></defs>
+            <path d="M${x1},${y1} Q${cpx},${cpy} ${x2},${y2}" stroke="${o.color||'#fff'}" stroke-width="${o.lineWidth||3}" fill="none" stroke-linecap="round" marker-end="url(#${markerId})"/>`;
+  }
   if (o.type === 'text') {
     // Text objects use {nx, ny} (normalized coords) — library preview uses raw 1000×600 space
     const tx = o.nx !== undefined ? o.nx : (o.x || 0);
