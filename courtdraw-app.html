@@ -21,7 +21,7 @@
   --bg: #1d4ed8; --surface: #2563eb; --surface2: #3b82f6;
   --border: rgba(255,255,255,0.15); --text: #ffffff; --text2: rgba(255,255,255,0.6);
   --accent: #93c5fd; --accent-dim: rgba(147,197,253,0.18);
-  --red: #ef4444; --blue: #3b82f6;
+  --red: #ef4444; --blue: #3b82f6; --purple: #a855f7;
   --header-h: 56px; --toolbar-h: 68px; --phase-bar-h: 44px;
   --radius: 10px; --transition: 0.18s ease;
   --team-a-color: #60a5fa; --team-b-color: #dc2626;
@@ -116,7 +116,7 @@ button {
 #court-svg.switching { opacity: 0; }
 #drawing-canvas {
   position: absolute; cursor: crosshair;
-  touch-action: none;
+  touch-action: none; z-index: 2;
 }
 #token-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 /* ── Player tokens ── */
@@ -2529,7 +2529,7 @@ function renderCourtGrid(filter) {
     for (const c of grouped[cat]) {
       const card = document.createElement('div');
       const isActive = c.id === state.courtId;
-      const isLocked = !state.isPro && !state.isClub && !!state.freeCourt && c.id !== state.freeCourt;
+      const isLocked = !state.isPro && !state.isClub && !!state.freeCourt && c.id !== state.freeCourt && !c.free;
       const isFree = c.id === state.freeCourt;
       card.className = `court-card${isActive?' active':''}${isLocked?' locked':''}`;
       card.innerHTML = `${c.icon}<div class="court-card-name">${c.name}</div>${isFree?'<span class="free-pill">FREE</span>':''}`;
@@ -2570,7 +2570,9 @@ function switchCourt(id, locked, skipReset) {
   }
   state.courtId = id;
   // Only lock in the free court after the user confirms the switch
-  if (!state.isPro && !state.isClub && !state.freeCourt) {
+  // (Never lock in always-free courts like Whiteboard — those are free for everyone)
+  const courtDef = COURTS.find(c => c.id === id);
+  if (!state.isPro && !state.isClub && !state.freeCourt && !courtDef?.free) {
     state.freeCourt = id;
     saveToStorage();
   }
@@ -3247,9 +3249,13 @@ async function loadClubLibrary() {
       // Notes toggle button
       const notesBtn = row.querySelector('[data-notes-id]');
       if (notesBtn) notesBtn.addEventListener('click', () => toggleTacticNotes(t._firestoreId));
-      // Post comment button
+      // Post comment button + Enter key shortcut on input
       const submitBtn = row.querySelector('[data-submit-id]');
       if (submitBtn) submitBtn.addEventListener('click', () => postTacticComment(t._firestoreId));
+      const commentInput = row.querySelector('.tactic-comment-input');
+      if (commentInput) commentInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); postTacticComment(t._firestoreId); }
+      });
       body.appendChild(row);
     }
   } catch (err) {
