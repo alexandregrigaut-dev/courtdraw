@@ -1465,27 +1465,26 @@ const COURTS = [
   },
   {
     id:'field_hockey', name:'Field Hockey', category:'field', free:false,
-    icon:`<svg viewBox="0 0 48 30"><rect x="17" y="2" width="14" height="26" fill="#2d6a4f" rx="1"/><rect x="17" y="2" width="14" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="17" y1="15" x2="31" y2="15" stroke="white" stroke-width="1"/><path d="M19,2 A5,5 0 0,1 29,2" fill="none" stroke="white" stroke-width="1.2"/><path d="M19,28 A5,5 0 0,0 29,28" fill="none" stroke="white" stroke-width="1.2"/></svg>`,
+    icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d6a4f" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><line x1="14" y1="2" x2="14" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><line x1="34" y1="2" x2="34" y2="28" stroke="rgba(255,255,255,0.5)" stroke-width="1"/><path d="M2,11 A8,8 0 0,1 2,19" fill="none" stroke="white" stroke-width="1.2"/><path d="M46,11 A8,8 0 0,0 46,19" fill="none" stroke="white" stroke-width="1.2"/></svg>`,
     svg(){return `
       <rect width="1000" height="600" fill="#1a3a2a"/>
-      <rect x="338" y="30" width="324" height="540" fill="#2d6a4f"/>
-      <rect x="338" y="30" width="324" height="540" fill="none" stroke="white" stroke-width="2.5"/>
-      ${Array.from({length:18},(_,i)=>{const y=Math.round(30+(i+1)*29.54);return y<570?`<line x1="332" y1="${y}" x2="338" y2="${y}" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/><line x1="662" y1="${y}" x2="668" y2="${y}" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/>`:''}).join('')}
-      <line x1="338" y1="165" x2="662" y2="165" stroke="white" stroke-width="1.5"/>
-      <line x1="338" y1="435" x2="662" y2="435" stroke="white" stroke-width="1.5"/>
-      <line x1="338" y1="300" x2="662" y2="300" stroke="white" stroke-width="2"/>
-      <line x1="497" y1="162" x2="503" y2="168" stroke="white" stroke-width="1.5"/>
-      <line x1="497" y1="432" x2="503" y2="438" stroke="white" stroke-width="1.5"/>
+      <rect x="101" y="60" width="798" height="480" fill="#2d6a4f"/>
+      <rect x="101" y="60" width="798" height="480" fill="none" stroke="white" stroke-width="3"/>
+      ${Array.from({length:18},(_,i)=>{const x=Math.round(101+(i+1)*43.66);return `<line x1="${x}" y1="54" x2="${x}" y2="60" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/><line x1="${x}" y1="540" x2="${x}" y2="546" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/>`;}).join('')}
+      ${Array.from({length:10},(_,i)=>{const y=Math.round(60+(i+1)*43.64);return `<line x1="95" y1="${y}" x2="101" y2="${y}" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/><line x1="899" y1="${y}" x2="905" y2="${y}" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/>`;}).join('')}
+      <line x1="500" y1="60" x2="500" y2="540" stroke="white" stroke-width="2"/>
+      <line x1="301" y1="60" x2="301" y2="540" stroke="white" stroke-width="1.5"/>
+      <line x1="699" y1="60" x2="699" y2="540" stroke="white" stroke-width="1.5"/>
       <circle cx="500" cy="300" r="3" fill="white"/>
-      <path d="M414,30 A86,86 0 0,1 586,30" fill="none" stroke="white" stroke-width="2"/>
-      <path d="M390,30 A110,110 0 0,1 610,30" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="5,4"/>
-      <path d="M414,570 A86,86 0 0,0 586,570" fill="none" stroke="white" stroke-width="2"/>
-      <path d="M390,570 A110,110 0 0,0 610,570" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="5,4"/>
-      <circle cx="500" cy="68" r="3" fill="white"/>
-      <circle cx="500" cy="532" r="3" fill="white"/>
-      <rect x="489" y="17" width="22" height="13" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="2"/>
-      <rect x="489" y="570" width="22" height="13" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="2"/>
-      <text x="840" y="304" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">FIELD HOCKEY</text>`}
+      <path d="M101,172 A128,128 0 0,1 101,428" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M101,137 A163,163 0 0,1 101,463" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <path d="M899,172 A128,128 0 0,0 899,428" fill="none" stroke="white" stroke-width="2"/>
+      <path d="M899,137 A163,163 0 0,0 899,463" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <rect x="68" y="284" width="33" height="32" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <rect x="899" y="284" width="33" height="32" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <circle cx="157" cy="300" r="4" fill="white"/>
+      <circle cx="843" cy="300" r="4" fill="white"/>
+      <text x="500" y="574" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">FIELD HOCKEY</text>`}
   },
   {
     id:'gaelic_football', name:'Gaelic Football', category:'field', free:false,
