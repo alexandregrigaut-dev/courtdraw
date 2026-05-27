@@ -697,6 +697,19 @@ body.portrait-mode.pt-chrome-visible #phase-bar  { transform: translateY(0); }
 body.portrait-mode.pt-chrome-visible #toolbar    { transform: translateY(0); }
 /* Hide the floating toolbar-toggle circle in portrait (replaced by tap-to-reveal) */
 body.portrait-mode #toolbar-toggle-btn { display: none !important; }
+/* Three-dot hint at bottom-right — shows in portrait, hides when chrome is visible */
+#pt-bottom-hint {
+  display: none;
+  position: fixed;
+  bottom: 14px; right: 16px;
+  z-index: 30;
+  font-size: 22px; letter-spacing: 2px;
+  color: rgba(255,255,255,0.55);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+body.portrait-mode #pt-bottom-hint { display: block; }
+body.portrait-mode.pt-chrome-visible #pt-bottom-hint { opacity: 0; }
 /* Counter-rotate player tokens so their labels read upright in portrait */
 body.portrait-mode .player-token {
   transform: translate(-50%, -50%) rotate(-90deg);
@@ -878,6 +891,7 @@ body.portrait-mode .player-token:active {
 <!-- Landscape immersive-mode tap-hint strips (hidden in portrait/desktop via CSS) -->
 <div id="ls-top-hint"    style="display:none;" aria-hidden="true"></div>
 <div id="ls-bottom-hint" style="display:none;" aria-hidden="true"></div>
+<div id="pt-bottom-hint" aria-hidden="true">···</div>
 
 <!-- Board -->
 <main id="board-area">
