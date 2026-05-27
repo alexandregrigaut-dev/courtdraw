@@ -710,6 +710,10 @@ body.portrait-mode #toolbar-toggle-btn { display: none !important; }
 }
 body.portrait-mode #pt-bottom-hint { display: block; }
 body.portrait-mode.pt-chrome-visible #pt-bottom-hint { opacity: 0; }
+@media (max-width: 900px) and (orientation: landscape) {
+  #pt-bottom-hint { display: block; }
+  body.ls-chrome-visible #pt-bottom-hint { opacity: 0; }
+}
 /* Counter-rotate player tokens so their labels read upright in portrait */
 body.portrait-mode .player-token {
   transform: translate(-50%, -50%) rotate(-90deg);
