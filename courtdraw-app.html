@@ -25,7 +25,8 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', 'G-9NZSFKFV1N');
+    const _gaDebug = new URLSearchParams(location.search).has('debug_mode');
+    gtag('config', 'G-9NZSFKFV1N', { debug_mode: _gaDebug });
   </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
