@@ -1891,6 +1891,9 @@ const CATEGORIES = {
 // ══════════════════════════════════════════════
 // APP STATE
 // ══════════════════════════════════════════════
+// ── Analytics: fire each event only once per session ─────────────────────
+let _gaFirstDrawFired = false;
+
 const state = {
   courtId: 'tennis_singles',
   tool: 'arrow',
@@ -2313,6 +2316,11 @@ function onDown(e) {
   state.isDrawing = true;
   state.startNX = nx; state.startNY = ny;
   state.points = [[nx, ny]];
+  // Track first real drawing stroke (once per session, excludes eraser/text)
+  if (!_gaFirstDrawFired && state.tool !== 'eraser' && state.tool !== 'text') {
+    _gaFirstDrawFired = true;
+    gtag('event', 'first_draw', { event_category: 'engagement', court_id: state.courtId });
+  }
   // Save undo snapshot before the first erase so the whole drag gesture is one undo unit
   if (state.tool === 'eraser') { saveUndo(); eraseAt(nx, ny); redrawAll(); }
   canvas.setPointerCapture(e.pointerId);
@@ -3049,6 +3057,7 @@ async function openBillingPortal() {
 // EXPORT PNG
 // ══════════════════════════════════════════════
 function exportPNG() {
+  gtag('event', 'export_play', { event_category: 'engagement', format: 'png', court_id: state.courtId });
   const W = 1200, H = 720;
   const off = document.createElement('canvas');
   off.width = W; off.height = H;
@@ -3129,6 +3138,7 @@ function exportPNG() {
 // ══════════════════════════════════════════════
 function exportPDF() {
   if (!state.isPro && !state.isClub) { openPaywall('Print / PDF export is a Pro feature. Upgrade to unlock clean PDF exports.'); return; }
+  gtag('event', 'export_play', { event_category: 'engagement', format: 'pdf', court_id: state.courtId });
   const W = 2400, H = 1440;
   const off = document.createElement('canvas');
   off.width = W; off.height = H;
@@ -3270,8 +3280,15 @@ function shareBoard() {
     const url = location.origin + location.pathname + '#s=' + encoded;
     if (url.length > 4000) { showToast('Board too complex to share via link — save it to your library instead.'); return; }
     navigator.clipboard.writeText(url)
-      .then(() => showToast('Share link copied to clipboard!'))
-      .catch(() => { location.hash = '#s=' + encoded; showToast('Link set — copy from address bar.'); });
+      .then(() => {
+        showToast('Share link copied to clipboard!');
+        gtag('event', 'share_play', { event_category: 'engagement', court_id: state.courtId });
+      })
+      .catch(() => {
+        location.hash = '#s=' + encoded;
+        showToast('Link set — copy from address bar.');
+        gtag('event', 'share_play', { event_category: 'engagement', court_id: state.courtId });
+      });
   } catch { showToast('Could not generate share link.'); }
 }
 
