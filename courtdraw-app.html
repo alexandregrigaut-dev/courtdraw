@@ -1828,6 +1828,7 @@ const state = {
   cumulativePhases: false,  // show prior phase drawings with decreasing opacity
   loopAnimation:   false,  // restart from phase 1 after the last phase
   zoom: 1, panX: 0, panY: 0,
+  portraitRotated: false,
   pinching: false, _pinchCooldown: null,
   videoObjectUrl: null,  // current video object URL (revoked on close)
 };
@@ -1924,10 +1925,36 @@ const container = document.getElementById('court-container');
 let canvasW = 0, canvasH = 0;
 let previewObj = null;
 
-function syncCanvas() {
+// ── Portrait rotation ────────────────────────────────────────────────────────
+// On phones/tablets in portrait mode the landscape court is rotated 90° CW so
+// its long axis fills the screen height.  The container is given explicit pixel
+// dimensions (H×W) and a CSS transform instead of the normal 100%×100%.
+function updatePortraitLayout() {
   const boardArea = container.parentElement;
-  const elW = boardArea.clientWidth;
-  const elH = boardArea.clientHeight;
+  const W = boardArea.clientWidth;
+  const H = boardArea.clientHeight;
+  state.portraitRotated = H > W * 1.1;  // at least 10% taller than wide
+  if (state.portraitRotated) {
+    container.style.position       = 'absolute';
+    container.style.width          = H + 'px';
+    container.style.height         = W + 'px';
+    container.style.transformOrigin = '0 0';
+    container.style.transform      = `translateX(${W}px) rotate(90deg)`;
+    state.zoom = 1; state.panX = 0; state.panY = 0;
+  } else {
+    container.style.position       = '';
+    container.style.width          = '';
+    container.style.height         = '';
+    container.style.transformOrigin = '0 0';
+    container.style.transform      = '';
+  }
+}
+
+function syncCanvas() {
+  updatePortraitLayout();  // must run first — sets container dimensions
+  // Read container's own dimensions (landscape H×W in portrait, normal in landscape)
+  const elW = container.clientWidth;
+  const elH = container.clientHeight;
 
   const vbAspect = 1000 / 600;  // viewBox ratio (landscape court)
   const elAspect = elW / (elH || 1);
@@ -1957,8 +1984,11 @@ function syncCanvas() {
   if (window.__videoResizeCb) window.__videoResizeCb();
 }
 
-const resizeObs = new ResizeObserver(() => { setTimeout(syncCanvas, 50); });
+let __syncTimer;
+function scheduleSyncCanvas() { clearTimeout(__syncTimer); __syncTimer = setTimeout(syncCanvas, 50); }
+const resizeObs = new ResizeObserver(scheduleSyncCanvas);
 resizeObs.observe(container);
+resizeObs.observe(container.parentElement);  // also watch board-area for portrait resize
 // Also sync on orientation change — iOS doesn't always fire resize
 window.addEventListener('orientationchange', () => { setTimeout(syncCanvas, 120); });
 
@@ -1970,12 +2000,20 @@ function c2n(cx, cy) {
 }
 function getPos(e) {
   // Return normalized coords from a pointer/touch event.
-  // Divide by rect.width/height (visual size) not canvasW/canvasH (CSS size)
-  // so coords are correct at any zoom level.
+  // In portrait mode the container is rotated 90° CW, so screen axes are swapped:
+  //   screen Y → court X,  screen X (inverted) → court Y.
   const r = canvas.getBoundingClientRect();
   const t = e.touches ? e.touches[0] : e;
-  const nx = (t.clientX - r.left) / r.width * 1000;
-  const ny = (t.clientY - r.top)  / r.height * 600;
+  const sx = t.clientX - r.left;
+  const sy = t.clientY - r.top;
+  let nx, ny;
+  if (state.portraitRotated) {
+    nx = sy / r.height * 1000;
+    ny = (1 - sx / r.width) * 600;
+  } else {
+    nx = sx / r.width  * 1000;
+    ny = sy / r.height * 600;
+  }
   return { nx, ny };
 }
 
@@ -2485,7 +2523,13 @@ function makeDraggable(el, idx) {
       hasMoved = true;
       clearTimeout(longPressTimer);
     }
-    const dx = (e.clientX - ox) / state.zoom, dy = (e.clientY - oy) / state.zoom;
+    // In portrait the container is rotated 90° CW: screen-Y → container-X, screen-X → -container-Y
+    const dx = state.portraitRotated
+      ?  (e.clientY - oy) / state.zoom
+      :  (e.clientX - ox) / state.zoom;
+    const dy = state.portraitRotated
+      ? -(e.clientX - ox) / state.zoom
+      :  (e.clientY - oy) / state.zoom;
 
     const canvasLeft = parseFloat(canvas.style.left) || 0;
     const canvasTop  = parseFloat(canvas.style.top)  || 0;
@@ -4309,6 +4353,11 @@ document.addEventListener('keydown', e => {
 // ZOOM / PAN
 // ══════════════════════════════════════════════
 function applyZoom() {
+  if (state.portraitRotated) {
+    const btn = document.getElementById('btn-reset-zoom');
+    if (btn) btn.style.display = 'none';
+    return; // portrait transform is managed by updatePortraitLayout()
+  }
   const z = state.zoom;
   const boardArea = container.parentElement;
   const maxPanX = 0;
@@ -4348,6 +4397,7 @@ function applyZoom() {
   container.addEventListener('touchstart', (e) => {
     const ts = Array.from(e.touches);
     if (ts.length === 2) {
+      if (state.portraitRotated) { e.preventDefault(); return; } // no zoom in portrait
       // Two-finger pinch starts — cancel any drawing stroke in progress
       e.preventDefault();
       pinching = true;
