@@ -1,9 +1,10 @@
 // src/sports-config.js
 // Court coordinate system: x = 0.0 (left) → 1.0 (right), y = 0.0 (top) → 1.0 (bottom)
 // SVG viewBox: "0 0 1000 600" — court is landscape orientation
-// Team A (blue) attacks right → starts LEFT half (x ≈ 0.05–0.45)
-// Team B (red) attacks left  → starts RIGHT half (x ≈ 0.55–0.95)
-// Goalkeeper for A ≈ x=0.04, for B ≈ x=0.96
+// Team A (blue) attacks right → starts LEFT half (x ≈ 0.08–0.45)
+// Team B (red) attacks left  → starts RIGHT half (x ≈ 0.55–0.92)
+// Goalkeeper x is sport-specific: placed at the centre of the goal mouth, INSIDE the field.
+// Court boundaries vary: handball/futsal x=70–930, football x=130–870, field hockey x=101–899, etc.
 
 export const SPORT_TOKENS = {
 
@@ -80,8 +81,9 @@ export const SPORT_TOKENS = {
 
   handball: [
     // IHF: 7v7 (6 outfield + GK). 4-2 outfield formation.
+    // Court x=70–930. Goal mouth centre: left x=80, right x=920. GK placed in goal.
     // Team A (blue) — left half, attacking right
-    { team: 'blue', label: 'GK', pct: [0.04, 0.50] },
+    { team: 'blue', label: 'GK', pct: [0.08, 0.50] },
     { team: 'blue', label: 'LW', pct: [0.25, 0.15] },
     { team: 'blue', label: 'LB', pct: [0.30, 0.35] },
     { team: 'blue', label: 'CB', pct: [0.32, 0.50] },
@@ -89,7 +91,7 @@ export const SPORT_TOKENS = {
     { team: 'blue', label: 'RW', pct: [0.25, 0.85] },
     { team: 'blue', label: 'PV', pct: [0.40, 0.50] },
     // Team B (red) — right half, attacking left
-    { team: 'red',  label: 'GK', pct: [0.96, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.92, 0.50] },
     { team: 'red',  label: 'LW', pct: [0.75, 0.15] },
     { team: 'red',  label: 'LB', pct: [0.70, 0.35] },
     { team: 'red',  label: 'CB', pct: [0.68, 0.50] },
@@ -100,12 +102,13 @@ export const SPORT_TOKENS = {
 
   futsal: [
     // FIFA Futsal: 5v5 (4 outfield + GK). 1-2-1 formation.
-    { team: 'blue', label: 'GK', pct: [0.04, 0.50] },
+    // Court x=70–930. Goal centre: left x=80, right x=920.
+    { team: 'blue', label: 'GK', pct: [0.08, 0.50] },
     { team: 'blue', label: 'FX', pct: [0.20, 0.50] },
     { team: 'blue', label: 'AL', pct: [0.30, 0.28] },
     { team: 'blue', label: 'AR', pct: [0.30, 0.72] },
     { team: 'blue', label: 'PI', pct: [0.42, 0.50] },
-    { team: 'red',  label: 'GK', pct: [0.96, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.92, 0.50] },
     { team: 'red',  label: 'FX', pct: [0.80, 0.50] },
     { team: 'red',  label: 'AL', pct: [0.70, 0.28] },
     { team: 'red',  label: 'AR', pct: [0.70, 0.72] },
@@ -114,11 +117,12 @@ export const SPORT_TOKENS = {
 
   futsal_mini: [
     // 4v4 variant (3 outfield + GK). 1-1-1.
-    { team: 'blue', label: 'GK', pct: [0.04, 0.50] },
+    // Court x=140–860. Goal centre: left x=150, right x=850.
+    { team: 'blue', label: 'GK', pct: [0.15, 0.50] },
     { team: 'blue', label: 'DF', pct: [0.22, 0.50] },
     { team: 'blue', label: 'MF', pct: [0.33, 0.50] },
     { team: 'blue', label: 'FW', pct: [0.43, 0.50] },
-    { team: 'red',  label: 'GK', pct: [0.96, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.85, 0.50] },
     { team: 'red',  label: 'DF', pct: [0.78, 0.50] },
     { team: 'red',  label: 'MF', pct: [0.67, 0.50] },
     { team: 'red',  label: 'FW', pct: [0.57, 0.50] },
@@ -175,13 +179,14 @@ export const SPORT_TOKENS = {
 
   floorball: [
     // IFF: 6v6 (5 outfield + GK). 2-2-1 formation.
-    { team: 'blue', label: 'GK', pct: [0.04, 0.50] },
+    // Court x=70–930. Goal centre: left x=80, right x=920.
+    { team: 'blue', label: 'GK', pct: [0.08, 0.50] },
     { team: 'blue', label: 'LD', pct: [0.20, 0.28] },
     { team: 'blue', label: 'RD', pct: [0.20, 0.72] },
     { team: 'blue', label: 'LM', pct: [0.30, 0.28] },
     { team: 'blue', label: 'RM', pct: [0.30, 0.72] },
     { team: 'blue', label: 'FW', pct: [0.40, 0.50] },
-    { team: 'red',  label: 'GK', pct: [0.96, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.92, 0.50] },
     { team: 'red',  label: 'LD', pct: [0.80, 0.28] },
     { team: 'red',  label: 'RD', pct: [0.80, 0.72] },
     { team: 'red',  label: 'LM', pct: [0.70, 0.28] },
@@ -234,8 +239,9 @@ export const SPORT_TOKENS = {
 
   football_full: [
     // FIFA: 11v11. 4-3-3 formation.
+    // Court x=130–870. Goal line: left x=130, right x=870. GK on goal line (inside).
     // Team A (blue) — left half
-    { team: 'blue', label: 'GK', pct: [0.04, 0.50] },
+    { team: 'blue', label: 'GK', pct: [0.14, 0.50] },
     { team: 'blue', label: 'LB', pct: [0.18, 0.82] },
     { team: 'blue', label: 'CB', pct: [0.18, 0.62] },
     { team: 'blue', label: 'CB', pct: [0.18, 0.38] },
@@ -247,7 +253,7 @@ export const SPORT_TOKENS = {
     { team: 'blue', label: 'ST', pct: [0.40, 0.50] },
     { team: 'blue', label: 'RW', pct: [0.40, 0.18] },
     // Team B (red) — right half
-    { team: 'red',  label: 'GK', pct: [0.96, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.86, 0.50] },
     { team: 'red',  label: 'LB', pct: [0.82, 0.18] },
     { team: 'red',  label: 'CB', pct: [0.82, 0.38] },
     { team: 'red',  label: 'CB', pct: [0.82, 0.62] },
@@ -272,8 +278,8 @@ export const SPORT_TOKENS = {
     { team: 'blue', label: 'LW', pct: [0.48, 0.82] },
     { team: 'blue', label: 'ST', pct: [0.48, 0.50] },
     { team: 'blue', label: 'RW', pct: [0.48, 0.18] },
-    // Defending team (red) — compressed, facing left
-    { team: 'red',  label: 'GK', pct: [0.96, 0.50] },
+    // Defending team (red) — compressed, facing left; their goal is left boundary x=130
+    { team: 'red',  label: 'GK', pct: [0.14, 0.50] },
     { team: 'red',  label: 'LB', pct: [0.80, 0.18] },
     { team: 'red',  label: 'CB', pct: [0.78, 0.38] },
     { team: 'red',  label: 'CB', pct: [0.78, 0.62] },
@@ -292,7 +298,7 @@ export const SPORT_TOKENS = {
     // World Rugby: 15v15. 3-4-1-2-3 (scrum formation → attacking spread)
     // Using a typical attacking spread: 1-3-4-3-4 across pitch
     // Team A (blue)
-    { team: 'blue', label: '15', pct: [0.06, 0.50] },  // fullback
+    { team: 'blue', label: '15', pct: [0.08, 0.50] },  // fullback
     { team: 'blue', label: '11', pct: [0.12, 0.88] },  // left wing
     { team: 'blue', label: '12', pct: [0.16, 0.65] },  // inside centre
     { team: 'blue', label: '13', pct: [0.16, 0.35] },  // outside centre
@@ -308,7 +314,7 @@ export const SPORT_TOKENS = {
     { team: 'blue', label: '2',  pct: [0.40, 0.50] },  // hooker
     { team: 'blue', label: '1',  pct: [0.40, 0.72] },  // loosehead prop
     // Team B (red)
-    { team: 'red',  label: '15', pct: [0.94, 0.50] },
+    { team: 'red',  label: '15', pct: [0.92, 0.50] },
     { team: 'red',  label: '11', pct: [0.88, 0.12] },
     { team: 'red',  label: '12', pct: [0.84, 0.35] },
     { team: 'red',  label: '13', pct: [0.84, 0.65] },
@@ -328,7 +334,7 @@ export const SPORT_TOKENS = {
   rugby_league: [
     // World Rugby League: 13v13. 6 forwards + 6 backs + halfback.
     // Team A (blue)
-    { team: 'blue', label: '1',  pct: [0.06, 0.50] },  // fullback
+    { team: 'blue', label: '1',  pct: [0.08, 0.50] },  // fullback
     { team: 'blue', label: '2',  pct: [0.12, 0.12] },  // right wing
     { team: 'blue', label: '3',  pct: [0.16, 0.28] },  // right centre
     { team: 'blue', label: '4',  pct: [0.16, 0.72] },  // left centre
@@ -342,7 +348,7 @@ export const SPORT_TOKENS = {
     { team: 'blue', label: '12', pct: [0.38, 0.65] },  // second row
     { team: 'blue', label: '13', pct: [0.38, 0.50] },  // loose forward
     // Team B (red)
-    { team: 'red',  label: '1',  pct: [0.94, 0.50] },
+    { team: 'red',  label: '1',  pct: [0.92, 0.50] },
     { team: 'red',  label: '2',  pct: [0.88, 0.88] },
     { team: 'red',  label: '3',  pct: [0.84, 0.72] },
     { team: 'red',  label: '4',  pct: [0.84, 0.28] },
@@ -361,7 +367,8 @@ export const SPORT_TOKENS = {
 
   field_hockey: [
     // FIH: 11v11. 4-3-3 / 1-4-3-3.
-    { team: 'blue', label: 'GK', pct: [0.04, 0.50] },
+    // Court x=101–899. Goal rect: left x=101 w=16, right x=883 w=16. Centre: left x=109, right x=891.
+    { team: 'blue', label: 'GK', pct: [0.11, 0.50] },
     { team: 'blue', label: 'LB', pct: [0.18, 0.80] },
     { team: 'blue', label: 'CB', pct: [0.18, 0.60] },
     { team: 'blue', label: 'CB', pct: [0.18, 0.40] },
@@ -372,7 +379,7 @@ export const SPORT_TOKENS = {
     { team: 'blue', label: 'LF', pct: [0.40, 0.80] },
     { team: 'blue', label: 'CF', pct: [0.40, 0.50] },
     { team: 'blue', label: 'RF', pct: [0.40, 0.20] },
-    { team: 'red',  label: 'GK', pct: [0.96, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.89, 0.50] },
     { team: 'red',  label: 'LB', pct: [0.82, 0.20] },
     { team: 'red',  label: 'CB', pct: [0.82, 0.40] },
     { team: 'red',  label: 'CB', pct: [0.82, 0.60] },
@@ -387,13 +394,14 @@ export const SPORT_TOKENS = {
 
   indoor_hockey: [
     // FIH Indoor: 6v6 (5 outfield + GK). 2-2-1 formation.
-    { team: 'blue', label: 'GK', pct: [0.04, 0.50] },
+    // Court x=70–930. Goal rect: left x=70 w=20, right x=910 w=20. Centre: left x=80, right x=920.
+    { team: 'blue', label: 'GK', pct: [0.08, 0.50] },
     { team: 'blue', label: 'LD', pct: [0.20, 0.30] },
     { team: 'blue', label: 'RD', pct: [0.20, 0.70] },
     { team: 'blue', label: 'LM', pct: [0.30, 0.30] },
     { team: 'blue', label: 'RM', pct: [0.30, 0.70] },
     { team: 'blue', label: 'FW', pct: [0.40, 0.50] },
-    { team: 'red',  label: 'GK', pct: [0.96, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.92, 0.50] },
     { team: 'red',  label: 'LD', pct: [0.80, 0.70] },
     { team: 'red',  label: 'RD', pct: [0.80, 0.30] },
     { team: 'red',  label: 'LM', pct: [0.70, 0.70] },
@@ -405,8 +413,9 @@ export const SPORT_TOKENS = {
 
   gaelic_football: [
     // GAA: 15v15. Goalkeeper + 6 backs + 2 midfielders + 6 forwards.
+    // Court x=105–895. Goal line at x=105/895. GK at x=115/885 (10px inside boundary).
     // Team A (blue)
-    { team: 'blue', label: 'GK', pct: [0.04, 0.50] },
+    { team: 'blue', label: 'GK', pct: [0.12, 0.50] },
     { team: 'blue', label: 'FB', pct: [0.12, 0.22] },
     { team: 'blue', label: 'FB', pct: [0.12, 0.50] },
     { team: 'blue', label: 'FB', pct: [0.12, 0.78] },
@@ -422,7 +431,7 @@ export const SPORT_TOKENS = {
     { team: 'blue', label: 'FF', pct: [0.43, 0.50] },
     { team: 'blue', label: 'FF', pct: [0.43, 0.78] },
     // Team B (red)
-    { team: 'red',  label: 'GK', pct: [0.96, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.88, 0.50] },
     { team: 'red',  label: 'FB', pct: [0.88, 0.78] },
     { team: 'red',  label: 'FB', pct: [0.88, 0.50] },
     { team: 'red',  label: 'FB', pct: [0.88, 0.22] },
@@ -441,8 +450,9 @@ export const SPORT_TOKENS = {
 
   hurling: [
     // GAA Hurling: same 15v15 structure as Gaelic football.
+    // Court x=105–895. GK at x=115/885.
     // Team A (blue)
-    { team: 'blue', label: 'GK', pct: [0.04, 0.50] },
+    { team: 'blue', label: 'GK', pct: [0.12, 0.50] },
     { team: 'blue', label: 'FB', pct: [0.12, 0.22] },
     { team: 'blue', label: 'FB', pct: [0.12, 0.50] },
     { team: 'blue', label: 'FB', pct: [0.12, 0.78] },
@@ -458,7 +468,7 @@ export const SPORT_TOKENS = {
     { team: 'blue', label: 'FF', pct: [0.43, 0.50] },
     { team: 'blue', label: 'FF', pct: [0.43, 0.78] },
     // Team B (red)
-    { team: 'red',  label: 'GK', pct: [0.96, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.88, 0.50] },
     { team: 'red',  label: 'FB', pct: [0.88, 0.78] },
     { team: 'red',  label: 'FB', pct: [0.88, 0.50] },
     { team: 'red',  label: 'FB', pct: [0.88, 0.22] },
@@ -554,13 +564,14 @@ export const SPORT_TOKENS = {
 
   ice_hockey: [
     // IIHF: 6v6 (5 skaters + GK). 2-1-2 formation.
-    { team: 'blue', label: 'GK', pct: [0.04, 0.50] },
+    // Court x=70–930. Crease: left x=127 w=40 → centre x=147; right x=833 w=40 → centre x=853.
+    { team: 'blue', label: 'GK', pct: [0.15, 0.50] },
     { team: 'blue', label: 'LD', pct: [0.22, 0.30] },
     { team: 'blue', label: 'RD', pct: [0.22, 0.70] },
     { team: 'blue', label: 'C',  pct: [0.32, 0.50] },
     { team: 'blue', label: 'LW', pct: [0.38, 0.25] },
     { team: 'blue', label: 'RW', pct: [0.38, 0.75] },
-    { team: 'red',  label: 'GK', pct: [0.96, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.85, 0.50] },
     { team: 'red',  label: 'LD', pct: [0.78, 0.70] },
     { team: 'red',  label: 'RD', pct: [0.78, 0.30] },
     { team: 'red',  label: 'C',  pct: [0.68, 0.50] },
@@ -570,12 +581,13 @@ export const SPORT_TOKENS = {
 
   roller_hockey: [
     // FIRS: 5v5 (4 skaters + GK) — no blue lines, more open game.
-    { team: 'blue', label: 'GK', pct: [0.04, 0.50] },
+    // Court x=70–930. Goal rect: left x=70 w=40 → centre x=90; right x=890 w=40 → centre x=910.
+    { team: 'blue', label: 'GK', pct: [0.09, 0.50] },
     { team: 'blue', label: 'LD', pct: [0.24, 0.30] },
     { team: 'blue', label: 'RD', pct: [0.24, 0.70] },
     { team: 'blue', label: 'LW', pct: [0.38, 0.28] },
     { team: 'blue', label: 'RW', pct: [0.38, 0.72] },
-    { team: 'red',  label: 'GK', pct: [0.96, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.91, 0.50] },
     { team: 'red',  label: 'LD', pct: [0.76, 0.70] },
     { team: 'red',  label: 'RD', pct: [0.76, 0.30] },
     { team: 'red',  label: 'LW', pct: [0.62, 0.72] },
@@ -594,11 +606,12 @@ export const SPORT_TOKENS = {
 
   beach_handball: [
     // IHF Beach: 4v4 (3 outfield + GK). Rotating GK/field.
-    { team: 'blue', label: 'GK', pct: [0.06, 0.50] },
+    // Court x=176–824. Goal rect: left x=176 w=20 → centre x=186; right x=804 w=20 → centre x=814.
+    { team: 'blue', label: 'GK', pct: [0.19, 0.50] },
     { team: 'blue', label: 'LW', pct: [0.25, 0.25] },
     { team: 'blue', label: 'PV', pct: [0.32, 0.50] },
     { team: 'blue', label: 'RW', pct: [0.25, 0.75] },
-    { team: 'red',  label: 'GK', pct: [0.94, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.81, 0.50] },
     { team: 'red',  label: 'LW', pct: [0.75, 0.75] },
     { team: 'red',  label: 'PV', pct: [0.68, 0.50] },
     { team: 'red',  label: 'RW', pct: [0.75, 0.25] },
@@ -606,12 +619,13 @@ export const SPORT_TOKENS = {
 
   beach_soccer: [
     // FIFA Beach Soccer: 5v5 (4 outfield + GK).
-    { team: 'blue', label: 'GK', pct: [0.06, 0.50] },
+    // Court x=130–870. Goal rect: left x=130 w=35 → centre x=147; right x=835 w=35 → centre x=852.
+    { team: 'blue', label: 'GK', pct: [0.15, 0.50] },
     { team: 'blue', label: 'DF', pct: [0.20, 0.50] },
     { team: 'blue', label: 'LW', pct: [0.30, 0.25] },
     { team: 'blue', label: 'RW', pct: [0.30, 0.75] },
     { team: 'blue', label: 'FW', pct: [0.40, 0.50] },
-    { team: 'red',  label: 'GK', pct: [0.94, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.85, 0.50] },
     { team: 'red',  label: 'DF', pct: [0.80, 0.50] },
     { team: 'red',  label: 'LW', pct: [0.70, 0.75] },
     { team: 'red',  label: 'RW', pct: [0.70, 0.25] },
@@ -630,7 +644,8 @@ export const SPORT_TOKENS = {
 
   lacrosse: [
     // World Lacrosse (field): 10v10. GK + 3 defense + 3 midfield + 3 attack.
-    { team: 'blue', label: 'GK', pct: [0.04, 0.50] },
+    // Court x=70–930. Goal rect: left x=70 w=25 → centre x=82; right x=905 w=25 → centre x=918.
+    { team: 'blue', label: 'GK', pct: [0.08, 0.50] },
     { team: 'blue', label: 'D',  pct: [0.16, 0.28] },
     { team: 'blue', label: 'D',  pct: [0.16, 0.50] },
     { team: 'blue', label: 'D',  pct: [0.16, 0.72] },
@@ -640,7 +655,7 @@ export const SPORT_TOKENS = {
     { team: 'blue', label: 'A',  pct: [0.40, 0.28] },
     { team: 'blue', label: 'A',  pct: [0.40, 0.50] },
     { team: 'blue', label: 'A',  pct: [0.40, 0.72] },
-    { team: 'red',  label: 'GK', pct: [0.96, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.92, 0.50] },
     { team: 'red',  label: 'D',  pct: [0.84, 0.72] },
     { team: 'red',  label: 'D',  pct: [0.84, 0.50] },
     { team: 'red',  label: 'D',  pct: [0.84, 0.28] },
@@ -656,14 +671,15 @@ export const SPORT_TOKENS = {
 
   water_polo: [
     // FINA: 7v7 (6 field + GK). 3-3 formation.
-    { team: 'blue', label: 'GK', pct: [0.04, 0.50] },
+    // Court x=140–860. Goal rect: left x=140 w=55 → centre x=167; right x=805 w=55 → centre x=832.
+    { team: 'blue', label: 'GK', pct: [0.17, 0.50] },
     { team: 'blue', label: 'L1', pct: [0.20, 0.22] },
     { team: 'blue', label: 'C',  pct: [0.20, 0.50] },
     { team: 'blue', label: 'R1', pct: [0.20, 0.78] },
     { team: 'blue', label: 'L2', pct: [0.32, 0.28] },
     { team: 'blue', label: 'CF', pct: [0.38, 0.50] },
     { team: 'blue', label: 'R2', pct: [0.32, 0.72] },
-    { team: 'red',  label: 'GK', pct: [0.96, 0.50] },
+    { team: 'red',  label: 'GK', pct: [0.83, 0.50] },
     { team: 'red',  label: 'L1', pct: [0.80, 0.78] },
     { team: 'red',  label: 'C',  pct: [0.80, 0.50] },
     { team: 'red',  label: 'R1', pct: [0.80, 0.22] },
