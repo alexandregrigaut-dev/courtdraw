@@ -381,10 +381,41 @@ button {
   flex-shrink: 0; background: none; border: none; color: rgba(255,255,255,0.6);
   font-size: 20px; cursor: pointer; padding: 4px; line-height: 1;
 }
-/* iOS share arrow indicator */
-#pwa-ios-arrow {
-  display: none; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-  z-index: 401; pointer-events: none;
+/* iOS install instructions modal */
+#pwa-ios-modal {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  align-items: flex-end; justify-content: center;
+}
+#pwa-ios-modal.visible { display: flex; }
+#pwa-ios-modal-box {
+  background: #1e293b; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px 20px 0 0; padding: 24px 24px calc(24px + env(safe-area-inset-bottom));
+  width: 100%; max-width: 480px;
+}
+#pwa-ios-modal-box h3 {
+  font-size: 17px; font-weight: 700; color: #fff; margin: 0 0 4px;
+  text-align: center;
+}
+#pwa-ios-modal-box p {
+  font-size: 13px; color: rgba(255,255,255,0.55); text-align: center; margin: 0 0 20px;
+}
+.pwa-ios-step {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(255,255,255,0.06); border-radius: 12px;
+  padding: 14px; margin-bottom: 10px;
+}
+.pwa-ios-step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #1d4ed8; color: #fff; font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.pwa-ios-step-text { font-size: 14px; color: #fff; line-height: 1.4; }
+.pwa-ios-step-text em { color: rgba(255,255,255,0.55); font-style: normal; font-size: 12px; display: block; margin-top: 2px; }
+#pwa-ios-modal-close {
+  width: 100%; margin-top: 16px; padding: 14px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
 }
 /* Toast */
 #toast {
@@ -1236,6 +1267,36 @@ body.portrait-mode .player-token:active {
   </div>
   <button id="pwa-banner-install">Install</button>
   <button id="pwa-banner-close" aria-label="Dismiss">✕</button>
+</div>
+
+<!-- iOS Install Instructions Modal -->
+<div id="pwa-ios-modal" role="dialog" aria-modal="true" aria-label="How to install CourtDraw">
+  <div id="pwa-ios-modal-box">
+    <h3>Add CourtDraw to your Home Screen</h3>
+    <p>Follow these 3 steps in Safari</p>
+    <div class="pwa-ios-step">
+      <div class="pwa-ios-step-num">1</div>
+      <div class="pwa-ios-step-text">
+        Tap the <strong>Share</strong> button
+        <em>The box with an arrow pointing up — at the bottom of Safari</em>
+      </div>
+    </div>
+    <div class="pwa-ios-step">
+      <div class="pwa-ios-step-num">2</div>
+      <div class="pwa-ios-step-text">
+        Scroll down and tap <strong>"Add to Home Screen"</strong>
+        <em>You may need to scroll the list of options</em>
+      </div>
+    </div>
+    <div class="pwa-ios-step">
+      <div class="pwa-ios-step-num">3</div>
+      <div class="pwa-ios-step-text">
+        Tap <strong>"Add"</strong> in the top right corner
+        <em>CourtDraw will appear on your home screen like a native app</em>
+      </div>
+    </div>
+    <button id="pwa-ios-modal-close">Got it!</button>
+  </div>
 </div>
 
 <script>
@@ -4917,7 +4978,7 @@ document.addEventListener('DOMContentLoaded', init);
     if (localStorage.getItem(DISMISSED_KEY)) return;
 
     function showBanner() {
-      setTimeout(() => banner.classList.add('visible'), 3000);
+      setTimeout(() => banner.classList.add('visible'), 1000);
     }
     function hideBanner(permanent) {
       banner.classList.remove('visible');
@@ -4931,14 +4992,22 @@ document.addEventListener('DOMContentLoaded', init);
                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
     if (isIOS) {
-      // iOS: no automatic prompt — show manual instructions
+      // iOS: no automatic prompt — show manual instructions modal
+      const iosModal     = document.getElementById('pwa-ios-modal');
+      const iosModalClose = document.getElementById('pwa-ios-modal-close');
       bannerTitle.textContent = 'Add to Home Screen';
-      bannerDesc.textContent  = 'Tap the Share button ↑ then "Add to Home Screen" for the full app experience';
-      btnInstall.textContent  = 'How?';
+      bannerDesc.textContent  = 'Works offline, no App Store needed — free forever';
+      btnInstall.textContent  = 'How to install';
       btnInstall.addEventListener('click', () => {
-        showToast('Tap Share (⬆) in Safari then "Add to Home Screen"');
+        iosModal.classList.add('visible');
         gtag('event', 'pwa_ios_prompt_tapped', { event_category: 'install' });
-        hideBanner(false);
+      });
+      iosModalClose.addEventListener('click', () => {
+        iosModal.classList.remove('visible');
+        hideBanner(true);
+      });
+      iosModal.addEventListener('click', (e) => {
+        if (e.target === iosModal) { iosModal.classList.remove('visible'); }
       });
       showBanner();
       return;
