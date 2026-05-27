@@ -688,6 +688,22 @@ export const SPORT_TOKENS = {
     { team: 'red',  label: 'R2', pct: [0.68, 0.28] },
   ],
 
+  fistball: [
+    // IFA standard: 5v5 on a 50m×20m court, net at centre.
+    // Court x=70–930, y=124–476. Net at x=500.
+    // Formation: 1 back (x≈0.15/0.85) + 2 mid (x≈0.28/0.72) + 2 front (x≈0.41/0.59)
+    { team: 'blue', label: 'P1', pct: [0.15, 0.50] },
+    { team: 'blue', label: 'P2', pct: [0.28, 0.28] },
+    { team: 'blue', label: 'P3', pct: [0.28, 0.72] },
+    { team: 'blue', label: 'P4', pct: [0.41, 0.33] },
+    { team: 'blue', label: 'P5', pct: [0.41, 0.67] },
+    { team: 'red',  label: 'P1', pct: [0.85, 0.50] },
+    { team: 'red',  label: 'P2', pct: [0.72, 0.72] },
+    { team: 'red',  label: 'P3', pct: [0.72, 0.28] },
+    { team: 'red',  label: 'P4', pct: [0.59, 0.67] },
+    { team: 'red',  label: 'P5', pct: [0.59, 0.33] },
+  ],
+
   // ─── WHITEBOARD (blank canvas — no default tokens) ────────────────────────
   whiteboard: [],
 
