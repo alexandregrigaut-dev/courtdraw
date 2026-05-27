@@ -644,10 +644,65 @@ body.presentation-mode #presentation-overlay { display: flex; }
   #ls-top-hint    { top: 0;    height: 22px; }
   #ls-bottom-hint { bottom: 0; height: 28px; }
 }
-/* Portrait mobile: court fills board-area naturally (no rotation needed) */
+/* ── Portrait immersive mode ────────────────────────────────────────────── */
+/* Court fills the full viewport; chrome (header/phase-bar/toolbar) floats  */
+/* as glass overlays and is hidden by default, revealed by edge tap.         */
 #court-container {
   transform-origin: 0 0;
   will-change: transform;
+}
+body.portrait-mode #board-area {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+}
+body.portrait-mode #app-header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+  background: rgba(29, 78, 216, 0.86);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255,255,255,0.13);
+  transform: translateY(-100%);
+  transition: transform 0.22s ease;
+}
+[data-theme="light"] body.portrait-mode #app-header {
+  background: rgba(239, 246, 255, 0.88);
+  border-bottom: 1px solid rgba(29,78,216,0.18);
+}
+body.portrait-mode #phase-bar {
+  position: fixed; left: 0; right: 0; z-index: 20;
+  bottom: calc(var(--toolbar-h) + env(safe-area-inset-bottom));
+  background: rgba(29, 78, 216, 0.86);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(255,255,255,0.10);
+  transform: translateY(150px);
+  transition: transform 0.22s ease;
+}
+[data-theme="light"] body.portrait-mode #phase-bar {
+  background: rgba(239, 246, 255, 0.88);
+  border-top: 1px solid rgba(29,78,216,0.18);
+}
+body.portrait-mode #toolbar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+  background: rgba(29, 78, 216, 0.86);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(255,255,255,0.10);
+  transform: translateY(150px);
+  transition: transform 0.22s ease;
+}
+[data-theme="light"] body.portrait-mode #toolbar {
+  background: rgba(239, 246, 255, 0.88);
+  border-top: 1px solid rgba(29,78,216,0.18);
+}
+/* Reveal chrome on demand */
+body.portrait-mode.pt-chrome-visible #app-header { transform: translateY(0); }
+body.portrait-mode.pt-chrome-visible #phase-bar  { transform: translateY(0); }
+body.portrait-mode.pt-chrome-visible #toolbar    { transform: translateY(0); }
+/* Hide the floating toolbar-toggle circle in portrait (replaced by tap-to-reveal) */
+body.portrait-mode #toolbar-toggle-btn { display: none !important; }
+/* Counter-rotate player tokens so their labels read upright in portrait */
+body.portrait-mode .player-token {
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+body.portrait-mode .player-token:active {
+  transform: translate(-50%, -50%) rotate(-90deg) scale(1.15);
 }
 @media (max-width: 900px) {
   #toolbar-toggle-btn {
@@ -1927,26 +1982,41 @@ let previewObj = null;
 
 // ── Portrait rotation ────────────────────────────────────────────────────────
 // On phones/tablets in portrait mode the landscape court is rotated 90° CW so
-// its long axis fills the screen height.  The container is given explicit pixel
-// dimensions (H×W) and a CSS transform instead of the normal 100%×100%.
+// its long axis fills the full viewport height (immersive — like landscape mode).
+// The container is given explicit pixel dimensions (H×W) and a CSS transform.
+let _ptWelcomeTimer = null;
 function updatePortraitLayout() {
-  const boardArea = container.parentElement;
-  const W = boardArea.clientWidth;
-  const H = boardArea.clientHeight;
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const wasPortrait = state.portraitRotated;
   state.portraitRotated = H > W * 1.1;  // at least 10% taller than wide
+
   if (state.portraitRotated) {
-    container.style.position       = 'absolute';
-    container.style.width          = H + 'px';
-    container.style.height         = W + 'px';
+    document.body.classList.add('portrait-mode');
+    container.style.position        = 'absolute';
+    container.style.top             = '0';
+    container.style.left            = '0';
+    container.style.width           = H + 'px';
+    container.style.height          = W + 'px';
     container.style.transformOrigin = '0 0';
-    container.style.transform      = `translateX(${W}px) rotate(90deg)`;
+    container.style.transform       = `translateX(${W}px) rotate(90deg)`;
     state.zoom = 1; state.panX = 0; state.panY = 0;
+    // Brief welcome flash to show chrome when first entering portrait
+    if (!wasPortrait) {
+      document.body.classList.add('pt-chrome-visible');
+      clearTimeout(_ptWelcomeTimer);
+      _ptWelcomeTimer = setTimeout(() => document.body.classList.remove('pt-chrome-visible'), 2500);
+    }
   } else {
-    container.style.position       = '';
-    container.style.width          = '';
-    container.style.height         = '';
+    document.body.classList.remove('portrait-mode');
+    document.body.classList.remove('pt-chrome-visible');
+    container.style.position        = '';
+    container.style.top             = '';
+    container.style.left            = '';
+    container.style.width           = '';
+    container.style.height          = '';
     container.style.transformOrigin = '0 0';
-    container.style.transform      = '';
+    container.style.transform       = '';
   }
 }
 
@@ -4693,6 +4763,43 @@ document.addEventListener('DOMContentLoaded', init);
       document.body.classList.add('ls-chrome-visible');
       hideTimer = setTimeout(hideChrome, 2500);
     }
+  })();
+
+  // ── Portrait immersive mode chrome reveal ──────────────────────────────
+  // Tapping the top or bottom ~60-70 px reveals header/toolbar/phase-bar.
+  // Chrome auto-hides after 3 s of inactivity (same pattern as landscape).
+  (function() {
+    const HIDE_DELAY  = 3000;
+    const TOP_ZONE    = 60;
+    const BOTTOM_ZONE = 70;
+    let   ptHideTimer = null;
+
+    function showPtChrome() {
+      document.body.classList.add('pt-chrome-visible');
+      clearTimeout(ptHideTimer);
+      ptHideTimer = setTimeout(hidePtChrome, HIDE_DELAY);
+    }
+    function hidePtChrome() {
+      document.body.classList.remove('pt-chrome-visible');
+      clearTimeout(ptHideTimer);
+    }
+
+    document.addEventListener('touchstart', function(e) {
+      if (!state.portraitRotated) return;
+      const y = e.touches[0].clientY;
+      const h = window.innerHeight;
+      if (y < TOP_ZONE || y > h - BOTTOM_ZONE) {
+        showPtChrome(); return;
+      }
+      if (e.target.closest('#app-header, #phase-bar, #toolbar')) {
+        clearTimeout(ptHideTimer);
+        ptHideTimer = setTimeout(hidePtChrome, HIDE_DELAY);
+      }
+    }, { passive: true });
+
+    window.addEventListener('resize', function() {
+      if (!state.portraitRotated) hidePtChrome();
+    });
   })();
 </script>
 </body>
