@@ -1685,13 +1685,16 @@ const COURTS = [
     icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d5a3e" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="1"/><path d="M2,12 A8,8 0 0,1 10,15 A8,8 0 0,1 2,18" fill="none" stroke="white" stroke-width="1.2"/><path d="M46,12 A8,8 0 0,0 38,15 A8,8 0 0,0 46,18" fill="none" stroke="white" stroke-width="1.2"/></svg>`,
     svg(){return `
       <rect width="1000" height="600" fill="#1a3a2a"/>
-      <rect x="130" y="85" width="740" height="430" fill="#2d5a3e"/>
-      <rect x="130" y="85" width="740" height="430" fill="none" stroke="white" stroke-width="3"/>
+      <clipPath id="ih_clip"><rect x="70" y="85" width="860" height="430"/></clipPath>
+      <rect x="70" y="85" width="860" height="430" fill="#2d5a3e"/>
+      <rect x="70" y="85" width="860" height="430" fill="none" stroke="white" stroke-width="3"/>
       <line x1="500" y1="85" x2="500" y2="515" stroke="white" stroke-width="2"/>
-      <path d="M130,101 A167,167 0 0,1 297,268 L297,332 A167,167 0 0,1 130,499" fill="none" stroke="white" stroke-width="2"/>
-      <path d="M870,101 A167,167 0 0,0 703,268 L703,332 A167,167 0 0,0 870,499" fill="none" stroke="white" stroke-width="2"/>
-      <rect x="130" y="268" width="20" height="64" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
-      <rect x="850" y="268" width="20" height="64" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <path d="M70,74 A194,194 0 0,1 264,268 L264,333 A194,194 0 0,1 70,527" fill="none" stroke="white" stroke-width="2" clip-path="url(#ih_clip)"/>
+      <path d="M930,74 A194,194 0 0,0 736,268 L736,333 A194,194 0 0,0 930,527" fill="none" stroke="white" stroke-width="2" clip-path="url(#ih_clip)"/>
+      <rect x="70" y="268" width="20" height="65" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <rect x="910" y="268" width="20" height="65" fill="rgba(255,255,255,0.1)" stroke="white" stroke-width="1.5"/>
+      <circle cx="208" cy="300" r="4" fill="white"/>
+      <circle cx="792" cy="300" r="4" fill="white"/>
       <text x="500" y="558" text-anchor="middle" font-family="system-ui" font-size="13" fill="rgba(255,255,255,0.4)" font-weight="600">INDOOR HOCKEY</text>`}
   },
   {
@@ -2178,9 +2181,21 @@ function buildObject(x1, y1, x2, y2, pts) {
       const mx = (x1+x2)/2, my = (y1+y2)/2;
       const len = Math.sqrt((x2-x1)**2+(y2-y1)**2);
       if (len < 1) return null;
+      // Perpendicular normal (positive = right of line direction)
       const nx2 = -(y2-y1)/len, ny2 = (x2-x1)/len;
+      // Detect which side of the straight line the user's gesture bowed toward.
+      // Signed cross-product sum: positive means points lie "left" of the vector
+      // (x1,y1)→(x2,y2), i.e. the gesture arced upward/leftward.
+      let signedDev = 0;
+      if (pts && pts.length > 2) {
+        for (const [px, py] of pts) {
+          signedDev += (px - x1) * (y2 - y1) - (py - y1) * (x2 - x1);
+        }
+      }
+      // If user bowed toward the "left" side, flip the control point to match.
+      const sign = signedDev > 0 ? -1 : 1;
       const offset = Math.max(30, len * 0.28);
-      return { ...base, type:'arc', x1, y1, x2, y2, cpx: mx+nx2*offset, cpy: my+ny2*offset };
+      return { ...base, type:'arc', x1, y1, x2, y2, cpx: mx+nx2*offset*sign, cpy: my+ny2*offset*sign };
     }
     case 'circle': {
       const r = Math.sqrt((x2-x1)**2+(y2-y1)**2);
