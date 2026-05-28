@@ -784,8 +784,9 @@ body.portrait-mode.pt-chrome-visible #pt-bottom-hint { opacity: 0; }
 }
 
 /* ── Toolbar pin button ──────────────────────────────────────────────────── */
+/* Default state: floating pill at bottom-right (chrome hidden) */
 #toolbar-pin-btn {
-  display: none; /* only in portrait / landscape mobile */
+  display: none;
   position: fixed;
   bottom: 16px;
   right: 16px;
@@ -793,7 +794,7 @@ body.portrait-mode.pt-chrome-visible #pt-bottom-hint { opacity: 0; }
   align-items: center;
   gap: 7px;
   padding: 0 16px;
-  height: 44px; /* iOS minimum tap target */
+  height: 44px;
   border-radius: 22px;
   border: 1.5px solid rgba(255,255,255,0.18);
   background: rgba(10,22,40,0.78);
@@ -806,28 +807,66 @@ body.portrait-mode.pt-chrome-visible #pt-bottom-hint { opacity: 0; }
   cursor: pointer;
   white-space: nowrap;
   box-shadow: 0 3px 16px rgba(0,0,0,0.35);
-  transition: bottom 0.22s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.12s ease;
+  transition: bottom 0.22s ease, right 0.22s ease, height 0.22s ease,
+              border-radius 0.22s ease, background 0.2s ease,
+              border-color 0.2s ease, color 0.2s ease, transform 0.12s ease,
+              box-shadow 0.2s ease, padding 0.22s ease;
 }
 #toolbar-pin-btn:active { transform: scale(0.95); }
+
 /* Show in portrait */
 body.portrait-mode #toolbar-pin-btn { display: flex; }
-/* Slide up above toolbar + phase bar when chrome is visible */
+
+/* Chrome visible: snap inline with phase bar — flush right, no pill shape */
 body.portrait-mode.pt-chrome-visible #toolbar-pin-btn {
-  bottom: calc(var(--toolbar-h) + var(--phase-bar-h) + env(safe-area-inset-bottom) + 8px);
+  bottom: calc(var(--toolbar-h) + env(safe-area-inset-bottom));
+  right: 0;
+  height: var(--phase-bar-h);
+  border-radius: 0;
+  border: none;
+  border-left: 1px solid rgba(255,255,255,0.13);
+  background: rgba(29,78,216,0.86);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: none;
+  padding: 0 14px;
+  color: rgba(255,255,255,0.8);
 }
-/* Pinned state — bright blue */
+/* Shrink phase bar content so it doesn't slide under the pin button */
+body.portrait-mode.pt-chrome-visible #phase-bar { padding-right: 108px; }
+
+/* Pinned state — brighter blue in both positions */
 body.toolbar-pinned #toolbar-pin-btn {
   background: #3b82f6;
   border-color: rgba(255,255,255,0.35);
   color: #ffffff;
   box-shadow: 0 3px 20px rgba(59,130,246,0.45);
 }
-/* Also show in landscape mobile */
+body.portrait-mode.pt-chrome-visible.toolbar-pinned #toolbar-pin-btn {
+  background: #2563eb;
+  border-left-color: rgba(255,255,255,0.2);
+  box-shadow: none;
+  color: #ffffff;
+}
+
+/* Also show in landscape mobile — same inline-with-phase-bar treatment */
 @media (max-width: 900px) and (orientation: landscape) {
   #toolbar-pin-btn { display: flex; }
   body.ls-chrome-visible #toolbar-pin-btn {
-    bottom: calc(var(--toolbar-h) + var(--phase-bar-h) + env(safe-area-inset-bottom) + 8px);
+    bottom: calc(var(--toolbar-h) + env(safe-area-inset-bottom));
+    right: 0;
+    height: var(--phase-bar-h);
+    border-radius: 0;
+    border: none;
+    border-left: 1px solid rgba(255,255,255,0.13);
+    background: rgba(29,78,216,0.86);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: none;
+    padding: 0 14px;
+    color: rgba(255,255,255,0.8);
   }
+  body.ls-chrome-visible #phase-bar { padding-right: 108px; }
 }
 /* Counter-rotate player tokens so their labels read upright in portrait */
 body.portrait-mode .player-token {
