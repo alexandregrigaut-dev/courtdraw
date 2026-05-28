@@ -63,14 +63,22 @@
     if (!params.get('session_id')) window.location.href = '/';
     // Optimistic update — shows Pro immediately while webhook processes in the background
     localStorage.setItem('courtdraw_pro', '1');
-    // Detect plan type from URL param (Stripe passes metadata back via session)
-    const plan = params.get('plan');
-    if (plan === 'club') {
+    // Detect plan type and trial status from URL params
+    const plan    = params.get('plan');
+    const isTrial = params.get('trial') === 'true';
+    if (plan === 'club' && isTrial) {
+      document.getElementById('success-title').textContent = 'Your 7-Day Club Trial Has Started!';
+      document.getElementById('success-body').textContent  = 'You have full Club access for 7 days — no charge until your trial ends. Go explore the shared library, invite your coaches, and set up your club branding. Cancel anytime before day 7 and you won\'t be billed.';
+      document.querySelector('.btn').href = '/club-admin.html';
+      document.querySelector('.btn').textContent = 'Open Club Admin →';
+    } else if (plan === 'club') {
       document.getElementById('success-title').textContent = 'Welcome to CourtDraw Club!';
-      document.getElementById('success-body').textContent = 'Your Club plan is active. All Pro features are unlocked plus your shared team library, club branding on exports, and the admin dashboard.';
+      document.getElementById('success-body').textContent  = 'Your Club plan is active. All Pro features are unlocked plus your shared team library, club branding on exports, and the admin dashboard.';
+      document.querySelector('.btn').href = '/club-admin.html';
+      document.querySelector('.btn').textContent = 'Open Club Admin →';
     } else {
       document.getElementById('success-title').textContent = 'Welcome to CourtDraw Pro!';
-      document.getElementById('success-body').textContent = 'Your subscription is active. All 38+ courts, unlimited saves, clean PNG exports, and more are now unlocked.';
+      document.getElementById('success-body').textContent  = 'Your subscription is active. All 38+ courts, unlimited saves, clean PNG exports, and more are now unlocked.';
     }
   </script>
 </body>

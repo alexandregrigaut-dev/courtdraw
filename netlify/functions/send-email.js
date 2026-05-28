@@ -141,7 +141,7 @@ const templates = {
       ctaText: 'Open the app',
       ctaUrl: `${APP_URL}/courtdraw-app.html`,
       features: [
-        { icon: '🏀', label: '37+ courts' },
+        { icon: '🏀', label: '38+ courts' },
         { icon: '✏️', label: 'Draw & annotate' },
         { icon: '📤', label: 'Export PNG' },
       ],
@@ -166,7 +166,7 @@ const templates = {
       ctaText: 'Open the app',
       ctaUrl: `${APP_URL}/courtdraw-app.html`,
       features: [
-        { icon: '🏟', label: '37+ courts' },
+        { icon: '🏟', label: '38+ courts' },
         { icon: '💾', label: 'Unlimited saves' },
         { icon: '📐', label: 'Multi-phase plays' },
       ],
@@ -249,22 +249,78 @@ const templates = {
     };
   },
 
-  cancellationScheduled: (email, endDate) => {
+  cancellationScheduled: (email, endDate, plan) => {
+    const planName = plan === 'club' ? 'Club' : 'Pro';
     const data = {
       label: 'Cancellation confirmed',
       labelColor: '#64748b',
       title: 'Your cancellation is confirmed',
-      body: `We have received your cancellation request. Your Pro access will remain active until <strong>${endDate}</strong>, after which your account will move to the Free plan.<br><br>
+      body: `We have received your cancellation request. Your ${planName} access will remain active until <strong>${endDate}</strong>, after which your account will move to the Free plan.<br><br>
              Changed your mind? You can reactivate your subscription at any time before that date.`,
       ctaText: 'Manage subscription',
       ctaUrl: `${APP_URL}/courtdraw-app.html`,
-      footerNote: "You're receiving this because you cancelled your CourtDraw subscription."
+      footerNote: `You're receiving this because you cancelled your CourtDraw ${planName} subscription.`
     };
     return {
       from: FROM,
       reply_to: REPLY_TO,
       to: email,
-      subject: 'Your CourtDraw subscription will end soon',
+      subject: `Your CourtDraw ${planName} subscription will end soon`,
+      html: layout(data),
+      text: toPlainText(data),
+    };
+  },
+
+  // Sent when a Club trial checkout completes (no charge yet)
+  clubTrialStarted: (email) => {
+    const data = {
+      label: '7-day free trial started',
+      labelColor: '#8b5cf6',
+      title: 'Your Club trial has started',
+      body: `You have 7 full days to explore every Club feature — shared tactic library, club branding on exports, presentation mode, and everything in Pro.<br><br>
+             <strong>No charge until your trial ends.</strong> Cancel anytime before then and you won't be billed — no questions asked.<br><br>
+             Head to Club Admin to set your club name and invite your coaches.`,
+      ctaText: 'Open Club Admin',
+      ctaUrl: `${APP_URL}/club-admin.html`,
+      features: [
+        { icon: '👥', label: 'Invite coaches' },
+        { icon: '📚', label: 'Shared library' },
+        { icon: '🏷', label: 'Club branding' },
+      ],
+      footerNote: "You're receiving this because you started a CourtDraw Club trial."
+    };
+    return {
+      from: FROM,
+      reply_to: REPLY_TO,
+      to: email,
+      subject: 'Your 7-day CourtDraw Club trial has started',
+      html: layout(data),
+      text: toPlainText(data),
+    };
+  },
+
+  // Sent when a Club trial converts to a paid subscription (day 8 charge succeeds)
+  clubTrialConverted: (email) => {
+    const data = {
+      label: 'Club plan active',
+      labelColor: '#8b5cf6',
+      title: 'Your Club subscription is now active',
+      body: `Your 7-day trial is over and your annual Club subscription is now active. Your card has been charged €99/yr.<br><br>
+             All Club features remain fully unlocked. Manage your billing anytime from the app.`,
+      ctaText: 'Open Club Admin',
+      ctaUrl: `${APP_URL}/club-admin.html`,
+      features: [
+        { icon: '👥', label: 'Invite coaches' },
+        { icon: '📚', label: 'Shared library' },
+        { icon: '🏷', label: 'Club branding' },
+      ],
+      footerNote: "You're receiving this because your CourtDraw Club trial converted to a paid subscription."
+    };
+    return {
+      from: FROM,
+      reply_to: REPLY_TO,
+      to: email,
+      subject: 'CourtDraw Club — your subscription is now active',
       html: layout(data),
       text: toPlainText(data),
     };

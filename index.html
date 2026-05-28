@@ -1327,8 +1327,8 @@
       </div>
     </div>
     <div style="text-align:center;margin-top:40px;">
-      <a href="login.html?checkout=club" class="btn btn-primary">Get Club Plan — €99 / yr</a>
-      <p style="margin-top:12px;font-size:0.85rem;color:var(--muted);">Up to 10 coaches. One flat rate. Billed annually.</p>
+      <a href="login.html?checkout=club" class="btn btn-primary">Start 7-Day Free Trial →</a>
+      <p style="margin-top:12px;font-size:0.85rem;color:var(--muted);">7-day free trial, then €99/yr. Up to 10 coaches. Cancel anytime before day 7 — no charge.</p>
     </div>
   </div>
 </section>
@@ -1339,7 +1339,7 @@
     <div class="section-header">
       <span class="badge">Pricing</span>
       <h2>Start Free. Upgrade When You're Ready.</h2>
-      <p>No credit card required to try. Cancel your Pro plan anytime — no questions asked.</p>
+      <p>No credit card required for the free plan. Club plan includes a 7-day free trial — cancel anytime, no questions asked.</p>
     </div>
 
     <div class="pricing-toggle">
@@ -1391,10 +1391,11 @@
 
       <!-- Club -->
       <div class="pricing-card">
+        <div class="popular-badge" style="background:linear-gradient(135deg,#7c3aed,#a855f7);">7-Day Free Trial</div>
         <div class="plan-name">Club</div>
         <div class="plan-price"><sup>€</sup>99<span class="period"> / yr</span></div>
-        <p class="plan-tagline">Up to 10 coaches. One flat rate. Billed annually.</p>
-        <a href="login.html?checkout=club" class="btn btn-ghost plan-btn">Get Club Plan</a>
+        <p class="plan-tagline">7-day free trial, then €99/yr. Up to 10 coaches. Cancel anytime.</p>
+        <a href="login.html?checkout=club" class="btn btn-ghost plan-btn" style="border-color:#a855f7;color:#a855f7;">Start 7-Day Free Trial</a>
         <ul class="plan-features">
           <li><span class="check">✓</span> <span><strong>Everything in Pro</strong> (incl. video overlay)</span></li>
           <li><span class="check">✓</span> <span><strong>Up to 10 coaching staff</strong> seats</span></li>
@@ -1521,11 +1522,21 @@
 
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">
-          Can I cancel my Pro subscription at any time?
+          How does the 7-day Club trial work?
           <span class="faq-chevron">▼</span>
         </button>
         <div class="faq-a"><div class="faq-a-inner">
-          Absolutely. You can cancel your Pro subscription at any time from your Stripe billing portal — no cancellation fee, no questions asked. You'll keep access to Pro features until the end of your current billing period. Questions? Email <a href="mailto:courtdraw.info@gmail.com">courtdraw.info@gmail.com</a>.
+          When you start the Club plan, you get 7 days of full Club access at no charge. A card is required upfront, but nothing is charged until day 8. If you cancel before the trial ends — via the billing portal inside the app — your subscription ends immediately and you are never billed. If you keep it, €99/yr is automatically charged when the trial converts. No manual steps, no refund requests needed.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Can I cancel my Pro or Club subscription at any time?
+          <span class="faq-chevron">▼</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          Absolutely. Cancel anytime from the billing portal inside the app — no cancellation fee, no questions asked. For Pro: you keep access until the end of your current billing period. For Club during the trial: access ends immediately and you are never charged. Questions? Email <a href="mailto:courtdraw.info@gmail.com">courtdraw.info@gmail.com</a>.
         </div></div>
       </div>
 
@@ -1719,7 +1730,7 @@
       cardClass: 'plan-free',
       features: ['1 court of your choice', '9 drawing tools', 'Draggable tokens + jersey numbering', '3 saved tactics', 'PNG export (with watermark)'],
       cta: `<a href="login.html?checkout=proYearly" class="acct-btn-primary">Upgrade to Pro ✦</a>
-            <button class="acct-btn-ghost" onclick="landingUpgradeToClub()">Upgrade to Club</button>
+            <button class="acct-btn-ghost" onclick="landingUpgradeToClub()">Try Club Free — 7 days</button>
             <a href="/join-club.html" class="acct-btn-ghost">🔑 Join a Club</a>`
     },
     pro: {
@@ -1728,7 +1739,7 @@
       cardClass: 'plan-pro',
       features: ['All 38+ courts + Whiteboard', 'Unlimited saves', 'Multi-phase plays + animated playback', 'Video overlay — draw on match footage', '200+ ready-made play templates', 'Clean PNG & PDF export', 'Shareable board links', 'Priority email support'],
       cta: `<button class="acct-btn-primary amber" onclick="landingOpenBilling()">Manage billing</button>
-            <button class="acct-btn-ghost" onclick="landingUpgradeToClub()">Upgrade to Club</button>`
+            <button class="acct-btn-ghost" onclick="landingUpgradeToClub()">Try Club Free — 7 days</button>`
     },
     club: {
       label: 'Club Plan',
