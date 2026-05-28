@@ -2699,8 +2699,13 @@ function positionToken(el, px, py) {
   // So we just use the canvas's own left/top offset + its CSS dimensions.
   const left = parseFloat(canvas.style.left) || 0;
   const top  = parseFloat(canvas.style.top)  || 0;
+  // In portrait mode the container is rotated 90° CW: screen-x = W*(1-py).
+  // Red team positions are Y-mirrored vs blue (they attack the opposite direction),
+  // so for red we must invert py to keep L/R labels on the correct side of the screen.
+  const effectivePy = (state.portraitRotated && el.classList.contains('team-red'))
+    ? 1 - py : py;
   el.style.left = (left + px * canvasW) + 'px';
-  el.style.top  = (top  + py * canvasH) + 'px';
+  el.style.top  = (top  + effectivePy * canvasH) + 'px';
 }
 
 function repositionTokens() {
@@ -2759,9 +2764,11 @@ function makeDraggable(el, idx) {
     const newT = Math.max(canvasTop,  Math.min(canvasTop  + canvasH, startT + dy));
     el.style.left = newL + 'px';
     el.style.top  = newT + 'px';
+    const rawPy = (newT - canvasTop) / canvasH;
+    const isRedInPortrait = state.portraitRotated && el.classList.contains('team-red');
     state.tokenPositions[idx].pct = [
       (newL - canvasLeft) / canvasW,
-      (newT - canvasTop)  / canvasH
+      isRedInPortrait ? 1 - rawPy : rawPy
     ];
   }
   function end(e) {
