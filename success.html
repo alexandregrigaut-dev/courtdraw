@@ -9,6 +9,19 @@
     gtag('js', new Date());
     gtag('config', 'G-9NZSFKFV1N');
   </script>
+  <!-- Meta Pixel -->
+  <script>
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1749822116171334');
+    fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1749822116171334&ev=PageView&noscript=1"/></noscript>
+  <!-- End Meta Pixel -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to CourtDraw Pro</title>
@@ -66,6 +79,7 @@
     // Detect plan type and trial status from URL params
     const plan    = params.get('plan');
     const isTrial = params.get('trial') === 'true';
+    const value   = parseFloat(params.get('value') || '0');
     if (plan === 'club' && isTrial) {
       document.getElementById('success-title').textContent = 'Your 7-Day Club Trial Has Started!';
       document.getElementById('success-body').textContent  = 'You have full Club access for 7 days — no charge until your trial ends. Go explore the shared library, invite your coaches, and set up your club branding. Cancel anytime before day 7 and you won\'t be billed.';
@@ -79,6 +93,17 @@
     } else {
       document.getElementById('success-title').textContent = 'Welcome to CourtDraw Pro!';
       document.getElementById('success-body').textContent  = 'Your subscription is active. All 38+ courts, unlimited saves, clean PNG exports, and more are now unlocked.';
+    }
+
+    // Meta Pixel — conversion event
+    // Trials fire StartTrial (no charge yet); paid plans fire Purchase with the exact EUR value.
+    if (typeof fbq === 'function') {
+      if (plan === 'club' && isTrial) {
+        fbq('track', 'StartTrial', { content_name: 'Club Trial', currency: 'EUR', value: 0 });
+      } else {
+        const contentName = plan === 'club' ? 'Club Plan' : 'Pro Plan';
+        fbq('track', 'Purchase', { content_name: contentName, currency: 'EUR', value });
+      }
     }
   </script>
 </body>

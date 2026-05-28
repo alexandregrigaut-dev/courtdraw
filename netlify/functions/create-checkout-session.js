@@ -18,6 +18,13 @@ const PLAN_BY_PRICE = {
   [process.env.STRIPE_PRICE_ID_CLUB]:        'club'
 };
 
+// EUR value for each price — used by success.html to fire an accurate Meta Pixel Purchase event
+const VALUE_BY_PRICE = {
+  [process.env.STRIPE_PRICE_ID_PRO_MONTHLY]: 4.99,
+  [process.env.STRIPE_PRICE_ID_PRO_YEARLY]:  39.99,
+  [process.env.STRIPE_PRICE_ID_CLUB]:        99
+};
+
 // Club plan gets a 7-day free trial — Pro plans remain freemium (no trial)
 const CLUB_TRIAL_DAYS = 7;
 
@@ -44,10 +51,12 @@ exports.handler = async (event) => {
 
   const plan = PLAN_BY_PRICE[priceId];
   const isClub = plan === 'club';
+  const value  = VALUE_BY_PRICE[priceId] ?? 0;
 
-  // Append &trial=true to success URL for Club so success.html can show the right message
+  // Append &trial=true for Club and &value=X for all plans so success.html can
+  // show the right message and fire an accurate Meta Pixel Purchase event.
   const planParam = plan || 'pro';
-  const successUrl = `${process.env.PUBLIC_URL}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${planParam}${isClub ? '&trial=true' : ''}`;
+  const successUrl = `${process.env.PUBLIC_URL}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${planParam}&value=${value}${isClub ? '&trial=true' : ''}`;
 
   let session;
   try {
