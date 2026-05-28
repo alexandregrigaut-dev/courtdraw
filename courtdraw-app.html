@@ -30,16 +30,16 @@
   </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>CourtDraw — Tactics Board for Coaches | 37+ Sports</title>
-<meta name="description" content="Free tactics board for coaches. Draw, animate and share plays for 37+ sports including handball, football, basketball, hockey and more. Works on any device.">
+<title>CourtDraw — Tactics Board for Coaches | 38+ Sports</title>
+<meta name="description" content="Free tactics board for coaches. Draw, animate and share plays for 38+ sports including handball, football, basketball, hockey and more. Works on any device.">
 <meta name="robots" content="index, follow">
 <meta name="keywords" content="tactics board, coaching app, sports tactics, handball tactics, football tactics, basketball tactics, hockey tactics, coach tools, play drawing">
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://courtdraw.app/">
-<meta property="og:title" content="CourtDraw — Tactics Board for Coaches | 37+ Sports">
-<meta property="og:description" content="Free tactics board for coaches. Draw, animate and share plays for 37+ sports. Works on any device, no download needed.">
+<meta property="og:title" content="CourtDraw — Tactics Board for Coaches | 38+ Sports">
+<meta property="og:description" content="Free tactics board for coaches. Draw, animate and share plays for 38+ sports. Works on any device, no download needed.">
 <meta property="og:image" content="https://courtdraw.app/assets/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -49,8 +49,8 @@
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://courtdraw.app/">
-<meta name="twitter:title" content="CourtDraw — Tactics Board for Coaches | 37+ Sports">
-<meta name="twitter:description" content="Free tactics board for coaches. Draw, animate and share plays for 37+ sports. Works on any device, no download needed.">
+<meta name="twitter:title" content="CourtDraw — Tactics Board for Coaches | 38+ Sports">
+<meta name="twitter:description" content="Free tactics board for coaches. Draw, animate and share plays for 38+ sports. Works on any device, no download needed.">
 <meta name="twitter:image" content="https://courtdraw.app/assets/og-image.png">
 
 <!-- Canonical -->
@@ -1083,13 +1083,13 @@ body.portrait-mode .player-token:active {
   <button class="tb-btn" id="btn-pro-library" title="200+ pre-built tactics library" aria-label="Tactics Library" onclick="openProLibrary()">
     <span class="icon">🗂</span><span>200+ Plays</span>
   </button>
-  <button class="tb-btn" title="Print / Export PDF" onclick="exportPDF()">
+  <button class="tb-btn" id="btn-print" title="Print / Export PDF" onclick="exportPDF()">
     <span class="icon">🖨</span><span>Print</span>
   </button>
   <button class="tb-btn" id="btn-present" title="Club Presentation Mode" onclick="enterPresentation()" style="display:none">
     <span class="icon">⛶</span><span>Present</span>
   </button>
-  <button class="tb-btn" title="Copy share link" onclick="shareBoard()">
+  <button class="tb-btn" id="btn-share" title="Copy share link" onclick="shareBoard()">
     <span class="icon">🔗</span><span>Share</span>
   </button>
   <button class="tb-btn" id="btn-jersey" title="Auto-number jerseys 1–N" onclick="autoNumberJerseys()">
@@ -1194,10 +1194,10 @@ body.portrait-mode .player-token:active {
       <div class="paywall-hero">
         <div class="pw-icon">⚡</div>
         <h2>Unlock Everything</h2>
-        <p id="paywall-reason">Upgrade to Pro to unlock all 37+ sport courts and unlimited saves.</p>
+        <p id="paywall-reason">Upgrade to Pro to unlock all 38+ sport courts and unlimited saves.</p>
       </div>
       <ul class="pw-features">
-        <li>All 37+ sport courts + Whiteboard</li>
+        <li>All 38+ sport courts + Whiteboard</li>
         <li>Unlimited tactic saves</li>
         <li>PNG &amp; PDF export — no watermark</li>
         <li>Jersey numbers &amp; custom player labels</li>
@@ -2075,6 +2075,12 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
   // Phase button: show lock hint for non-Pro users
   const phaseBtn = document.getElementById('btn-add-phase');
   if (phaseBtn) phaseBtn.textContent = isPro ? '+ Phase' : '+ Phase 🔒';
+  // Apply/remove pro-lock visual cue on gated toolbar buttons
+  const hasPro = isPro || isClub;
+  ['btn-print', 'btn-share', 'btn-video'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.classList.toggle('pro-lock', !hasPro);
+  });
   // Update header logo (club logo replaces CourtDraw logo for club users)
   updateHeaderLogo();
   if (isClub) updateClubUI();
@@ -2942,7 +2948,6 @@ function renameToken(idx, el) {
 // TOOL SELECTION
 // ══════════════════════════════════════════════
 function setTool(t) {
-  if ((t === 'ball') && !state.isPro && !state.isClub) { openPaywall('Custom ball token is a Pro feature.'); return; }
   state.tool = t;
   document.querySelectorAll('.tb-btn[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
   canvas.style.cursor = t === 'eraser' ? 'cell' : t === 'text' ? 'text' : 'crosshair';
@@ -2998,7 +3003,7 @@ function renderCourtGrid(filter) {
   if (!state.isPro && !state.isClub && !state.freeCourt) {
     const banner = document.createElement('div');
     banner.style.cssText = 'background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:var(--accent);line-height:1.45;';
-    banner.innerHTML = '<strong>Pick your one free sport court.</strong> Yours forever — unlock all 37+ with Pro. The Whiteboard is always free for everyone.';
+    banner.innerHTML = '<strong>Pick your one free sport court.</strong> Yours forever — unlock all 38+ with Pro. The Whiteboard is always free for everyone.';
     container.appendChild(banner);
   }
   const q = filter.toLowerCase().trim();
@@ -3042,7 +3047,7 @@ function switchCourt(id, locked, skipReset) {
   if (locked) {
     closeModal('modal-court-picker');
     const freeName = COURTS.find(c => c.id === state.freeCourt)?.name || 'your free court';
-    openPaywall(`You're on the free plan with ${freeName} as your court. Upgrade to Pro to access all 37+ courts.`);
+    openPaywall(`You're on the free plan with ${freeName} as your court. Upgrade to Pro to access all 38+ courts.`);
     return;
   }
   // Clear attribution whenever the court changes (user is leaving the loaded tactic)
@@ -3233,7 +3238,7 @@ function deleteTactic(i) {
 // PAYWALL & CHECKOUT
 // ══════════════════════════════════════════════
 function openPaywall(reason) {
-  document.getElementById('paywall-reason').textContent = reason || 'Upgrade to Pro to unlock all 37+ sport courts and unlimited saves.';
+  document.getElementById('paywall-reason').textContent = reason || 'Upgrade to Pro to unlock all 38+ sport courts and unlimited saves.';
   openModal('modal-paywall');
 }
 
@@ -4371,6 +4376,13 @@ function init() {
     badge.textContent = 'PRO ✦';
     badge.classList.remove('free-badge');
     badge.onclick = () => openBillingPortal();
+  }
+  // Apply pro-lock visual cue on gated toolbar buttons (pre-Firebase state)
+  if (!state.isPro) {
+    ['btn-print', 'btn-share', 'btn-video'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.classList.add('pro-lock');
+    });
   }
   // Theme button
   document.getElementById('btn-theme').textContent = state.theme === 'dark' ? '☀️' : '🌙';
