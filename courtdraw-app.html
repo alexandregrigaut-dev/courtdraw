@@ -2234,12 +2234,18 @@ function updatePortraitLayout() {
       state.zoom = 1; state.panX = 0; state.panY = 0;
       document.body.classList.add('pt-chrome-visible');
       clearTimeout(_ptWelcomeTimer);
-      _ptWelcomeTimer = setTimeout(() => document.body.classList.remove('pt-chrome-visible'), 2500);
+      _ptWelcomeTimer = setTimeout(() => {
+        if (!document.body.classList.contains('toolbar-pinned'))
+          document.body.classList.remove('pt-chrome-visible');
+      }, 2500);
     }
     // transform applied by applyZoom() which is called from syncCanvas()
   } else {
     document.body.classList.remove('portrait-mode');
     document.body.classList.remove('pt-chrome-visible');
+    // If pinned, carry the visible state into landscape immediately
+    if (document.body.classList.contains('toolbar-pinned'))
+      document.body.classList.add('ls-chrome-visible');
     // Reset zoom/pan when leaving portrait
     if (wasPortrait) { state.zoom = 1; state.panX = 0; state.panY = 0; }
     container.style.position        = '';
@@ -4962,16 +4968,18 @@ function toggleToolbarPin() {
   const label = document.getElementById('toolbar-pin-label');
   const icon  = document.getElementById('toolbar-pin-icon');
   if (isPinned) {
-    // Show toolbar immediately and lock it open
+    // Ensure chrome stays visible in whichever orientation we're in
     document.body.classList.add('pt-chrome-visible');
     document.body.classList.add('ls-chrome-visible');
     if (label) label.textContent = 'Pinned';
     if (icon)  icon.textContent  = '✓';
   } else {
-    // Restore auto-hide — restart the timer via the exposed helper
     if (label) label.textContent = 'Keep open';
     if (icon)  icon.textContent  = '📌';
-    if (window._showPtChrome) window._showPtChrome();
+    // Restart auto-hide timer using the correct orientation's helper
+    const isLandscape = window.innerWidth > window.innerHeight && window.innerWidth <= 900;
+    if (isLandscape && window._showLsChrome) window._showLsChrome();
+    else if (window._showPtChrome) window._showPtChrome();
   }
 }
 
@@ -5157,16 +5165,24 @@ document.addEventListener('DOMContentLoaded', init);
              window.innerWidth  >  window.innerHeight;
     }
 
+    function isPinned() {
+      return document.body.classList.contains('toolbar-pinned');
+    }
+
     function showChrome() {
       document.body.classList.add('ls-chrome-visible');
       clearTimeout(hideTimer);
-      hideTimer = setTimeout(hideChrome, HIDE_DELAY);
+      if (!isPinned()) hideTimer = setTimeout(hideChrome, HIDE_DELAY);
     }
 
     function hideChrome() {
+      if (isPinned()) return; // never auto-hide when pinned
       document.body.classList.remove('ls-chrome-visible');
       clearTimeout(hideTimer);
     }
+
+    // Expose so toggleToolbarPin() can restart the auto-hide timer when unpinning in landscape
+    window._showLsChrome = showChrome;
 
     // Touch handler: edge zones reveal chrome; chrome touches extend the timer.
     document.addEventListener('touchstart', function(e) {
@@ -5179,9 +5195,9 @@ document.addEventListener('DOMContentLoaded', init);
         return;
       }
       // Touch on a chrome element while visible → extend timer only
-      if (e.target.closest('#app-header, #phase-bar, #toolbar')) {
+      if (e.target.closest('#app-header, #phase-bar, #toolbar, #toolbar-pin-btn')) {
         clearTimeout(hideTimer);
-        hideTimer = setTimeout(hideChrome, HIDE_DELAY);
+        if (!isPinned()) hideTimer = setTimeout(hideChrome, HIDE_DELAY);
       }
       // Mid-screen drawing touch → no chrome action (let timer run out naturally)
     }, { passive: true });
@@ -5189,14 +5205,18 @@ document.addEventListener('DOMContentLoaded', init);
     // On orientation/resize change: teardown when leaving landscape
     window.addEventListener('resize', function() {
       if (!isLandscapeMobile()) {
-        hideChrome();
+        hideChrome(); // respects isPinned() — won't hide if pinned
+      } else if (isPinned()) {
+        // Switched into landscape while pinned — show chrome immediately
+        document.body.classList.add('ls-chrome-visible');
+        clearTimeout(hideTimer);
       }
     });
 
     // Brief welcome reveal on first load in landscape so the user sees the UI
     if (isLandscapeMobile()) {
       document.body.classList.add('ls-chrome-visible');
-      hideTimer = setTimeout(hideChrome, 2500);
+      if (!isPinned()) hideTimer = setTimeout(hideChrome, 2500);
     }
   })();
 
