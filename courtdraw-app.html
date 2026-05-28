@@ -186,7 +186,8 @@ button {
 .player-token.team-red  { background: var(--team-b-color, #dc2626); }
 .player-token.team-blue { background: var(--team-a-color, #60a5fa); }
 .player-token:active { cursor: grabbing; transform: translate(-50%,-50%) scale(1.15); box-shadow: 0 4px 16px rgba(0,0,0,0.6); }
-.ball-token { background: #f8fafc; border-color: #334155; color: #0f172a; }
+.ball-token { background: transparent !important; border: none !important; box-shadow: none !important; }
+.ball-token svg { width: 34px; height: 34px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55)); }
 /* ── Toolbar ── */
 #toolbar {
   height: calc(var(--toolbar-h) + env(safe-area-inset-bottom));
@@ -1023,8 +1024,11 @@ body.portrait-mode .player-token:active {
   <button class="tb-btn" data-tool="line" title="Line" onclick="setTool('line')">
     <span class="icon">╱</span><span>Line</span>
   </button>
-  <button class="tb-btn" data-tool="arc" title="Curved Arrow" onclick="setTool('arc')">
-    <span class="icon">↪</span><span>Curve</span>
+  <button class="tb-btn" data-tool="arc-left" title="Curve Left" onclick="setTool('arc-left')">
+    <span class="icon">↺</span><span>Curve L</span>
+  </button>
+  <button class="tb-btn" data-tool="arc-right" title="Curve Right" onclick="setTool('arc-right')">
+    <span class="icon">↻</span><span>Curve R</span>
   </button>
   <button class="tb-btn" data-tool="circle" title="Zone Circle" onclick="setTool('circle')">
     <span class="icon">◯</span><span>Circle</span>
@@ -2146,29 +2150,32 @@ function updatePortraitLayout() {
     container.style.width           = H + 'px';
     container.style.height          = W + 'px';
     container.style.transformOrigin = '0 0';
-    container.style.transform       = `translateX(${W}px) rotate(90deg)`;
-    state.zoom = 1; state.panX = 0; state.panY = 0;
-    // Brief welcome flash to show chrome when first entering portrait
+    // Reset zoom/pan only on first entry into portrait; preserve during pinch-zoom
     if (!wasPortrait) {
+      state.zoom = 1; state.panX = 0; state.panY = 0;
       document.body.classList.add('pt-chrome-visible');
       clearTimeout(_ptWelcomeTimer);
       _ptWelcomeTimer = setTimeout(() => document.body.classList.remove('pt-chrome-visible'), 2500);
     }
+    // transform applied by applyZoom() which is called from syncCanvas()
   } else {
     document.body.classList.remove('portrait-mode');
     document.body.classList.remove('pt-chrome-visible');
+    // Reset zoom/pan when leaving portrait
+    if (wasPortrait) { state.zoom = 1; state.panX = 0; state.panY = 0; }
     container.style.position        = '';
     container.style.top             = '';
     container.style.left            = '';
     container.style.width           = '';
     container.style.height          = '';
-    container.style.transformOrigin = '0 0';
+    container.style.transformOrigin = '';
     container.style.transform       = '';
   }
 }
 
 function syncCanvas() {
-  updatePortraitLayout();  // must run first — sets container dimensions
+  updatePortraitLayout();  // must run first — sets container dimensions + portrait state
+  applyZoom();             // apply zoom/pan transform after layout is settled
   // Read container's own dimensions (landscape H×W in portrait, normal in landscape)
   const elW = container.clientWidth;
   const elH = container.clientHeight;
@@ -2499,6 +2506,19 @@ function buildObject(x1, y1, x2, y2, pts) {
       const offset = Math.max(30, len * 0.28);
       return { ...base, type:'arc', x1, y1, x2, y2, cpx: mx+nx2*offset*sign, cpy: my+ny2*offset*sign };
     }
+    case 'arc-left':
+    case 'arc-right': {
+      // Explicit curve direction — user pre-selects left or right.
+      // "Left" means the curve bows toward the left of the travel direction (arc-left → sign=-1).
+      // "Right" bows toward the right (arc-right → sign=1).
+      const mx = (x1+x2)/2, my = (y1+y2)/2;
+      const len = Math.sqrt((x2-x1)**2+(y2-y1)**2);
+      if (len < 1) return null;
+      const nx2 = -(y2-y1)/len, ny2 = (x2-x1)/len;
+      const sign = state.tool === 'arc-left' ? -1 : 1;
+      const offset = Math.max(30, len * 0.28);
+      return { ...base, type:'arc', x1, y1, x2, y2, cpx: mx+nx2*offset*sign, cpy: my+ny2*offset*sign };
+    }
     case 'circle': {
       const r = Math.sqrt((x2-x1)**2+(y2-y1)**2);
       return { ...base, type:'circle', cx:x1, cy:y1, r };
@@ -2681,11 +2701,112 @@ function resetTokensToDefaults() {
   updatePhaseUI();
 }
 
+// ── Sport-specific ball tokens ──────────────────────────────────────────────
+const SPORT_BALL_TYPE = {
+  tennis_singles:'tennis', tennis_doubles:'tennis', padel:'tennis',
+  pickleball:'tennis', squash:'tennis', racquetball:'tennis', beach_tennis:'tennis',
+  badminton_singles:'shuttlecock', badminton_doubles:'shuttlecock',
+  table_tennis:'ping_pong',
+  football_full:'soccer', football_half:'soccer', futsal:'soccer',
+  futsal_mini:'soccer', beach_soccer:'soccer', padbol:'soccer', gaelic_football:'soccer',
+  handball:'handball', beach_handball:'handball',
+  basketball_full:'basketball', basketball_half:'basketball',
+  korfball:'basketball', netball:'basketball',
+  volleyball:'volleyball', beach_volleyball:'volleyball',
+  water_polo:'volleyball', fistball:'volleyball',
+  rugby_union:'rugby', rugby_league:'rugby', hurling:'rugby', australian_rules:'rugby',
+  american_football:'american_football',
+  field_hockey:'hockey_ball', indoor_hockey:'hockey_ball',
+  floorball:'hockey_ball', lacrosse:'hockey_ball',
+  ice_hockey:'puck', roller_hockey:'puck',
+};
+
+function getBallSvg(courtId) {
+  const type = SPORT_BALL_TYPE[courtId] || 'soccer';
+  const svgs = {
+    soccer: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="11" fill="white" stroke="#222" stroke-width="1.5"/>
+      <polygon points="12,2 14.5,7.5 12,10 9.5,7.5" fill="#111"/>
+      <polygon points="19,9 20,14 16.5,15.5 14,12 16,8" fill="#111"/>
+      <polygon points="18,18 14.5,21 11.5,19.5 12.5,15.5 16,15.5" fill="#111"/>
+      <polygon points="9.5,19.5 6,21 4.5,17 7.5,15 10.5,15.5" fill="#111"/>
+      <polygon points="4.5,9 8.5,8 10,11.5 7.5,15 4,13.5" fill="#111"/>
+    </svg>`,
+    basketball: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="11" fill="#E06010" stroke="#111" stroke-width="1.5"/>
+      <path d="M1 12 Q6 8,12 8 Q18 8,23 12" stroke="#111" stroke-width="1.5" fill="none"/>
+      <path d="M1 12 Q6 16,12 16 Q18 16,23 12" stroke="#111" stroke-width="1.5" fill="none"/>
+      <path d="M12 1 Q16 6,16 12 Q16 18,12 23" stroke="#111" stroke-width="1.5" fill="none"/>
+      <path d="M12 1 Q8 6,8 12 Q8 18,12 23" stroke="#111" stroke-width="1.5" fill="none"/>
+    </svg>`,
+    volleyball: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="11" fill="white" stroke="#AAA" stroke-width="1.5"/>
+      <path d="M12 1 Q19 5,22 12" stroke="#1B73E8" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M22 12 Q19 19,12 23" stroke="#E84040" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M12 23 Q5 19,2 12" stroke="#F5A623" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M2 12 Q5 5,12 1" stroke="#1B73E8" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </svg>`,
+    tennis: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="11" fill="#C6E847" stroke="#9BAF1A" stroke-width="1.5"/>
+      <path d="M2 9 Q8 12,12 12 Q16 12,22 9" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M2 15 Q8 12,12 12 Q16 12,22 15" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>`,
+    shuttlecock: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="12" cy="19.5" rx="4" ry="3" fill="#F5ECD7" stroke="#AAA" stroke-width="1.2"/>
+      <line x1="12" y1="16" x2="7" y2="4" stroke="#D4C4A0" stroke-width="1.5"/>
+      <line x1="12" y1="16" x2="12" y2="3" stroke="#D4C4A0" stroke-width="1.5"/>
+      <line x1="12" y1="16" x2="17" y2="4" stroke="#D4C4A0" stroke-width="1.5"/>
+      <path d="M7 4 Q12 2,17 4" stroke="#D4C4A0" stroke-width="1" fill="none"/>
+      <path d="M7.5 7 Q12 5,16.5 7" stroke="#DDD" stroke-width="0.8" fill="none"/>
+      <path d="M8 10 Q12 8,16 10" stroke="#DDD" stroke-width="0.8" fill="none"/>
+      <path d="M8.5 13 Q12 11,15.5 13" stroke="#DDD" stroke-width="0.8" fill="none"/>
+    </svg>`,
+    ping_pong: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="10" fill="white" stroke="#DDD" stroke-width="1.5"/>
+      <circle cx="9" cy="9" r="2.5" fill="rgba(255,255,255,0.65)" stroke="rgba(220,220,220,0.5)" stroke-width="0.5"/>
+    </svg>`,
+    rugby: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="12" cy="12" rx="10" ry="6.5" fill="#7B3F00" stroke="#3D1C00" stroke-width="1.5"/>
+      <line x1="12" y1="5.5" x2="12" y2="18.5" stroke="white" stroke-width="1.5"/>
+      <line x1="9" y1="11" x2="15" y2="11" stroke="white" stroke-width="1"/>
+      <line x1="9" y1="13" x2="15" y2="13" stroke="white" stroke-width="1"/>
+    </svg>`,
+    american_football: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="12" cy="12" rx="10" ry="6" fill="#7B3F00" stroke="#3D1C00" stroke-width="1.5" transform="rotate(-25,12,12)"/>
+      <line x1="9.5" y1="9.5" x2="14.5" y2="14.5" stroke="white" stroke-width="1.5" transform="rotate(-25,12,12)"/>
+      <line x1="8" y1="11" x2="12" y2="11" stroke="white" stroke-width="0.9" transform="rotate(-25,12,12)"/>
+      <line x1="8.8" y1="13" x2="12.8" y2="13" stroke="white" stroke-width="0.9" transform="rotate(-25,12,12)"/>
+    </svg>`,
+    puck: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="12" cy="14.5" rx="10" ry="7" fill="#111" stroke="#333" stroke-width="1"/>
+      <ellipse cx="12" cy="12" rx="10" ry="5.5" fill="#1A1A1A" stroke="#444" stroke-width="1"/>
+      <ellipse cx="12" cy="11.5" rx="7" ry="3" fill="#252525"/>
+    </svg>`,
+    hockey_ball: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="9" fill="white" stroke="#CCC" stroke-width="1.5"/>
+      <circle cx="9.5" cy="9.5" r="2" fill="rgba(255,255,255,0.7)"/>
+    </svg>`,
+    handball: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="11" fill="#C85420" stroke="#222" stroke-width="1.5"/>
+      <path d="M12 1 Q17 5,17 12 Q17 19,12 23" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" fill="none"/>
+      <path d="M12 1 Q7 5,7 12 Q7 19,12 23" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" fill="none"/>
+      <path d="M2 9 Q12 11,22 9" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" fill="none"/>
+      <path d="M2 15 Q12 13,22 15" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" fill="none"/>
+    </svg>`,
+  };
+  return svgs[type] || svgs.soccer;
+}
+
 function createTokenEl(i) {
   const t = state.tokenPositions[i];
   const el = document.createElement('div');
-  el.className = `player-token team-${t.team}`;
-  el.textContent = t.label;
+  if (t.team === 'ball') {
+    el.className = 'player-token ball-token';
+    el.innerHTML = getBallSvg(state.courtId);
+  } else {
+    el.className = `player-token team-${t.team}`;
+    el.textContent = t.label;
+  }
   el.dataset.idx = i;
   document.getElementById('token-layer').appendChild(el);
   makeDraggable(el, i);
@@ -2737,7 +2858,9 @@ function makeDraggable(el, idx) {
         dragging = false;
         hasMoved = true; // prevent end() from triggering renameToken after confirm dismisses
         const currentIdx = parseInt(el.dataset.idx);
-        if (confirm(`Remove player ${state.tokenPositions[currentIdx]?.label}?`)) {
+        const curTok = state.tokenPositions[currentIdx];
+        const removeLabel = curTok?.team === 'ball' ? 'ball' : `player ${curTok?.label}`;
+        if (confirm(`Remove ${removeLabel}?`)) {
           removePlayer(currentIdx);
         }
       }
@@ -2777,7 +2900,10 @@ function makeDraggable(el, idx) {
     dragging = false;
     el.style.zIndex = 5;
     el.style.transition = '';
-    if (!hasMoved) renameToken(idx, el);
+    if (!hasMoved) {
+      const tok = state.tokenPositions[idx];
+      if (tok && tok.team !== 'ball') renameToken(idx, el);
+    }
   }
   el.addEventListener('pointerdown', start, { passive: false });
   el.addEventListener('pointermove', move, { passive: false });
@@ -4591,12 +4717,29 @@ document.addEventListener('keydown', e => {
 // ZOOM / PAN
 // ══════════════════════════════════════════════
 function applyZoom() {
-  if (state.portraitRotated) {
-    const btn = document.getElementById('btn-reset-zoom');
-    if (btn) btn.style.display = 'none';
-    return; // portrait transform is managed by updatePortraitLayout()
-  }
   const z = state.zoom;
+  const btn = document.getElementById('btn-reset-zoom');
+  if (state.portraitRotated) {
+    // Portrait mode: transform formula derived so court centre stays at screen centre.
+    // Container space (W_screen=innerWidth, H_screen=innerHeight):
+    //   container width = H_screen, height = W_screen
+    // Transform: translateX(tx) translateY(ty) rotate(90deg) scale(z)
+    //   maps container (cx,cy) → screen (tx - z*cy, ty + z*cx)
+    // For court centre (cx=H/2, cy=W/2) → screen (W/2, H/2):
+    //   tx = W*(1+z)/2 + panX,  ty = H*(1-z)/2 + panY
+    const W = window.innerWidth, H = window.innerHeight;
+    // Clamp pan so the court edge never moves more than halfway off-screen
+    const maxPX = W * (z - 1) / 2, minPX = -maxPX;
+    const maxPY = H * (z - 1) / 2, minPY = -maxPY;
+    state.panX = Math.max(minPX, Math.min(maxPX, state.panX));
+    state.panY = Math.max(minPY, Math.min(maxPY, state.panY));
+    const tx = W * (1 + z) / 2 + state.panX;
+    const ty = H * (1 - z) / 2 + state.panY;
+    container.style.transform = `translateX(${tx}px) translateY(${ty}px) rotate(90deg) scale(${z})`;
+    if (btn) btn.style.display = z > 1.01 ? 'flex' : 'none';
+    return;
+  }
+  // Landscape mode
   const boardArea = container.parentElement;
   const maxPanX = 0;
   const minPanX = Math.min(0, boardArea.clientWidth  * (1 - z));
@@ -4607,8 +4750,6 @@ function applyZoom() {
   container.style.transform = z === 1
     ? ''
     : `translate(${state.panX}px, ${state.panY}px) scale(${z})`;
-  // Show/hide reset zoom button
-  const btn = document.getElementById('btn-reset-zoom');
   if (btn) btn.style.display = z > 1.01 ? 'flex' : 'none';
 }
 
@@ -4635,7 +4776,6 @@ function applyZoom() {
   container.addEventListener('touchstart', (e) => {
     const ts = Array.from(e.touches);
     if (ts.length === 2) {
-      if (state.portraitRotated) { e.preventDefault(); return; } // no zoom in portrait
       // Two-finger pinch starts — cancel any drawing stroke in progress
       e.preventDefault();
       pinching = true;
@@ -4648,10 +4788,23 @@ function applyZoom() {
       pinchStartDist = dist(ts[0], ts[1]);
       pinchStartZoom = state.zoom;
       const m = mid(ts[0], ts[1]);
-      const rect = container.getBoundingClientRect();
-      // Midpoint in un-transformed container coords
-      pinchMidX = (m.x - rect.left) / state.zoom;
-      pinchMidY = (m.y - rect.top)  / state.zoom;
+      if (state.portraitRotated) {
+        // Portrait: compute anchor in container space using inverse portrait transform.
+        // Transform: sx = tx - z*cy,  sy = ty + z*cx
+        // where tx = W*(1+z)/2 + panX,  ty = H*(1-z)/2 + panY
+        // Inverse: cx = (sy - ty)/z,  cy = (tx - sx)/z
+        const W = window.innerWidth, H = window.innerHeight;
+        const z = state.zoom;
+        const tx = W * (1 + z) / 2 + state.panX;
+        const ty = H * (1 - z) / 2 + state.panY;
+        pinchMidX = (m.y - ty) / z;   // cx (container X axis → screen Y)
+        pinchMidY = (tx - m.x) / z;   // cy (container Y axis → −screen X)
+      } else {
+        const rect = container.getBoundingClientRect();
+        // Midpoint in un-transformed container coords (landscape)
+        pinchMidX = (m.x - rect.left) / state.zoom;
+        pinchMidY = (m.y - rect.top)  / state.zoom;
+      }
     } else if (ts.length === 1) {
       // Double-tap to reset zoom
       const now = Date.now();
@@ -4673,13 +4826,23 @@ function applyZoom() {
     if (pinching && ts.length === 2) {
       e.preventDefault();
       const d = dist(ts[0], ts[1]);
-      let newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, pinchStartZoom * (d / pinchStartDist)));
-      // Anchor the pinch midpoint in screen space to also pan during zoom
-      const boardRect = container.parentElement.getBoundingClientRect();
+      const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, pinchStartZoom * (d / pinchStartDist)));
       const m = mid(ts[0], ts[1]);
-      const mRelBoard = { x: m.x - boardRect.left, y: m.y - boardRect.top };
-      state.panX = mRelBoard.x - pinchMidX * newZoom;
-      state.panY = mRelBoard.y - pinchMidY * newZoom;
+      if (state.portraitRotated) {
+        // Portrait: keep pinch anchor (pinchMidX=cx, pinchMidY=cy) fixed on screen.
+        // We want: m.x = newTx - newZ*pinchMidY,  m.y = newTy + newZ*pinchMidX
+        // newTx = W*(1+newZoom)/2 + panX  →  panX = m.x - W*(1+newZoom)/2 + newZoom*pinchMidY
+        // newTy = H*(1-newZoom)/2 + panY  →  panY = m.y - H*(1-newZoom)/2 - newZoom*pinchMidX
+        const W = window.innerWidth, H = window.innerHeight;
+        state.panX = m.x - W * (1 + newZoom) / 2 + newZoom * pinchMidY;
+        state.panY = m.y - H * (1 - newZoom) / 2 - newZoom * pinchMidX;
+      } else {
+        // Landscape: anchor the pinch midpoint in screen space to also pan during zoom
+        const boardRect = container.parentElement.getBoundingClientRect();
+        const mRelBoard = { x: m.x - boardRect.left, y: m.y - boardRect.top };
+        state.panX = mRelBoard.x - pinchMidX * newZoom;
+        state.panY = mRelBoard.y - pinchMidY * newZoom;
+      }
       state.zoom = newZoom;
       applyZoom();
     }

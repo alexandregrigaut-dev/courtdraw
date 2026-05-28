@@ -717,8 +717,25 @@ export const SPORT_TOKENS = {
  * @param {string} courtId
  * @returns {{ team: string, label: string, pct: [number, number] }[]}
  */
+// Sports that have a ball/puck/shuttlecock token added by default.
+// Whiteboard is excluded; all other supported sports get a ball at court centre.
+const BALL_SPORTS = new Set([
+  'tennis_singles','tennis_doubles','padel','pickleball','badminton_singles','badminton_doubles',
+  'squash','table_tennis','racquetball','beach_tennis',
+  'handball','futsal','futsal_mini','basketball_full','basketball_half','volleyball','floorball',
+  'korfball','netball','football_full','football_half','rugby_union','rugby_league','field_hockey',
+  'indoor_hockey','gaelic_football','hurling','american_football','australian_rules',
+  'ice_hockey','roller_hockey','beach_volleyball','beach_handball','beach_soccer','padbol',
+  'lacrosse','water_polo','fistball',
+]);
+
 export function getDefaultTokens(courtId) {
   if (courtId === 'whiteboard') return [];
-  return (SPORT_TOKENS[courtId] || SPORT_TOKENS['basketball_full'])
+  const tokens = (SPORT_TOKENS[courtId] || SPORT_TOKENS['basketball_full'])
     .map(t => ({ ...t, pct: [...t.pct] }));
+  // Add a sport-specific ball token at centre court for all ball sports
+  if (BALL_SPORTS.has(courtId)) {
+    tokens.push({ team: 'ball', label: '', pct: [0.5, 0.5] });
+  }
+  return tokens;
 }
