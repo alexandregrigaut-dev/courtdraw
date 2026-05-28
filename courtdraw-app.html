@@ -811,9 +811,9 @@ body.portrait-mode.pt-chrome-visible #pt-bottom-hint { opacity: 0; }
 #toolbar-pin-btn:active { transform: scale(0.95); }
 /* Show in portrait */
 body.portrait-mode #toolbar-pin-btn { display: flex; }
-/* Slide up when toolbar is visible */
+/* Slide up above toolbar + phase bar when chrome is visible */
 body.portrait-mode.pt-chrome-visible #toolbar-pin-btn {
-  bottom: calc(var(--toolbar-h) + env(safe-area-inset-bottom) + 10px);
+  bottom: calc(var(--toolbar-h) + var(--phase-bar-h) + env(safe-area-inset-bottom) + 8px);
 }
 /* Pinned state — bright blue */
 body.toolbar-pinned #toolbar-pin-btn {
@@ -826,7 +826,7 @@ body.toolbar-pinned #toolbar-pin-btn {
 @media (max-width: 900px) and (orientation: landscape) {
   #toolbar-pin-btn { display: flex; }
   body.ls-chrome-visible #toolbar-pin-btn {
-    bottom: calc(var(--toolbar-h) + env(safe-area-inset-bottom) + 10px);
+    bottom: calc(var(--toolbar-h) + var(--phase-bar-h) + env(safe-area-inset-bottom) + 8px);
   }
 }
 /* Counter-rotate player tokens so their labels read upright in portrait */
