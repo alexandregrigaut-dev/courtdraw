@@ -782,6 +782,53 @@ body.portrait-mode.pt-chrome-visible #pt-bottom-hint { opacity: 0; }
   #pt-bottom-hint { display: block; }
   body.ls-chrome-visible #pt-bottom-hint { opacity: 0; }
 }
+
+/* ── Toolbar pin button ──────────────────────────────────────────────────── */
+#toolbar-pin-btn {
+  display: none; /* only in portrait / landscape mobile */
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 33;
+  align-items: center;
+  gap: 7px;
+  padding: 0 16px;
+  height: 44px; /* iOS minimum tap target */
+  border-radius: 22px;
+  border: 1.5px solid rgba(255,255,255,0.18);
+  background: rgba(10,22,40,0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: rgba(255,255,255,0.75);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 3px 16px rgba(0,0,0,0.35);
+  transition: bottom 0.22s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.12s ease;
+}
+#toolbar-pin-btn:active { transform: scale(0.95); }
+/* Show in portrait */
+body.portrait-mode #toolbar-pin-btn { display: flex; }
+/* Slide up when toolbar is visible */
+body.portrait-mode.pt-chrome-visible #toolbar-pin-btn {
+  bottom: calc(var(--toolbar-h) + env(safe-area-inset-bottom) + 10px);
+}
+/* Pinned state — bright blue */
+body.toolbar-pinned #toolbar-pin-btn {
+  background: #3b82f6;
+  border-color: rgba(255,255,255,0.35);
+  color: #ffffff;
+  box-shadow: 0 3px 20px rgba(59,130,246,0.45);
+}
+/* Also show in landscape mobile */
+@media (max-width: 900px) and (orientation: landscape) {
+  #toolbar-pin-btn { display: flex; }
+  body.ls-chrome-visible #toolbar-pin-btn {
+    bottom: calc(var(--toolbar-h) + env(safe-area-inset-bottom) + 10px);
+  }
+}
 /* Counter-rotate player tokens so their labels read upright in portrait */
 body.portrait-mode .player-token {
   transform: translate(-50%, -50%) rotate(-90deg);
@@ -964,6 +1011,10 @@ body.portrait-mode .player-token:active {
 <div id="ls-top-hint"    style="display:none;" aria-hidden="true"></div>
 <div id="ls-bottom-hint" style="display:none;" aria-hidden="true"></div>
 <div id="pt-bottom-hint" aria-hidden="true">···</div>
+<button id="toolbar-pin-btn" onclick="toggleToolbarPin()" aria-label="Keep toolbar visible">
+  <span id="toolbar-pin-icon">📌</span>
+  <span id="toolbar-pin-label">Keep open</span>
+</button>
 
 <!-- Board -->
 <main id="board-area">
@@ -4883,6 +4934,25 @@ function toggleToolbar() {
   btn.textContent = document.body.classList.contains('toolbar-collapsed') ? '⋯' : '✕';
 }
 
+function toggleToolbarPin() {
+  const isPinned = document.body.classList.toggle('toolbar-pinned');
+  localStorage.setItem('toolbar_pinned', isPinned ? '1' : '0');
+  const label = document.getElementById('toolbar-pin-label');
+  const icon  = document.getElementById('toolbar-pin-icon');
+  if (isPinned) {
+    // Show toolbar immediately and lock it open
+    document.body.classList.add('pt-chrome-visible');
+    document.body.classList.add('ls-chrome-visible');
+    if (label) label.textContent = 'Pinned';
+    if (icon)  icon.textContent  = '✓';
+  } else {
+    // Restore auto-hide — restart the timer via the exposed helper
+    if (label) label.textContent = 'Keep open';
+    if (icon)  icon.textContent  = '📌';
+    if (window._showPtChrome) window._showPtChrome();
+  }
+}
+
 // ══════════════════════════════════════════════
 // ADD / REMOVE PLAYERS
 // ══════════════════════════════════════════════
@@ -5111,21 +5181,32 @@ document.addEventListener('DOMContentLoaded', init);
   // ── Portrait immersive mode chrome reveal ──────────────────────────────
   // Tapping the top or bottom ~60-70 px reveals header/toolbar/phase-bar.
   // Chrome auto-hides after 3 s of inactivity (same pattern as landscape).
+  // When toolbar-pinned is set, auto-hide is bypassed entirely.
   (function() {
     const HIDE_DELAY  = 3000;
     const TOP_ZONE    = 60;
     const BOTTOM_ZONE = 70;
     let   ptHideTimer = null;
 
+    function isPinned() {
+      return document.body.classList.contains('toolbar-pinned');
+    }
+
     function showPtChrome() {
       document.body.classList.add('pt-chrome-visible');
       clearTimeout(ptHideTimer);
-      ptHideTimer = setTimeout(hidePtChrome, HIDE_DELAY);
+      if (!isPinned()) {
+        ptHideTimer = setTimeout(hidePtChrome, HIDE_DELAY);
+      }
     }
     function hidePtChrome() {
+      if (isPinned()) return; // never auto-hide when pinned
       document.body.classList.remove('pt-chrome-visible');
       clearTimeout(ptHideTimer);
     }
+
+    // Expose so toggleToolbarPin() can restart the auto-hide timer when unpinning
+    window._showPtChrome = showPtChrome;
 
     document.addEventListener('touchstart', function(e) {
       if (!state.portraitRotated) return;
@@ -5134,15 +5215,24 @@ document.addEventListener('DOMContentLoaded', init);
       if (y < TOP_ZONE || y > h - BOTTOM_ZONE) {
         showPtChrome(); return;
       }
-      if (e.target.closest('#app-header, #phase-bar, #toolbar')) {
+      if (e.target.closest('#app-header, #phase-bar, #toolbar, #toolbar-pin-btn')) {
         clearTimeout(ptHideTimer);
-        ptHideTimer = setTimeout(hidePtChrome, HIDE_DELAY);
+        if (!isPinned()) ptHideTimer = setTimeout(hidePtChrome, HIDE_DELAY);
       }
     }, { passive: true });
 
     window.addEventListener('resize', function() {
       if (!state.portraitRotated) hidePtChrome();
     });
+
+    // Restore pinned preference from localStorage and sync button label
+    if (localStorage.getItem('toolbar_pinned') === '1') {
+      document.body.classList.add('toolbar-pinned');
+      const label = document.getElementById('toolbar-pin-label');
+      const icon  = document.getElementById('toolbar-pin-icon');
+      if (label) label.textContent = 'Pinned';
+      if (icon)  icon.textContent  = '✓';
+    }
   })();
 
   // ── PWA Install Banner ────────────────────────────────────────────────────
