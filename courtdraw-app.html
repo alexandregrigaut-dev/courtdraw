@@ -186,8 +186,8 @@ button {
 .player-token.team-red  { background: var(--team-b-color, #dc2626); }
 .player-token.team-blue { background: var(--team-a-color, #60a5fa); }
 .player-token:active { cursor: grabbing; transform: translate(-50%,-50%) scale(1.15); box-shadow: 0 4px 16px rgba(0,0,0,0.6); }
-.ball-token { background: transparent !important; border: none !important; box-shadow: none !important; }
-.ball-token svg { width: 34px; height: 34px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55)); }
+.ball-token { background: transparent !important; border: none !important; box-shadow: none !important; width: 16px !important; height: 16px !important; }
+.ball-token svg { width: 16px; height: 16px; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6)); }
 /* ── Toolbar ── */
 #toolbar {
   height: calc(var(--toolbar-h) + env(safe-area-inset-bottom));
@@ -1025,10 +1025,10 @@ body.portrait-mode .player-token:active {
     <span class="icon">╱</span><span>Line</span>
   </button>
   <button class="tb-btn" data-tool="arc-left" title="Curve Left" onclick="setTool('arc-left')">
-    <span class="icon">↺</span><span>Curve L</span>
+    <span class="icon">↻</span><span>Curve L</span>
   </button>
   <button class="tb-btn" data-tool="arc-right" title="Curve Right" onclick="setTool('arc-right')">
-    <span class="icon">↻</span><span>Curve R</span>
+    <span class="icon">↺</span><span>Curve R</span>
   </button>
   <button class="tb-btn" data-tool="circle" title="Zone Circle" onclick="setTool('circle')">
     <span class="icon">◯</span><span>Circle</span>
