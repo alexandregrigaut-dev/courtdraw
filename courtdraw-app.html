@@ -2154,10 +2154,12 @@ const state = {
   isDrawing: false,
   startNX: 0, startNY: 0,
   points: [],
-  selectedIdx: -1,         // index in state.objects of selected shape (-1 = none)
-  selectDragStart: null,   // {nx,ny} where drag began
-  selectObjSnapshot: null, // deep copy of selected obj at drag start
-  preDragObjects: null,    // full objects snapshot before drag (for undo)
+  selectedIdx: -1,           // index in state.objects of selected shape (-1 = none)
+  selectDragStart: null,     // {nx,ny} where drag began
+  selectObjSnapshot: null,   // deep copy of selected obj at drag start
+  preDragObjects: null,      // full objects snapshot before drag (for undo)
+  selectResizeHandle: null,  // 'tl'|'tr'|'bl'|'br' while resize-dragging, else null
+  selectBboxSnapshot: null,  // bbox at drag start (for resize)
   isPro: false,
   isClub: false,
   isClubOwner: false,
@@ -2762,18 +2764,48 @@ function distToSeg(px,py,x1,y1,x2,y2){
 // ══════════════════════════════════════════════
 
 function handleSelectDown(e, nx, ny) {
-  const HIT_R = 36; // normalized-unit hit radius (generous for finger taps)
+  const HIT_R      = 36; // hit radius for shapes (generous for finger taps)
+  const HANDLE_HIT = 32; // hit radius for corner resize handles
+  const PAD        = 14; // must match drawSelectionHighlight
+
+  // If a shape is already selected, check corner handles first
+  if (state.selectedIdx >= 0) {
+    const bbox = getObjectBbox(state.objects[state.selectedIdx]);
+    if (bbox) {
+      const corners = {
+        tl: [bbox.minX - PAD, bbox.minY - PAD],
+        tr: [bbox.maxX + PAD, bbox.minY - PAD],
+        bl: [bbox.minX - PAD, bbox.maxY + PAD],
+        br: [bbox.maxX + PAD, bbox.maxY + PAD],
+      };
+      for (const [key, [cx, cy]] of Object.entries(corners)) {
+        if (Math.sqrt((nx - cx) ** 2 + (ny - cy) ** 2) < HANDLE_HIT) {
+          state.selectResizeHandle = key;
+          state.selectBboxSnapshot = { ...bbox };
+          state.selectDragStart    = { nx, ny };
+          state.selectObjSnapshot  = JSON.parse(JSON.stringify(state.objects[state.selectedIdx]));
+          state.preDragObjects     = JSON.parse(JSON.stringify(state.objects));
+          state.isDrawing          = true;
+          canvas.setPointerCapture(e.pointerId);
+          return; // resize mode — skip shape hit test
+        }
+      }
+    }
+  }
+
+  // Normal shape hit test
   let hitIdx = -1;
-  // Search in reverse so the topmost-drawn shape wins
   for (let i = state.objects.length - 1; i >= 0; i--) {
     if (objectNearPoint(state.objects[i], nx, ny, HIT_R)) { hitIdx = i; break; }
   }
   if (hitIdx >= 0) {
-    state.selectedIdx       = hitIdx;
-    state.selectDragStart   = { nx, ny };
-    state.selectObjSnapshot = JSON.parse(JSON.stringify(state.objects[hitIdx]));
-    state.preDragObjects    = JSON.parse(JSON.stringify(state.objects)); // for undo on move
-    state.isDrawing         = true;
+    state.selectedIdx        = hitIdx;
+    state.selectResizeHandle = null;
+    state.selectBboxSnapshot = null;
+    state.selectDragStart    = { nx, ny };
+    state.selectObjSnapshot  = JSON.parse(JSON.stringify(state.objects[hitIdx]));
+    state.preDragObjects     = JSON.parse(JSON.stringify(state.objects));
+    state.isDrawing          = true;
     canvas.setPointerCapture(e.pointerId);
     redrawAll();
     updateSelectBar();
@@ -2784,13 +2816,18 @@ function handleSelectDown(e, nx, ny) {
 
 function handleSelectMove(nx, ny) {
   if (state.selectedIdx < 0) return;
-  const dnx = nx - state.selectDragStart.nx;
-  const dny = ny - state.selectDragStart.ny;
-  // Restore snapshot then translate by current delta (clean repeated move)
-  state.objects[state.selectedIdx] = JSON.parse(JSON.stringify(state.selectObjSnapshot));
-  moveObject(state.objects[state.selectedIdx], dnx, dny);
-  redrawAll();
-  updateSelectBar();
+  if (state.selectResizeHandle) {
+    applyResize(nx, ny);
+    redrawAll();
+  } else {
+    const dnx = nx - state.selectDragStart.nx;
+    const dny = ny - state.selectDragStart.ny;
+    // Restore snapshot then translate by current delta (clean repeated move)
+    state.objects[state.selectedIdx] = JSON.parse(JSON.stringify(state.selectObjSnapshot));
+    moveObject(state.objects[state.selectedIdx], dnx, dny);
+    redrawAll();
+    updateSelectBar();
+  }
 }
 
 function handleSelectUp(nx, ny) {
@@ -2798,14 +2835,14 @@ function handleSelectUp(nx, ny) {
   const dnx = nx - state.selectDragStart.nx;
   const dny = ny - state.selectDragStart.ny;
   if ((Math.abs(dnx) > 3 || Math.abs(dny) > 3) && state.preDragObjects) {
-    // Object actually moved — push pre-drag snapshot onto undo stack
     state.undoStack.push(state.preDragObjects);
     if (state.undoStack.length > 50) state.undoStack.shift();
     state.redoStack = [];
     updateUndoButtons();
     saveCurrentPhase();
   }
-  state.preDragObjects = null;
+  state.preDragObjects     = null;
+  state.selectResizeHandle = null;
   updateSelectBar();
 }
 
@@ -2832,6 +2869,82 @@ function moveObject(obj, dnx, dny) {
       break;
     case 'text':
       obj.nx += dnx; obj.ny += dny;
+      break;
+  }
+}
+
+function applyResize(nx, ny) {
+  const origBbox = state.selectBboxSnapshot;
+  const handle   = state.selectResizeHandle;
+  const PAD      = 14; // must match drawSelectionHighlight
+  const MIN_SIZE = 20; // minimum bbox size in normalized units
+
+  // Compute new bbox by mapping current finger position → new object boundary
+  // Handle corner positions: tl=(minX-PAD, minY-PAD), tr=(maxX+PAD, minY-PAD), etc.
+  // So: left handle  → objMinX = fingerNX + PAD
+  //     right handle → objMaxX = fingerNX - PAD
+  //     top handle   → objMinY = fingerNY + PAD
+  //     bottom handle→ objMaxY = fingerNY - PAD
+  let newMinX = origBbox.minX, newMinY = origBbox.minY;
+  let newMaxX = origBbox.maxX, newMaxY = origBbox.maxY;
+  switch (handle) {
+    case 'tl': newMinX = nx + PAD; newMinY = ny + PAD; break;
+    case 'tr': newMaxX = nx - PAD; newMinY = ny + PAD; break;
+    case 'bl': newMinX = nx + PAD; newMaxY = ny - PAD; break;
+    case 'br': newMaxX = nx - PAD; newMaxY = ny - PAD; break;
+  }
+  // Enforce minimum dimensions (clamp the moving edge)
+  if (handle === 'tl' || handle === 'bl') newMinX = Math.min(newMinX, newMaxX - MIN_SIZE);
+  else                                     newMaxX = Math.max(newMaxX, newMinX + MIN_SIZE);
+  if (handle === 'tl' || handle === 'tr') newMinY = Math.min(newMinY, newMaxY - MIN_SIZE);
+  else                                     newMaxY = Math.max(newMaxY, newMinY + MIN_SIZE);
+
+  const origW = origBbox.maxX - origBbox.minX || 1;
+  const origH = origBbox.maxY - origBbox.minY || 1;
+  const sx    = (newMaxX - newMinX) / origW;
+  const sy    = (newMaxY - newMinY) / origH;
+
+  // Anchor = corner opposite the dragged handle (stays fixed)
+  const anchorX = (handle === 'tl' || handle === 'bl') ? origBbox.maxX : origBbox.minX;
+  const anchorY = (handle === 'tl' || handle === 'tr') ? origBbox.maxY : origBbox.minY;
+
+  const tx = px => anchorX + (px - anchorX) * sx;
+  const ty = py => anchorY + (py - anchorY) * sy;
+
+  // Apply transform to a fresh copy of the snapshot
+  const obj = JSON.parse(JSON.stringify(state.selectObjSnapshot));
+  state.objects[state.selectedIdx] = obj;
+
+  switch (obj.type) {
+    case 'arrow': case 'dashed-arrow': case 'line':
+      if (obj.points) obj.points = obj.points.map(([px, py]) => [tx(px), ty(py)]);
+      else { obj.x1 = tx(obj.x1); obj.y1 = ty(obj.y1); obj.x2 = tx(obj.x2); obj.y2 = ty(obj.y2); }
+      break;
+    case 'arc':
+      obj.x1  = tx(obj.x1);  obj.y1  = ty(obj.y1);
+      obj.x2  = tx(obj.x2);  obj.y2  = ty(obj.y2);
+      obj.cpx = tx(obj.cpx); obj.cpy = ty(obj.cpy);
+      break;
+    case 'circle': {
+      // Keep it a circle: uniform scale = avg of sx and sy
+      const s = (Math.abs(sx) + Math.abs(sy)) / 2;
+      obj.cx = tx(obj.cx);
+      obj.cy = ty(obj.cy);
+      obj.r  = Math.max(10, obj.r * s);
+      break;
+    }
+    case 'rect':
+      if (obj.x !== undefined) {
+        obj.x = tx(obj.x); obj.y = ty(obj.y);
+        obj.w = Math.abs(obj.w * sx); obj.h = Math.abs(obj.h * sy);
+      } else {
+        obj.x1 = tx(obj.x1); obj.y1 = ty(obj.y1);
+        obj.x2 = tx(obj.x2); obj.y2 = ty(obj.y2);
+      }
+      break;
+    case 'text':
+      obj.nx = tx(obj.nx); obj.ny = ty(obj.ny);
+      if (obj.fontSize) obj.fontSize = Math.max(8, Math.round(obj.fontSize * (sx + sy) / 2));
       break;
   }
 }
@@ -2870,11 +2983,13 @@ function drawSelectionHighlight(ctx, obj) {
   ctx.setLineDash([6, 4]);
   ctx.globalAlpha = 0.85;
   ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
-  // Corner handles
+  // Corner handles — white ring + blue fill, large enough to tap on mobile
   ctx.setLineDash([]);
-  ctx.fillStyle = '#3b82f6';
   [[a.x, a.y],[b.x, a.y],[a.x, b.y],[b.x, b.y]].forEach(([hx, hy]) => {
-    ctx.beginPath(); ctx.arc(hx, hy, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(hx, hy, 8, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.beginPath(); ctx.arc(hx, hy, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#3b82f6'; ctx.fill();
   });
   ctx.restore();
 }
