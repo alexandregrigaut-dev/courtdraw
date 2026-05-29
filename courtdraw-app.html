@@ -2654,7 +2654,7 @@ function onUp(e) {
     // Show save-play prompt on first completed shape for non-logged-in users (once per session)
     if (!window.__currentUser && !sessionStorage.getItem('cd_save_prompt_shown')) {
       sessionStorage.setItem('cd_save_prompt_shown', '1');
-      setTimeout(() => openModal('modal-save-prompt'), 900);
+      setTimeout(() => openModal('modal-save-prompt'), 12000); // 12s — let them draw a bit first
       gtag('event', 'save_prompt_shown', { event_category: 'engagement' });
     }
   }

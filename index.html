@@ -1360,7 +1360,7 @@
     <div class="section-header">
       <span class="badge">Pricing</span>
       <h2>Start Free. Upgrade When You're Ready.</h2>
-      <p>No credit card required for the free plan. Club plan includes a 7-day free trial — cancel anytime, no questions asked.</p>
+      <p>No credit card required for the free plan. Pro includes a <strong>3-day free trial</strong>, Club includes a <strong>7-day free trial</strong> — cancel anytime before your trial ends, no charge.</p>
     </div>
 
     <div class="pricing-toggle">
@@ -1390,11 +1390,11 @@
 
       <!-- Pro -->
       <div class="pricing-card popular">
-        <div class="popular-badge">Most Popular</div>
+        <div class="popular-badge">3-Day Free Trial</div>
         <div class="plan-name">Pro</div>
         <div class="plan-price" id="pro-price"><sup>€</sup>4<span class="period"> / mo</span></div>
-        <p class="plan-tagline" id="pro-tagline">Billed annually at €49/yr. €6/mo billed monthly.</p>
-        <a href="login.html?checkout=proYearly" class="btn btn-primary plan-btn" id="btn-pro-plan">Upgrade to Pro</a>
+        <p class="plan-tagline" id="pro-tagline">3-day free trial, then €49/yr. €6/mo billed monthly. Cancel anytime.</p>
+        <a href="login.html?checkout=proYearly" class="btn btn-primary plan-btn" id="btn-pro-plan">Start 3-Day Free Trial</a>
         <ul class="plan-features">
           <li><span class="check">✓</span> <span><strong>All 38+ sport courts</strong> + Whiteboard</span></li>
           <li><span class="check">✓</span> <span><strong>Unlimited saved tactics</strong></span></li>
@@ -1543,6 +1543,16 @@
 
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">
+          How does the 3-day Pro trial work?
+          <span class="faq-chevron">▼</span>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">
+          When you start a Pro plan, you get 3 days of full Pro access at no charge. A card is required upfront, but nothing is charged until day 4. If you cancel before the trial ends — via the billing portal inside the app — your subscription ends immediately and you are never billed. If you keep it, your chosen plan (monthly or annual) is automatically charged when the trial converts. No manual steps, no refund requests needed.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
           How does the 7-day Club trial work?
           <span class="faq-chevron">▼</span>
         </button>
@@ -1557,7 +1567,7 @@
           <span class="faq-chevron">▼</span>
         </button>
         <div class="faq-a"><div class="faq-a-inner">
-          Absolutely. Cancel anytime from the billing portal inside the app — no cancellation fee, no questions asked. For Pro: you keep access until the end of your current billing period. For Club during the trial: access ends immediately and you are never charged. Questions? Email <a href="mailto:courtdraw.info@gmail.com">courtdraw.info@gmail.com</a>.
+          Absolutely. Cancel anytime from the billing portal inside the app — no cancellation fee, no questions asked. During a trial (Pro or Club): access ends immediately and you are never charged. After a trial converts: you keep access until the end of your current billing period. Questions? Email <a href="mailto:courtdraw.info@gmail.com">courtdraw.info@gmail.com</a>.
         </div></div>
       </div>
 
@@ -1673,12 +1683,12 @@
     if (mode === 'monthly') {
       monthly.classList.add('active'); annual.classList.remove('active');
       price.innerHTML = '<sup>€</sup>6<span class="period"> / mo</span>';
-      tagline.textContent = 'Billed monthly. Switch to annual to save 32%.';
+      tagline.textContent = '3-day free trial, then €6/mo. Switch to annual to save 32%.';
       if (proBtnEl) proBtnEl.href = 'login.html?checkout=proMonthly';
     } else {
       annual.classList.add('active'); monthly.classList.remove('active');
       price.innerHTML = '<sup>€</sup>4<span class="period"> / mo</span>';
-      tagline.textContent = 'Billed annually at €49/yr. €6/mo billed monthly.';
+      tagline.textContent = '3-day free trial, then €49/yr. €6/mo billed monthly. Cancel anytime.';
       if (proBtnEl) proBtnEl.href = 'login.html?checkout=proYearly';
     }
   }
