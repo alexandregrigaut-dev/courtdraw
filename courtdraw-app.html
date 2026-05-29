@@ -1148,7 +1148,7 @@ body.portrait-mode .player-token:active {
 <div id="toolbar">
   <!-- Select / move tool -->
   <button class="tb-btn" data-tool="select" title="Select & Move" onclick="setTool('select')">
-    <span class="icon">↖</span><span>Select</span>
+    <span class="icon">☞</span><span>Select</span>
   </button>
   <div class="tool-sep"></div>
   <!-- Drawing tools -->
@@ -2709,8 +2709,13 @@ function eraseAt(nx, ny) {
 function objectNearPoint(obj, nx, ny, r) {
   switch(obj.type) {
     case 'arrow': case 'dashed-arrow':
-      if (obj.points) return obj.points.some(p => dist2(p[0],p[1],nx,ny) < r*r);
-      return dist2(obj.x1,obj.y1,nx,ny)<r*r || dist2(obj.x2,obj.y2,nx,ny)<r*r;
+      if (obj.points && obj.points.length >= 2) {
+        for (let i = 0; i < obj.points.length - 1; i++) {
+          if (distToSeg(nx, ny, obj.points[i][0], obj.points[i][1], obj.points[i+1][0], obj.points[i+1][1]) < r) return true;
+        }
+        return false;
+      }
+      return distToSeg(nx, ny, obj.x1, obj.y1, obj.x2, obj.y2) < r;
     case 'line': {
       // Support both {x1,y1,x2,y2} (drawn) and {points} (library)
       if (obj.points && obj.points.length >= 2) {
@@ -2721,7 +2726,7 @@ function objectNearPoint(obj, nx, ny, r) {
       }
       return distToSeg(nx, ny, obj.x1, obj.y1, obj.x2, obj.y2) < r;
     }
-    case 'circle': return Math.abs(dist2(obj.cx,obj.cy,nx,ny)**0.5 - obj.r) < r;
+    case 'circle': return Math.sqrt(dist2(obj.cx,obj.cy,nx,ny)) <= obj.r + r;
     case 'rect': {
       // Support both {x1,y1,x2,y2} (drawn) and {x,y,w,h} (library)
       const rMinX = obj.x !== undefined ? obj.x : Math.min(obj.x1, obj.x2);
@@ -2731,7 +2736,15 @@ function objectNearPoint(obj, nx, ny, r) {
       return nx > rMinX - r && nx < rMaxX + r && ny > rMinY - r && ny < rMaxY + r;
     }
     case 'text': return dist2(obj.nx,obj.ny,nx,ny) < r*r*2;
-    case 'arc': return dist2(obj.cpx,obj.cpy,nx,ny)<r*r || dist2(obj.x1,obj.y1,nx,ny)<r*r;
+    case 'arc': {
+      // Sample points along the quadratic bezier to get accurate hit testing
+      for (let t = 0; t <= 1; t += 0.1) {
+        const bx = (1-t)*(1-t)*obj.x1 + 2*(1-t)*t*obj.cpx + t*t*obj.x2;
+        const by = (1-t)*(1-t)*obj.y1 + 2*(1-t)*t*obj.cpy + t*t*obj.y2;
+        if (Math.sqrt(dist2(nx, ny, bx, by)) < r) return true;
+      }
+      return false;
+    }
     default: return false;
   }
 }
@@ -2749,7 +2762,7 @@ function distToSeg(px,py,x1,y1,x2,y2){
 // ══════════════════════════════════════════════
 
 function handleSelectDown(e, nx, ny) {
-  const HIT_R = 28; // normalized-unit hit radius
+  const HIT_R = 36; // normalized-unit hit radius (generous for finger taps)
   let hitIdx = -1;
   // Search in reverse so the topmost-drawn shape wins
   for (let i = state.objects.length - 1; i >= 0; i--) {
