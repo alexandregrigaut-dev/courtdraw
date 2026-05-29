@@ -278,10 +278,80 @@ button {
 [data-theme="light"] .court-card:hover { background: var(--accent-dim); }
 .court-card.active { border-color: var(--accent); background: #112244; }
 [data-theme="light"] .court-card.active { background: var(--accent-dim); }
-.court-card.locked { opacity: 0.55; }
+/* Point 3: locked courts shown at full color with lock overlay */
+.court-card.locked { opacity: 1; position: relative; }
+.court-card.locked .court-lock-overlay {
+  position: absolute; inset: 0; border-radius: 9px;
+  background: rgba(0,0,0,0.52); display: flex; align-items: center;
+  justify-content: center; pointer-events: none;
+}
+.court-lock-badge {
+  background: #3b82f6; color: #fff; border-radius: 6px;
+  padding: 3px 7px; font-size: 10px; font-weight: 700; letter-spacing: 0.03em;
+}
 .court-card svg { width: 48px; height: 30px; }
 .court-card-name { font-size: 11px; font-weight: 500; line-height: 1.2; color: var(--text); }
 .free-pill { font-size: 9px; background: var(--accent-dim); color: var(--accent); border-radius: 4px; padding: 1px 5px; font-weight: 700; }
+
+/* Point 1: save counter pill */
+#save-counter {
+  display: none; font-size: 11px; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px; cursor: default;
+  background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.25);
+  white-space: nowrap; transition: background 0.2s, color 0.2s;
+}
+#save-counter.warn { background: rgba(245,158,11,0.15); color: #f59e0b; border-color: rgba(245,158,11,0.3); }
+#save-counter.full { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); cursor: pointer; }
+
+/* Point 2: upgrade toast with CTA */
+#toast.upgrade-toast { white-space: normal; max-width: 320px; text-align: center; padding: 10px 16px; }
+.toast-cta { display: inline-block; margin-top: 7px; background: #3b82f6; color: #fff; border-radius: 8px; padding: 5px 14px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; }
+
+/* Point 6: return visitor banner */
+#return-visitor-banner {
+  display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+  padding: 10px 16px; align-items: center; gap: 10px;
+  justify-content: center; flex-wrap: wrap;
+}
+#return-visitor-banner.visible { display: flex; animation: slideDown 0.3s ease; }
+@keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+#return-visitor-banner p { color: #fff; font-size: 13px; font-weight: 600; margin: 0; }
+#return-visitor-banner .rv-cta { background: #fff; color: #1d4ed8; border: none; border-radius: 8px; padding: 5px 14px; font-size: 12px; font-weight: 800; cursor: pointer; }
+#return-visitor-banner .rv-dismiss { background: none; border: none; color: rgba(255,255,255,0.7); font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1; }
+
+/* Point 7: feature preview modal */
+#modal-feature-preview .modal-sheet { max-width: 400px; }
+.fp-body { padding: 24px 28px 28px; text-align: center; }
+.fp-icon { font-size: 52px; margin-bottom: 12px; }
+.fp-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 10px; }
+.fp-desc { color: var(--text2); font-size: 14px; line-height: 1.65; margin-bottom: 20px; }
+.fp-progress { height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-bottom: 16px; overflow: hidden; }
+.fp-progress-bar { height: 100%; background: #3b82f6; border-radius: 2px; width: 0%; transition: width 2.5s linear; }
+.fp-cta { width: 100%; }
+
+/* Point 9: phase teaser modal */
+#modal-phase-teaser .modal-sheet { max-width: 420px; }
+.pt-body { padding: 24px 20px 28px; text-align: center; }
+.pt-title { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 6px; }
+.pt-sub { color: var(--text2); font-size: 13px; margin-bottom: 18px; }
+.pt-phases { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+.pt-phase-card {
+  flex: 1; max-width: 110px; border: 2px solid var(--border);
+  border-radius: 10px; padding: 10px 6px; transition: border-color 0.4s, background 0.4s;
+  background: var(--surface2);
+}
+.pt-phase-card.active { border-color: #3b82f6; background: rgba(59,130,246,0.12); }
+.pt-phase-label { font-size: 11px; font-weight: 700; color: var(--text2); margin-bottom: 8px; }
+.pt-phase-arrows { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.pt-arrow { width: 40px; height: 4px; border-radius: 2px; background: #3b82f6; opacity: 0.3; transition: opacity 0.4s; }
+.pt-phase-card.active .pt-arrow { opacity: 1; }
+.pt-arrow:nth-child(2) { width: 28px; background: #f87171; }
+.pt-arrow:nth-child(3) { width: 34px; }
+.pt-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 18px; }
+.pt-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); transition: background 0.3s; }
+.pt-dot.active { background: #3b82f6; }
+.pt-cta { width: 100%; }
 /* Tactic library */
 .tactic-row {
   display: flex; align-items: center; gap: 12px;
@@ -1221,6 +1291,8 @@ body.portrait-mode .player-token:active {
   <button class="tb-btn" title="My saved tactics" onclick="openLibrary()">
     <span class="icon">💼</span><span>My Plays</span>
   </button>
+  <!-- Point 1: save counter pill — shown for free users only -->
+  <span id="save-counter" role="status" aria-live="polite" title="Upgrade to Pro for unlimited saves"></span>
   <button class="tb-btn" title="Export PNG" onclick="exportPNG()">
     <span class="icon">🖼</span><span>PNG</span>
   </button>
@@ -1423,6 +1495,74 @@ body.portrait-mode .player-token:active {
 
 <!-- Toast -->
 <div id="toast"></div>
+
+<!-- Point 6: Return visitor banner -->
+<div id="return-visitor-banner" role="alert" aria-live="polite">
+  <p>👋 You keep coming back — ready to unlock everything?</p>
+  <button class="rv-cta" onclick="closeReturnBanner(); openPaywall('Try Pro free for 3 days — unlock all courts, unlimited saves, and clean exports.')">Try Pro free →</button>
+  <button class="rv-dismiss" onclick="closeReturnBanner()" aria-label="Dismiss">✕</button>
+</div>
+
+<!-- Point 7: Feature preview modal -->
+<div class="modal-backdrop" id="modal-feature-preview">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title" id="fp-modal-title">Feature Preview</span>
+      <button class="modal-close" aria-label="Close" onclick="skipFeaturePreview()">✕</button>
+    </div>
+    <div class="fp-body">
+      <div class="fp-icon" id="fp-icon">⚡</div>
+      <div class="fp-title" id="fp-title">Pro Feature</div>
+      <div class="fp-desc" id="fp-desc"></div>
+      <div class="fp-progress"><div class="fp-progress-bar" id="fp-progress-bar"></div></div>
+      <button class="btn-accent fp-cta" onclick="skipFeaturePreview()">See pricing →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Point 9: Phase animated teaser -->
+<div class="modal-backdrop" id="modal-phase-teaser">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title">Phase Animation</span>
+      <button class="modal-close" aria-label="Close" onclick="skipPhaseTeaser()">✕</button>
+    </div>
+    <div class="pt-body">
+      <div class="pt-title">See your play come to life</div>
+      <div class="pt-sub">Build your tactic phase by phase — step through each move during a timeout.</div>
+      <div class="pt-phases">
+        <div class="pt-phase-card active" id="pt-card-0">
+          <div class="pt-phase-label">Phase 1</div>
+          <div class="pt-phase-arrows">
+            <div class="pt-arrow"></div>
+            <div class="pt-arrow"></div>
+          </div>
+        </div>
+        <div class="pt-phase-card" id="pt-card-1">
+          <div class="pt-phase-label">Phase 2</div>
+          <div class="pt-phase-arrows">
+            <div class="pt-arrow"></div>
+            <div class="pt-arrow"></div>
+            <div class="pt-arrow"></div>
+          </div>
+        </div>
+        <div class="pt-phase-card" id="pt-card-2">
+          <div class="pt-phase-label">Phase 3</div>
+          <div class="pt-phase-arrows">
+            <div class="pt-arrow"></div>
+            <div class="pt-arrow"></div>
+          </div>
+        </div>
+      </div>
+      <div class="pt-dots">
+        <div class="pt-dot active" id="pt-dot-0"></div>
+        <div class="pt-dot" id="pt-dot-1"></div>
+        <div class="pt-dot" id="pt-dot-2"></div>
+      </div>
+      <button class="btn-accent pt-cta" onclick="skipPhaseTeaser()">Unlock Phase Animation →</button>
+    </div>
+  </div>
+</div>
 
 <!-- PWA Install Banner -->
 <div id="pwa-banner" role="banner" aria-label="Install CourtDraw">
@@ -2290,6 +2430,10 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
       localStorage.removeItem('courtdraw_pending_checkout');
     }
   }
+  // Point 1: update save counter now that plan is known
+  updateSaveCounter();
+  // Point 6: check return visitor (only fires on 3rd visit for free users)
+  checkReturnVisitor();
 };
 window.__currentUser = null;
 
@@ -3520,7 +3664,9 @@ function renderCourtGrid(filter) {
       const isLocked = !state.isPro && !state.isClub && !!state.freeCourt && c.id !== state.freeCourt && !c.free;
       const isFree = !state.isPro && !state.isClub && c.id === state.freeCourt;
       card.className = `court-card${isActive?' active':''}${isLocked?' locked':''}`;
-      card.innerHTML = `${c.icon}<div class="court-card-name">${c.name}</div>${isFree?'<span class="free-pill">FREE</span>':''}`;
+      // Point 3: locked courts show full color with lock overlay instead of faded
+      const lockOverlay = isLocked ? '<div class="court-lock-overlay"><span class="court-lock-badge">🔒 Pro</span></div>' : '';
+      card.innerHTML = `${c.icon}<div class="court-card-name">${c.name}</div>${isFree?'<span class="free-pill">FREE</span>':''}${lockOverlay}`;
       card.onclick = () => switchCourt(c.id, isLocked);
       grid.appendChild(card);
       total++;
@@ -3680,6 +3826,7 @@ function saveTactic() {
   clearAuthorCredit();
   document.getElementById('tactic-name-input').value = '';
   renderLibrary();
+  updateSaveCounter(); // Point 1
   if (state.isClub) {
     // For club users: show "saving…" while syncing, then confirm or report failure
     showToast(`"${name}" saved — syncing to club…`);
@@ -3723,12 +3870,147 @@ function deleteTactic(i) {
   state.savedTactics.splice(i, 1);
   saveToStorage();
   renderLibrary();
+  updateSaveCounter(); // Point 1
   showToast('Play deleted.');
 }
 
 // ══════════════════════════════════════════════
 // PAYWALL & CHECKOUT
 // ══════════════════════════════════════════════
+// ══════════════════════════════════════════════
+// POINT 1 — Save counter
+// ══════════════════════════════════════════════
+function updateSaveCounter() {
+  const el = document.getElementById('save-counter');
+  if (!el) return;
+  const hasPro = state.isPro || state.isClub;
+  if (hasPro) { el.style.display = 'none'; return; }
+  const used = state.savedTactics.length;
+  const max  = FREE_SAVES;
+  el.style.display = '';
+  el.classList.remove('warn', 'full');
+  if (used >= max) {
+    el.textContent = `${used}/${max} saves — upgrade →`;
+    el.classList.add('full');
+    el.onclick = () => openPaywall(`You've used all ${max} free saves. Upgrade to Pro for unlimited saves.`);
+  } else if (used === max - 1) {
+    el.textContent = `${used}/${max} saves used`;
+    el.classList.add('warn');
+    el.onclick = null;
+  } else {
+    el.textContent = `${used}/${max} saves used`;
+    el.onclick = null;
+  }
+}
+
+// ══════════════════════════════════════════════
+// POINT 6 — Return visitor prompt
+// ══════════════════════════════════════════════
+function checkReturnVisitor() {
+  // Only trigger for non-Pro, non-Club users
+  if (state.isPro || state.isClub) return;
+  // Only show once ever
+  if (localStorage.getItem('cd_return_prompt_shown')) return;
+  // Increment visit count
+  const count = parseInt(localStorage.getItem('cd_visit_count') || '0', 10) + 1;
+  localStorage.setItem('cd_visit_count', count);
+  if (count === 3) {
+    localStorage.setItem('cd_return_prompt_shown', '1');
+    setTimeout(() => {
+      const banner = document.getElementById('return-visitor-banner');
+      if (banner && !state.isPro && !state.isClub) {
+        banner.classList.add('visible');
+        gtag('event', 'return_visitor_prompt_shown', { event_category: 'engagement' });
+      }
+    }, 5000);
+  }
+}
+
+function closeReturnBanner() {
+  const banner = document.getElementById('return-visitor-banner');
+  if (banner) banner.classList.remove('visible');
+}
+
+// ══════════════════════════════════════════════
+// POINT 7 — Feature preview before paywall
+// ══════════════════════════════════════════════
+const FEATURE_PREVIEWS = {
+  phases:    { icon: '📐', title: 'Phase-by-Phase Animation',   desc: 'Plan your play in up to 5 steps. Each phase shows exactly how players and the ball move. Tap through them during a timeout.' },
+  video:     { icon: '📹', title: 'Video Overlay',              desc: 'Load match footage and draw plays directly on top — frame by frame. Perfect for post-match analysis and game prep.' },
+  library:   { icon: '📚', title: '200+ Play Templates',        desc: 'Browse a library of 200+ pre-built plays across all sports. Load any tactic in one tap and customise it for your team.' },
+  share:     { icon: '🔗', title: 'Live Shareable Board Links', desc: 'Generate a link to your play. Anyone with it can open the exact tactic in their browser — no account needed.' },
+  animation: { icon: '▶️',  title: 'Animated Playback',         desc: 'Watch your tactical sequence play out automatically — perfect for showing your team the full flow of a play.' },
+  export:    { icon: '🖼',  title: 'Clean Export — No Watermark', desc: 'Export your play as a high-resolution PNG or PDF with no watermark — ready for presentations, WhatsApp, or your club app.' },
+};
+let _fpPaywallReason = '';
+let _fpTimer = null;
+
+function showFeaturePreview(featureKey, paywallReason) {
+  const preview = FEATURE_PREVIEWS[featureKey];
+  if (!preview) { openPaywall(paywallReason); return; }
+  _fpPaywallReason = paywallReason;
+  document.getElementById('fp-modal-title').textContent = 'Pro Feature';
+  document.getElementById('fp-icon').textContent = preview.icon;
+  document.getElementById('fp-title').textContent = preview.title;
+  document.getElementById('fp-desc').textContent = preview.desc;
+  // Reset + animate progress bar
+  const bar = document.getElementById('fp-progress-bar');
+  bar.style.transition = 'none'; bar.style.width = '0%';
+  openModal('modal-feature-preview');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      bar.style.transition = 'width 2.5s linear';
+      bar.style.width = '100%';
+    });
+  });
+  clearTimeout(_fpTimer);
+  _fpTimer = setTimeout(skipFeaturePreview, 2600);
+}
+
+function skipFeaturePreview() {
+  clearTimeout(_fpTimer);
+  closeModal('modal-feature-preview');
+  openPaywall(_fpPaywallReason);
+}
+
+// ══════════════════════════════════════════════
+// POINT 9 — Phase animated teaser
+// ══════════════════════════════════════════════
+let _ptPhase = 0, _ptTimer = null;
+
+function openPhaseTeaser() {
+  _ptPhase = 0;
+  updatePhaseTeaserUI();
+  openModal('modal-phase-teaser');
+  clearTimeout(_ptTimer);
+  _ptAdvance();
+}
+
+function _ptAdvance() {
+  _ptTimer = setTimeout(() => {
+    _ptPhase = (_ptPhase + 1) % 3;
+    updatePhaseTeaserUI();
+    if (_ptPhase < 2) _ptAdvance();
+    else {
+      // After showing all 3 phases, wait 1s then auto-open paywall
+      _ptTimer = setTimeout(skipPhaseTeaser, 1200);
+    }
+  }, 1100);
+}
+
+function updatePhaseTeaserUI() {
+  [0,1,2].forEach(i => {
+    document.getElementById(`pt-card-${i}`).classList.toggle('active', i === _ptPhase);
+    document.getElementById(`pt-dot-${i}`).classList.toggle('active', i === _ptPhase);
+  });
+}
+
+function skipPhaseTeaser() {
+  clearTimeout(_ptTimer);
+  closeModal('modal-phase-teaser');
+  openPaywall('Phase-by-phase animation is a Pro feature. Plan each move step by step.');
+}
+
 function closeSavePrompt(goSignup = false) {
   closeModal('modal-save-prompt');
   if (goSignup) {
@@ -3869,11 +4151,24 @@ function exportPNG() {
         finalizePng();
       }
     } else if (!state.isPro && !state.isClub) {
-      // Free watermark
-      oc.save(); oc.globalAlpha = 0.35; oc.fillStyle = '#ffffff';
-      oc.font = 'bold 20px system-ui'; oc.textAlign = 'right'; oc.textBaseline = 'bottom';
-      oc.fillText('courtdraw.app', W - 10, H - 10); oc.restore();
+      // Free watermark — Point 11: clearly show courtdraw.app as a URL
+      oc.save();
+      oc.globalAlpha = 0.55; oc.fillStyle = 'rgba(0,0,0,0.4)';
+      oc.fillRect(W - 178, H - 34, 168, 26);
+      oc.globalAlpha = 0.9; oc.fillStyle = '#ffffff';
+      oc.font = 'bold 15px system-ui'; oc.textAlign = 'right'; oc.textBaseline = 'middle';
+      oc.fillText('courtdraw.app', W - 14, H - 21);
+      oc.restore();
       finalizePng();
+      // Point 2: nudge to upgrade after export (once per session)
+      if (!sessionStorage.getItem('cd_export_nudge_shown')) {
+        sessionStorage.setItem('cd_export_nudge_shown', '1');
+        setTimeout(() => showUpgradeToast(
+          'Remove the watermark — try Pro free for 3 days',
+          'Try Pro →',
+          () => openPaywall('Export clean plays with no watermark.')
+        ), 1200);
+      }
     } else {
       finalizePng(); // Pro — no watermark
     }
@@ -3885,7 +4180,7 @@ function exportPNG() {
 // PDF EXPORT
 // ══════════════════════════════════════════════
 function exportPDF() {
-  if (!state.isPro && !state.isClub) { openPaywall('Print / PDF export is a Pro feature. Upgrade to unlock clean PDF exports.'); return; }
+  if (!state.isPro && !state.isClub) { showFeaturePreview('export', 'Print / PDF export is a Pro feature. Upgrade to unlock clean PDF exports.'); return; }
   gtag('event', 'export_play', { event_category: 'engagement', format: 'pdf', court_id: state.courtId });
   const W = 2400, H = 1440;
   const off = document.createElement('canvas');
@@ -4014,7 +4309,7 @@ function dl(){
 // SHARE BOARD
 // ══════════════════════════════════════════════
 function shareBoard() {
-  if (!state.isPro && !state.isClub) { openPaywall('Shareable board links are a Pro feature.'); return; }
+  if (!state.isPro && !state.isClub) { showFeaturePreview('share', 'Shareable board links are a Pro feature.'); return; }
   saveCurrentPhase();
   const payload = {
     courtId: state.courtId,
@@ -4029,8 +4324,19 @@ function shareBoard() {
     if (url.length > 4000) { showToast('Board too complex to share via link — save it to your library instead.'); return; }
     navigator.clipboard.writeText(url)
       .then(() => {
-        showToast('Share link copied to clipboard!');
         gtag('event', 'share_play', { event_category: 'engagement', court_id: state.courtId });
+        // Point 8: upsell Club to Pro users after sharing (once per session)
+        if (state.isPro && !state.isClub && !sessionStorage.getItem('cd_share_upsell_shown')) {
+          sessionStorage.setItem('cd_share_upsell_shown', '1');
+          showUpgradeToast(
+            'Link copied! With Club, your whole coaching staff gets their own editor + shared library ✦',
+            'Learn more →',
+            () => startCheckout('club'),
+            7000
+          );
+        } else {
+          showToast('Share link copied to clipboard!');
+        }
       })
       .catch(() => {
         location.hash = '#s=' + encoded;
@@ -4478,7 +4784,7 @@ function loadPhase(idx) {
 }
 
 function addPhase() {
-  if (!state.isPro && !state.isClub) { openPaywall('Phase-by-phase animation is a Pro feature.'); return; }
+  if (!state.isPro && !state.isClub) { openPhaseTeaser(); return; }
   saveCurrentPhase();
   const newPhase = {
     objects: [],
@@ -4549,7 +4855,7 @@ function setAnimSpeed(val) {
 
 function toggleAnimation() {
   if (!state.isPro && !state.isClub) {
-    openPaywall('Animated playback is a Pro feature. Watch your tactical sequence come to life automatically.');
+    showFeaturePreview('animation', 'Animated playback is a Pro feature. Watch your tactical sequence come to life automatically.');
     return;
   }
   if (!state.phases || state.phases.length < 2) {
@@ -4643,7 +4949,7 @@ function autoNumberJerseys() {
 // ══════════════════════════════════════════════
 function openVideoUpload() {
   if (!state.isPro && !state.isClub) {
-    openPaywall('Load match footage and draw plays on top, frame by frame. Pro & Club feature.');
+    showFeaturePreview('video', 'Load match footage and draw plays on top, frame by frame. Pro & Club feature.');
     return;
   }
   document.getElementById('video-file-input').click();
@@ -4809,8 +5115,18 @@ document.querySelectorAll('.modal-backdrop').forEach(m => {
 let toastTimer;
 function showToast(msg, ms = 2400) {
   const t = document.getElementById('toast');
+  t.className = 'show'; // reset any upgrade-toast class
   t.textContent = msg;
-  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+// Point 2: upgrade toast with inline CTA button
+function showUpgradeToast(msg, ctaLabel, ctaFn, ms = 6000) {
+  const t = document.getElementById('toast');
+  t.className = 'show upgrade-toast';
+  t.innerHTML = `<span>${msg}</span><br><button class="toast-cta" id="toast-cta-btn">${ctaLabel}</button>`;
+  document.getElementById('toast-cta-btn').onclick = () => { t.classList.remove('show'); ctaFn(); };
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 }
@@ -5132,7 +5448,7 @@ function handleLibTacticClick(id) {
   const t = window.TACTICS_LIBRARY.find(x => x.id === id);
   if (!t) return;
   if (t.tier === 'pro' && !state.isPro && !state.isClub) {
-    openPaywall('Unlock the full Tactics Library with Pro — ' + t.sport + ' tactics, all sports, all formations.');
+    showFeaturePreview('library', 'Unlock the full Tactics Library with Pro — ' + t.sport + ' tactics, all sports, all formations.');
     return;
   }
   if (t.tier === 'club' && !state.isClub) {

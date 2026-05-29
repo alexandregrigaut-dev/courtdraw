@@ -271,6 +271,85 @@ const templates = {
     };
   },
 
+  // ── Drip email: Day 2 — Feature spotlight ───────────────────────────────────
+  dripDay2: (email) => {
+    const data = {
+      label: 'Did you know?',
+      labelColor: '#3b82f6',
+      title: 'Your plays can come to life — step by step',
+      body: `Most coaches draw their play once and call it done.<br><br>
+             CourtDraw Pro lets you build it in <strong>phases</strong> — Phase 1 shows the initial positions, Phase 2 shows the first movement, Phase 3 shows the finish. Tap through them during a timeout so your players see exactly what to do.<br><br>
+             There's also <strong>animated playback</strong> — hit play and watch the whole sequence run automatically.<br><br>
+             Give it a try. Your first 3 days are free — no charge until day 4, cancel anytime.`,
+      ctaText: 'Try Pro free for 3 days',
+      ctaUrl: `${APP_URL}/#pricing`,
+      features: [
+        { icon: '📐', label: 'Phases' },
+        { icon: '▶️',  label: 'Playback' },
+        { icon: '🔗', label: 'Share link' },
+      ],
+      footerNote: "You're receiving this because you created a free CourtDraw account."
+    };
+    return {
+      from: FROM, reply_to: REPLY_TO, to: email,
+      subject: 'Did you know CourtDraw can animate your plays?',
+      html: layout(data), text: toPlainText(data),
+    };
+  },
+
+  // ── Drip email: Day 5 — Urgency around save limit ────────────────────────────
+  dripDay5: (email) => {
+    const data = {
+      label: 'You\'ve got 3 saves',
+      labelColor: '#f59e0b',
+      title: 'Coaches who upgraded say this changed their prep',
+      body: `On the free plan you can save 3 plays. That fills up fast once you're building tactics for multiple opponents.<br><br>
+             CourtDraw Pro gives you <strong>unlimited saves</strong> — every play, every sport, every opponent, organised in one place.<br><br>
+             <strong>What coaches say after upgrading:</strong><br>
+             <em>"I have a full library now — I load the right play in 10 seconds on the sideline."</em><br><br>
+             Try Pro free for 3 days. No charge until day 4.`,
+      ctaText: 'Start my 3-day free trial',
+      ctaUrl: `${APP_URL}/#pricing`,
+      features: [
+        { icon: '💾', label: 'Unlimited saves' },
+        { icon: '🏟', label: '38+ courts' },
+        { icon: '📤', label: 'Clean exports' },
+      ],
+      footerNote: "You're receiving this because you created a free CourtDraw account."
+    };
+    return {
+      from: FROM, reply_to: REPLY_TO, to: email,
+      subject: 'You\'ve got 3 saves — here\'s what coaches with Pro say',
+      html: layout(data), text: toPlainText(data),
+    };
+  },
+
+  // ── Drip email: Day 10 — Direct trial CTA ────────────────────────────────────
+  dripDay10: (email) => {
+    const data = {
+      label: 'Your free trial is waiting',
+      labelColor: '#10b981',
+      title: 'Your 3-day Pro trial — no charge until day 4',
+      body: `You've been using CourtDraw for a few days now. If you're serious about your coaching prep, Pro is worth trying.<br><br>
+             <strong>Everything unlocked for 3 days — completely free:</strong><br>
+             All 38+ courts, unlimited saves, phase animation, video overlay, clean PNG exports, 200+ play templates, and shareable board links.<br><br>
+             Card required upfront. No charge until day 4. Cancel before then and you won't be billed — no questions asked.`,
+      ctaText: 'Claim my free 3-day trial →',
+      ctaUrl: `${APP_URL}/#pricing`,
+      features: [
+        { icon: '🏟', label: '38+ courts' },
+        { icon: '💾', label: 'Unlimited saves' },
+        { icon: '📹', label: 'Video overlay' },
+      ],
+      footerNote: "You're receiving this because you created a free CourtDraw account. To stop receiving these emails, reply with 'unsubscribe'."
+    };
+    return {
+      from: FROM, reply_to: REPLY_TO, to: email,
+      subject: 'Your 3-day CourtDraw Pro trial is waiting',
+      html: layout(data), text: toPlainText(data),
+    };
+  },
+
   // Sent when a Pro trial checkout completes (no charge yet)
   proTrialStarted: (email) => {
     const data = {

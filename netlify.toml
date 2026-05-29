@@ -2,6 +2,11 @@
   publish = "."
   functions = "netlify/functions"
 
+# Point 5 — Drip email sequence: runs daily at 09:00 UTC
+# Sends Day 2 / Day 5 / Day 10 nudge emails to free users
+[functions."drip-emails"]
+  schedule = "0 9 * * *"
+
 # Firebase client-side API keys are intentionally public — they are not secrets.
 # Firebase security is enforced by Firebase Security Rules, not key secrecy.
 # This disables Netlify's false-positive secret scanning failure for this repo.
