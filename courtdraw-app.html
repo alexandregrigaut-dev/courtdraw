@@ -4118,7 +4118,7 @@ function exportPNG() {
     canvasW = savedW; canvasH = savedH;
 
     // ── Draw ball tokens async (SVG → canvas image) ─────────────────────────
-    const BALL_PX = 44; // ball diameter in export pixels
+    const BALL_PX = 24; // ball diameter in export pixels — half of player token diameter (48px), matching live canvas ratio
     const ballTokens = state.tokenPositions.filter(t => t.team === 'ball');
     const ballPromises = ballTokens.map(t => new Promise(resolve => {
       const svgStr = getBallSvg(state.courtId);
@@ -4233,7 +4233,7 @@ function exportPDF() {
       oc.fillText(t.label, x, y);
     }
     // Draw ball tokens as proper SVG images
-    const BALL_PX_PDF = 56;
+    const BALL_PX_PDF = 28; // half of player token diameter (56px), matching live canvas ratio
     const pdfBallPromises = state.tokenPositions.filter(t => t.team === 'ball').map(t => new Promise(resolve => {
       const bsvg = getBallSvg(state.courtId);
       const burl = URL.createObjectURL(new Blob([bsvg], { type: 'image/svg+xml' }));
