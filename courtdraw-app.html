@@ -548,7 +548,57 @@ button {
 /* ── Presentation mode ── */
 body.presentation-mode #app-header,
 body.presentation-mode #toolbar,
-body.presentation-mode #phase-bar { display: none !important; }
+body.presentation-mode #phase-bar,
+body.presentation-mode #select-action-bar { display: none !important; }
+
+/* ── Select tool action bar ─────────────────────────────────────────────── */
+#select-action-bar {
+  display: none;
+  position: fixed;
+  bottom: calc(var(--toolbar-h) + var(--phase-bar-h) + env(safe-area-inset-bottom) + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  background: rgba(10, 20, 42, 0.92);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 14px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.45);
+  white-space: nowrap;
+}
+#select-action-bar.visible { display: flex; }
+.sel-color-dot {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.1s, border-color 0.12s;
+}
+.sel-color-dot:active { transform: scale(0.88); }
+.sel-color-dot.active { border-color: #fff; transform: scale(1.12); }
+.sel-sep {
+  width: 1px; height: 22px;
+  background: rgba(255,255,255,0.15);
+  margin: 0 3px; flex-shrink: 0;
+}
+.sel-action-btn {
+  width: 32px; height: 32px;
+  border: none; border-radius: 8px;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.85);
+  font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.12s;
+}
+.sel-action-btn:hover  { background: rgba(255,255,255,0.16); }
+.sel-action-btn:active { background: rgba(255,255,255,0.24); transform: scale(0.92); }
+.sel-action-btn.del    { color: #f87171; }
 body.presentation-mode #board-area { height: 100dvh; height: 100vh; }
 #presentation-overlay {
   display: none; position: fixed; inset: 0; z-index: 200; pointer-events: none;
@@ -1033,6 +1083,15 @@ body.portrait-mode .player-token:active {
 <div id="ls-top-hint"    style="display:none;" aria-hidden="true"></div>
 <div id="ls-bottom-hint" style="display:none;" aria-hidden="true"></div>
 <div id="pt-bottom-hint" aria-hidden="true">···</div>
+
+<!-- Select tool action bar -->
+<div id="select-action-bar" role="toolbar" aria-label="Selected object actions">
+  <div id="sel-colors" style="display:flex;align-items:center;gap:5px;"></div>
+  <div class="sel-sep"></div>
+  <button class="sel-action-btn del" onclick="deleteSelected()" title="Delete shape" aria-label="Delete selected shape">🗑</button>
+  <button class="sel-action-btn" onclick="deselectObject()" title="Done" aria-label="Deselect">✕</button>
+</div>
+
 <button id="toolbar-pin-btn" onclick="toggleToolbarPin()" aria-label="Keep toolbar visible">
   <span id="toolbar-pin-icon">📌</span>
   <span id="toolbar-pin-label">Keep open</span>
@@ -1087,6 +1146,11 @@ body.portrait-mode .player-token:active {
 
 <!-- Toolbar -->
 <div id="toolbar">
+  <!-- Select / move tool -->
+  <button class="tb-btn" data-tool="select" title="Select & Move" onclick="setTool('select')">
+    <span class="icon">↖</span><span>Select</span>
+  </button>
+  <div class="tool-sep"></div>
   <!-- Drawing tools -->
   <button class="tb-btn active" data-tool="arrow" title="Arrow" onclick="setTool('arrow')">
     <span class="icon">↗</span><span>Arrow</span>
@@ -2090,6 +2154,10 @@ const state = {
   isDrawing: false,
   startNX: 0, startNY: 0,
   points: [],
+  selectedIdx: -1,         // index in state.objects of selected shape (-1 = none)
+  selectDragStart: null,   // {nx,ny} where drag began
+  selectObjSnapshot: null, // deep copy of selected obj at drag start
+  preDragObjects: null,    // full objects snapshot before drag (for undo)
   isPro: false,
   isClub: false,
   isClubOwner: false,
@@ -2494,6 +2562,10 @@ function redrawAll() {
 
   for (const obj of state.objects) drawObject(ctx, obj);
   if (previewObj) drawObject(ctx, previewObj);
+  // Selection highlight
+  if (state.tool === 'select' && state.selectedIdx >= 0 && state.selectedIdx < state.objects.length) {
+    drawSelectionHighlight(ctx, state.objects[state.selectedIdx]);
+  }
 }
 
 // ── Canvas events ──
@@ -2513,6 +2585,7 @@ function onDown(e) {
   if (state.pinching) return;
   if (state.tool === 'text') { handleTextTool(e); return; }
   const { nx, ny } = getPos(e);
+  if (state.tool === 'select') { handleSelectDown(e, nx, ny); return; }
   state.isDrawing = true;
   state.startNX = nx; state.startNY = ny;
   state.points = [[nx, ny]];
@@ -2532,6 +2605,7 @@ function onMove(e) {
   if (state.pinching) { state.isDrawing = false; previewObj = null; redrawAll(); return; }
   e.preventDefault();
   const { nx, ny } = getPos(e);
+  if (state.tool === 'select') { handleSelectMove(nx, ny); return; }
   state.points.push([nx, ny]);
   // Continuous erase during drag — no preview needed
   if (state.tool === 'eraser') { eraseAt(nx, ny); redrawAll(); return; }
@@ -2543,6 +2617,7 @@ function onUp(e) {
   if (!state.isDrawing) return;
   state.isDrawing = false;
   const { nx, ny } = getPos(e);
+  if (state.tool === 'select') { handleSelectUp(nx, ny); return; }
   const dx = Math.abs(nx - state.startNX), dy = Math.abs(ny - state.startNY);
   // Eraser: saveUndo already called in onDown; erase at final position too
   if (state.tool === 'eraser') { eraseAt(nx, ny); previewObj = null; redrawAll(); return; }
@@ -2667,6 +2742,183 @@ function distToSeg(px,py,x1,y1,x2,y2){
   let t=((px-x1)*dx+(py-y1)*dy)/len2;
   t=Math.max(0,Math.min(1,t));
   return Math.sqrt(dist2(px,py,x1+t*dx,y1+t*dy));
+}
+
+// ══════════════════════════════════════════════
+// SELECT TOOL — hit, drag, recolor, delete
+// ══════════════════════════════════════════════
+
+function handleSelectDown(e, nx, ny) {
+  const HIT_R = 28; // normalized-unit hit radius
+  let hitIdx = -1;
+  // Search in reverse so the topmost-drawn shape wins
+  for (let i = state.objects.length - 1; i >= 0; i--) {
+    if (objectNearPoint(state.objects[i], nx, ny, HIT_R)) { hitIdx = i; break; }
+  }
+  if (hitIdx >= 0) {
+    state.selectedIdx       = hitIdx;
+    state.selectDragStart   = { nx, ny };
+    state.selectObjSnapshot = JSON.parse(JSON.stringify(state.objects[hitIdx]));
+    state.preDragObjects    = JSON.parse(JSON.stringify(state.objects)); // for undo on move
+    state.isDrawing         = true;
+    canvas.setPointerCapture(e.pointerId);
+    redrawAll();
+    updateSelectBar();
+  } else {
+    deselectObject();
+  }
+}
+
+function handleSelectMove(nx, ny) {
+  if (state.selectedIdx < 0) return;
+  const dnx = nx - state.selectDragStart.nx;
+  const dny = ny - state.selectDragStart.ny;
+  // Restore snapshot then translate by current delta (clean repeated move)
+  state.objects[state.selectedIdx] = JSON.parse(JSON.stringify(state.selectObjSnapshot));
+  moveObject(state.objects[state.selectedIdx], dnx, dny);
+  redrawAll();
+  updateSelectBar();
+}
+
+function handleSelectUp(nx, ny) {
+  if (state.selectedIdx < 0) return;
+  const dnx = nx - state.selectDragStart.nx;
+  const dny = ny - state.selectDragStart.ny;
+  if ((Math.abs(dnx) > 3 || Math.abs(dny) > 3) && state.preDragObjects) {
+    // Object actually moved — push pre-drag snapshot onto undo stack
+    state.undoStack.push(state.preDragObjects);
+    if (state.undoStack.length > 50) state.undoStack.shift();
+    state.redoStack = [];
+    updateUndoButtons();
+    saveCurrentPhase();
+  }
+  state.preDragObjects = null;
+  updateSelectBar();
+}
+
+function moveObject(obj, dnx, dny) {
+  switch (obj.type) {
+    case 'arrow': case 'dashed-arrow': case 'line':
+      if (obj.points) {
+        obj.points = obj.points.map(p => [p[0] + dnx, p[1] + dny]);
+      } else {
+        obj.x1 += dnx; obj.y1 += dny; obj.x2 += dnx; obj.y2 += dny;
+      }
+      break;
+    case 'arc':
+      obj.x1  += dnx; obj.y1  += dny;
+      obj.x2  += dnx; obj.y2  += dny;
+      obj.cpx += dnx; obj.cpy += dny;
+      break;
+    case 'circle':
+      obj.cx += dnx; obj.cy += dny;
+      break;
+    case 'rect':
+      if (obj.x !== undefined) { obj.x += dnx; obj.y += dny; }
+      else { obj.x1 += dnx; obj.y1 += dny; obj.x2 += dnx; obj.y2 += dny; }
+      break;
+    case 'text':
+      obj.nx += dnx; obj.ny += dny;
+      break;
+  }
+}
+
+function getObjectBbox(obj) {
+  switch (obj.type) {
+    case 'arrow': case 'dashed-arrow': case 'line':
+      if (obj.points && obj.points.length) {
+        const xs = obj.points.map(p => p[0]), ys = obj.points.map(p => p[1]);
+        return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
+      }
+      return { minX: Math.min(obj.x1,obj.x2), maxX: Math.max(obj.x1,obj.x2), minY: Math.min(obj.y1,obj.y2), maxY: Math.max(obj.y1,obj.y2) };
+    case 'arc':
+      return { minX: Math.min(obj.x1,obj.x2,obj.cpx), maxX: Math.max(obj.x1,obj.x2,obj.cpx),
+               minY: Math.min(obj.y1,obj.y2,obj.cpy), maxY: Math.max(obj.y1,obj.y2,obj.cpy) };
+    case 'circle':
+      return { minX: obj.cx - obj.r, maxX: obj.cx + obj.r, minY: obj.cy - obj.r, maxY: obj.cy + obj.r };
+    case 'rect':
+      if (obj.x !== undefined) return { minX: obj.x, maxX: obj.x + obj.w, minY: obj.y, maxY: obj.y + obj.h };
+      return { minX: Math.min(obj.x1,obj.x2), maxX: Math.max(obj.x1,obj.x2), minY: Math.min(obj.y1,obj.y2), maxY: Math.max(obj.y1,obj.y2) };
+    case 'text':
+      return { minX: obj.nx - 30, maxX: obj.nx + 100, minY: obj.ny - 20, maxY: obj.ny + 12 };
+    default: return null;
+  }
+}
+
+function drawSelectionHighlight(ctx, obj) {
+  const bbox = getObjectBbox(obj);
+  if (!bbox) return;
+  const pad = 14; // normalized-unit padding around bounding box
+  const a = n2c(bbox.minX - pad, bbox.minY - pad);
+  const b = n2c(bbox.maxX + pad, bbox.maxY + pad);
+  ctx.save();
+  ctx.strokeStyle = '#3b82f6';
+  ctx.lineWidth   = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.globalAlpha = 0.85;
+  ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
+  // Corner handles
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#3b82f6';
+  [[a.x, a.y],[b.x, a.y],[a.x, b.y],[b.x, b.y]].forEach(([hx, hy]) => {
+    ctx.beginPath(); ctx.arc(hx, hy, 4, 0, Math.PI * 2); ctx.fill();
+  });
+  ctx.restore();
+}
+
+function deselectObject(redraw = true) {
+  state.selectedIdx       = -1;
+  state.selectDragStart   = null;
+  state.selectObjSnapshot = null;
+  state.preDragObjects    = null;
+  const bar = document.getElementById('select-action-bar');
+  if (bar) bar.classList.remove('visible');
+  if (redraw) redrawAll();
+}
+
+function deleteSelected() {
+  if (state.selectedIdx < 0) return;
+  saveUndo();
+  state.objects.splice(state.selectedIdx, 1);
+  saveCurrentPhase();
+  deselectObject();
+}
+
+function updateSelectBar() {
+  const bar = document.getElementById('select-action-bar');
+  if (!bar) return;
+  if (state.selectedIdx < 0 || state.selectedIdx >= state.objects.length || state.tool !== 'select') {
+    bar.classList.remove('visible'); return;
+  }
+  bar.classList.add('visible');
+  // Update which color dot is active for the selected shape
+  const obj = state.objects[state.selectedIdx];
+  document.querySelectorAll('.sel-color-dot').forEach(d => {
+    d.classList.toggle('active', d.dataset.color === obj.color);
+  });
+}
+
+function buildSelectBar() {
+  const wrap = document.getElementById('sel-colors');
+  if (!wrap) return;
+  COLORS.forEach(c => {
+    const d = document.createElement('div');
+    d.className       = 'sel-color-dot';
+    d.dataset.color   = c;
+    d.style.background = c;
+    d.title = 'Change color';
+    if (c === '#ffffff' || c === '#111827') d.style.border = '2.5px solid #64748b';
+    d.addEventListener('pointerdown', (ev) => {
+      ev.stopPropagation();
+      if (state.selectedIdx < 0 || state.selectedIdx >= state.objects.length) return;
+      saveUndo();
+      state.objects[state.selectedIdx].color = c;
+      saveCurrentPhase();
+      redrawAll();
+      updateSelectBar();
+    });
+    wrap.appendChild(d);
+  });
 }
 
 // ── Text tool ──
@@ -3027,9 +3279,10 @@ function renameToken(idx, el) {
 // TOOL SELECTION
 // ══════════════════════════════════════════════
 function setTool(t) {
+  if (t !== 'select') deselectObject(false);
   state.tool = t;
   document.querySelectorAll('.tb-btn[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
-  canvas.style.cursor = t === 'eraser' ? 'cell' : t === 'text' ? 'text' : 'crosshair';
+  canvas.style.cursor = t === 'eraser' ? 'cell' : t === 'text' ? 'text' : t === 'select' ? 'default' : 'crosshair';
 }
 
 // ══════════════════════════════════════════════
@@ -4042,6 +4295,7 @@ function saveCurrentPhase() {
 }
 
 function loadPhase(idx) {
+  deselectObject(false);
   saveCurrentPhase();
   state.currentPhase = idx;
   const ph = state.phases[idx];
@@ -4435,6 +4689,7 @@ function init() {
   loadFromStorage();
   const sharedBoard = loadFromHash();
   buildColors();
+  buildSelectBar();
   // Initialize team color pickers and apply saved/default colors
   const pickerA = document.getElementById('color-team-a');
   const pickerB = document.getElementById('color-team-b');
@@ -5195,7 +5450,7 @@ document.addEventListener('DOMContentLoaded', init);
         return;
       }
       // Touch on a chrome element while visible → extend timer only
-      if (e.target.closest('#app-header, #phase-bar, #toolbar, #toolbar-pin-btn')) {
+      if (e.target.closest('#app-header, #phase-bar, #toolbar, #toolbar-pin-btn, #select-action-bar')) {
         clearTimeout(hideTimer);
         if (!isPinned()) hideTimer = setTimeout(hideChrome, HIDE_DELAY);
       }
@@ -5257,7 +5512,7 @@ document.addEventListener('DOMContentLoaded', init);
       if (y < TOP_ZONE || y > h - BOTTOM_ZONE) {
         showPtChrome(); return;
       }
-      if (e.target.closest('#app-header, #phase-bar, #toolbar, #toolbar-pin-btn')) {
+      if (e.target.closest('#app-header, #phase-bar, #toolbar, #toolbar-pin-btn, #select-action-bar')) {
         clearTimeout(ptHideTimer);
         if (!isPinned()) ptHideTimer = setTimeout(hidePtChrome, HIDE_DELAY);
       }
