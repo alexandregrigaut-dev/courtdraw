@@ -1494,7 +1494,7 @@ body.portrait-mode .player-token:active {
       <button class="modal-close" aria-label="Close" onclick="dismissWelcome()">✕</button>
     </div>
     <div class="welcome-body">
-      <div class="welcome-logo">🏟</div>
+      <div class="welcome-logo">⚡</div>
       <h2 class="welcome-title">Draw your first play in 30 seconds</h2>
       <p class="welcome-sub">No account needed. Works on any phone or browser.</p>
       <div class="welcome-steps">
@@ -5257,7 +5257,12 @@ function openModal(id) {
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-backdrop').forEach(m => {
-  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+  m.addEventListener('click', e => {
+    if (e.target !== m) return;
+    // Welcome modal: must go through dismissWelcome() so the localStorage flag is set
+    if (m.id === 'modal-welcome') { dismissWelcome(); return; }
+    m.classList.remove('open');
+  });
 });
 
 // ══════════════════════════════════════════════
