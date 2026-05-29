@@ -2262,7 +2262,7 @@ const COURTS = [
 
   // ── FISTBALL ──
   {
-    id:'fistball', name:'Fistball', category:'other', free:true,
+    id:'fistball', name:'Fistball', category:'other', free:false,
     icon:`<svg viewBox="0 0 48 30"><rect x="2" y="2" width="44" height="26" fill="#2d5a1b" rx="1"/><rect x="2" y="2" width="44" height="26" fill="none" stroke="white" stroke-width="1.5"/><line x1="24" y1="2" x2="24" y2="28" stroke="white" stroke-width="2"/><circle cx="24" cy="2" r="1.5" fill="white"/><circle cx="24" cy="28" r="1.5" fill="white"/></svg>`,
     svg(){return `
       <rect width="1000" height="600" fill="#1a3a0a"/>
@@ -3887,7 +3887,7 @@ function updateSaveCounter() {
   if (hasPro) { el.style.display = 'none'; return; }
   const used = state.savedTactics.length;
   const max  = FREE_SAVES;
-  el.style.display = '';
+  el.style.display = 'inline-block';
   el.classList.remove('warn', 'full');
   if (used >= max) {
     el.textContent = `${used}/${max} saves — upgrade →`;
@@ -4104,7 +4104,9 @@ function exportPNG() {
     const savedW = canvasW, savedH = canvasH;
     canvasW = W; canvasH = H;
     for (const obj of state.objects) drawObject(oc, obj);
+    // Draw player tokens (non-ball) synchronously; ball tokens need async SVG load
     for (const t of state.tokenPositions) {
+      if (t.team === 'ball') continue;
       const x = t.pct[0] * W, y = t.pct[1] * H;
       oc.beginPath(); oc.arc(x, y, 24, 0, Math.PI*2);
       oc.fillStyle = t.team === 'red' ? (state.teamColorB || '#dc2626') : (state.teamColorA || '#60a5fa');
@@ -4115,6 +4117,25 @@ function exportPNG() {
     }
     canvasW = savedW; canvasH = savedH;
 
+    // ── Draw ball tokens async (SVG → canvas image) ─────────────────────────
+    const BALL_PX = 44; // ball diameter in export pixels
+    const ballTokens = state.tokenPositions.filter(t => t.team === 'ball');
+    const ballPromises = ballTokens.map(t => new Promise(resolve => {
+      const svgStr = getBallSvg(state.courtId);
+      const ballBlob = new Blob([svgStr], { type: 'image/svg+xml' });
+      const ballUrl  = URL.createObjectURL(ballBlob);
+      const bi = new Image();
+      bi.onload = () => {
+        const bx = t.pct[0] * W, by = t.pct[1] * H;
+        oc.drawImage(bi, bx - BALL_PX / 2, by - BALL_PX / 2, BALL_PX, BALL_PX);
+        URL.revokeObjectURL(ballUrl);
+        resolve();
+      };
+      bi.onerror = () => { URL.revokeObjectURL(ballUrl); resolve(); };
+      bi.src = ballUrl;
+    }));
+
+    Promise.all(ballPromises).then(() => {
     // ── Branding / watermark ────────────────────────────────────────────────
     const FOOT_H = 48, FOOT_PAD = 16;
     const finalizePng = () => {
@@ -4172,6 +4193,7 @@ function exportPNG() {
     } else {
       finalizePng(); // Pro — no watermark
     }
+    }); // end Promise.all(ballPromises).then
   };
   img.src = url;
 }
@@ -4198,7 +4220,9 @@ function exportPDF() {
     const savedW = canvasW, savedH = canvasH;
     canvasW = W; canvasH = H;
     for (const obj of state.objects) drawObject(oc, obj);
+    // Draw player tokens synchronously; ball tokens rendered async below
     for (const t of state.tokenPositions) {
+      if (t.team === 'ball') continue;
       const x = t.pct[0] * W, y = t.pct[1] * H;
       oc.beginPath(); oc.arc(x, y, 28, 0, Math.PI * 2);
       oc.fillStyle = t.team === 'red' ? (state.teamColorB || '#dc2626') : (state.teamColorA || '#60a5fa');
@@ -4208,6 +4232,20 @@ function exportPDF() {
       oc.font = 'bold 22px system-ui'; oc.textAlign = 'center'; oc.textBaseline = 'middle';
       oc.fillText(t.label, x, y);
     }
+    // Draw ball tokens as proper SVG images
+    const BALL_PX_PDF = 56;
+    const pdfBallPromises = state.tokenPositions.filter(t => t.team === 'ball').map(t => new Promise(resolve => {
+      const bsvg = getBallSvg(state.courtId);
+      const burl = URL.createObjectURL(new Blob([bsvg], { type: 'image/svg+xml' }));
+      const bi = new Image();
+      bi.onload = () => {
+        oc.drawImage(bi, t.pct[0]*W - BALL_PX_PDF/2, t.pct[1]*H - BALL_PX_PDF/2, BALL_PX_PDF, BALL_PX_PDF);
+        URL.revokeObjectURL(burl); resolve();
+      };
+      bi.onerror = () => { URL.revokeObjectURL(burl); resolve(); };
+      bi.src = burl;
+    }));
+    Promise.all(pdfBallPromises).then(() => {
     // ── Branding footer drawn directly onto the canvas ──────────────────────
     // Free users: subtle watermark centre. Club: logo BL + name BR. Pro: clean.
     const FOOT_H   = 90;          // footer bar height in px (at W×H resolution)
@@ -4301,6 +4339,7 @@ function dl(){
       canvasW = savedW; canvasH = savedH;
       finalizePdf();
     }
+    }); // end Promise.all(pdfBallPromises).then
   };
   img.src = url;
 }
