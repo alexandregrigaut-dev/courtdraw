@@ -271,6 +271,61 @@ const templates = {
     };
   },
 
+  // Sent when a Pro trial checkout completes (no charge yet)
+  proTrialStarted: (email) => {
+    const data = {
+      label: '3-day free trial started',
+      labelColor: '#f59e0b',
+      title: 'Your Pro trial has started',
+      body: `You have 3 full days to explore every Pro feature — all 38+ courts, unlimited saves, multi-phase plays, clean PNG exports, video overlay, and the tactics library.<br><br>
+             <strong>No charge until your trial ends.</strong> Cancel anytime before then and you won't be billed — no questions asked.<br><br>
+             Head to the app and start building plays.`,
+      ctaText: 'Open the app',
+      ctaUrl: `${APP_URL}/courtdraw-app.html`,
+      features: [
+        { icon: '🏟', label: '38+ courts' },
+        { icon: '💾', label: 'Unlimited saves' },
+        { icon: '📐', label: 'Multi-phase plays' },
+      ],
+      footerNote: "You're receiving this because you started a CourtDraw Pro trial."
+    };
+    return {
+      from: FROM,
+      reply_to: REPLY_TO,
+      to: email,
+      subject: 'Your 3-day CourtDraw Pro trial has started',
+      html: layout(data),
+      text: toPlainText(data),
+    };
+  },
+
+  // Sent when a Pro trial converts to a paid subscription (day 4 charge succeeds)
+  proTrialConverted: (email) => {
+    const data = {
+      label: 'Pro plan active',
+      labelColor: '#f59e0b',
+      title: 'Your Pro subscription is now active',
+      body: `Your 3-day trial is over and your Pro subscription is now active. All Pro features remain fully unlocked.<br><br>
+             Manage your billing anytime from inside the app.`,
+      ctaText: 'Open the app',
+      ctaUrl: `${APP_URL}/courtdraw-app.html`,
+      features: [
+        { icon: '🏟', label: '38+ courts' },
+        { icon: '💾', label: 'Unlimited saves' },
+        { icon: '📐', label: 'Multi-phase plays' },
+      ],
+      footerNote: "You're receiving this because your CourtDraw Pro trial converted to a paid subscription."
+    };
+    return {
+      from: FROM,
+      reply_to: REPLY_TO,
+      to: email,
+      subject: 'CourtDraw Pro — your subscription is now active',
+      html: layout(data),
+      text: toPlainText(data),
+    };
+  },
+
   // Sent when a Club trial checkout completes (no charge yet)
   clubTrialStarted: (email) => {
     const data = {

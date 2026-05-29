@@ -66,8 +66,8 @@ exports.handler = async (event) => {
       return { statusCode: 200, body: JSON.stringify({ received: true }) };
     }
 
-    // Detect whether this is a trial checkout (Club plan + no immediate charge)
-    const isTrial = plan === 'club' && session.payment_status === 'no_payment_required';
+    // Detect whether this is a trial checkout (any plan — no immediate charge means trial)
+    const isTrial = session.payment_status === 'no_payment_required';
 
     const update = {
       plan,
@@ -75,26 +75,25 @@ exports.handler = async (event) => {
       subscribedAt: new Date().toISOString()
     };
 
+    // Store trial metadata for any trialing plan
+    if (isTrial && session.subscription) {
+      try {
+        const sub = await stripe.subscriptions.retrieve(session.subscription);
+        if (sub.trial_end) {
+          update.isTrialing  = true;
+          update.trialEndsAt = new Date(sub.trial_end * 1000).toISOString();
+        }
+      } catch (e) {
+        // Non-fatal: trial info is nice-to-have, not required for access
+        console.error('Could not retrieve subscription for trial info:', e.message);
+      }
+    }
+
     // Club plan: create the club document, assign a stable clubId, generate a join code
     if (plan === 'club') {
       const clubId   = 'club_' + userId;
       const clubCode = generateClubCode();
       update.clubId = clubId;
-
-      // Store trial metadata for record-keeping and potential future UI use
-      if (isTrial && session.subscription) {
-        try {
-          const sub = await stripe.subscriptions.retrieve(session.subscription);
-          if (sub.trial_end) {
-            update.isTrialing   = true;
-            update.trialEndsAt  = new Date(sub.trial_end * 1000).toISOString();
-          }
-        } catch (e) {
-          // Non-fatal: trial info is nice-to-have, not required for access
-          console.error('Could not retrieve subscription for trial info:', e.message);
-        }
-      }
-
       await db.collection('clubs').doc(clubId).set({
         ownerId:   userId,
         clubCode,           // 6-char code coaches use to join
@@ -107,8 +106,8 @@ exports.handler = async (event) => {
     // Send appropriate email based on plan and trial status
     if (plan === 'club') {
       await sendEmail(isTrial ? 'clubTrialStarted' : 'clubWelcome', session.customer_email);
-    } else {
-      await sendEmail('paymentConfirmed', session.customer_email);
+    } else if (plan === 'pro') {
+      await sendEmail(isTrial ? 'proTrialStarted' : 'paymentConfirmed', session.customer_email);
     }
   }
 
@@ -117,8 +116,7 @@ exports.handler = async (event) => {
     const sub  = stripeEvent.data.object;
     const prev = stripeEvent.data.previous_attributes || {};
 
-    // 1. Trial converted to paid subscription (trialing → active)
-    //    Mark the user as no longer trialing. Plan stays 'club'.
+    // 1. Trial converted to paid subscription (trialing → active) — any plan
     if (sub.status === 'active' && prev.status === 'trialing') {
       const customerId = sub.customer;
       const snap = await db.collection('users')
@@ -126,9 +124,15 @@ exports.handler = async (event) => {
         .limit(1)
         .get();
       if (!snap.empty) {
+        const userData  = snap.docs[0].data();
+        const userPlan  = userData.plan || 'pro';
+        const userEmail = userData.email;
         await snap.docs[0].ref.update({ isTrialing: false });
-        const userEmail = snap.docs[0].data().email;
-        if (userEmail) await sendEmail('clubTrialConverted', userEmail);
+        if (userEmail) {
+          // Send plan-appropriate "trial converted" email
+          const template = userPlan === 'club' ? 'clubTrialConverted' : 'proTrialConverted';
+          await sendEmail(template, userEmail);
+        }
       }
     }
 

@@ -315,6 +315,13 @@ button {
 .btn-accent:hover { filter: brightness(1.1); }
 /* Paywall */
 #modal-paywall .modal-sheet { max-width: 480px; }
+#modal-save-prompt .modal-sheet { max-width: 380px; }
+.save-prompt-body { text-align: center; padding: 20px 24px 28px; }
+.save-prompt-body .sp-icon { font-size: 44px; margin-bottom: 12px; }
+.save-prompt-body h3 { font-size: 20px; font-weight: 800; margin: 0 0 10px; letter-spacing: -0.02em; }
+.save-prompt-body p { color: var(--text2); font-size: 14px; line-height: 1.6; margin: 0 0 22px; }
+.save-prompt-body .btn-accent { width: 100%; margin-bottom: 10px; font-size: 15px; padding: 13px 20px; }
+.save-prompt-skip { background: none; border: none; color: var(--text2); font-size: 13px; cursor: pointer; padding: 6px; width: 100%; }
 .paywall-hero { text-align: center; padding: 8px 0 16px; }
 .paywall-hero .pw-icon { font-size: 48px; }
 .paywall-hero h2 { font-family: 'Cabinet Grotesk', system-ui, sans-serif; font-size: 24px; font-weight: 900; margin: 8px 0 4px; }
@@ -1348,26 +1355,43 @@ body.portrait-mode .player-token:active {
       <div class="pw-plans">
         <button class="pw-plan featured" onclick="startCheckout('proMonthly')">
           <div>
-            <div class="pw-plan-name">Pro Monthly</div>
-            <div class="pw-plan-sub">Everything unlocked</div>
+            <div class="pw-plan-name">Pro Monthly — <span style="color:#4ade80;font-size:12px;font-weight:700;">3-day free trial</span></div>
+            <div class="pw-plan-sub">Everything unlocked · cancel anytime</div>
           </div>
           <div class="pw-plan-price">€6<small>/mo</small></div>
         </button>
         <button class="pw-plan" onclick="startCheckout('proYearly')">
           <div>
-            <div class="pw-plan-name">Pro Yearly</div>
-            <div class="pw-plan-sub">Save 32%</div>
+            <div class="pw-plan-name">Pro Yearly — <span style="color:#4ade80;font-size:12px;font-weight:700;">3-day free trial</span></div>
+            <div class="pw-plan-sub">Save 32% · best value</div>
           </div>
           <div class="pw-plan-price">€49<small>/yr</small></div>
         </button>
         <button class="pw-plan" onclick="startCheckout('club')">
           <div>
-            <div class="pw-plan-name">Club — 7-day free trial ✦</div>
+            <div class="pw-plan-name">Club — <span style="color:#4ade80;font-size:12px;font-weight:700;">7-day free trial</span> ✦</div>
             <div class="pw-plan-sub">Up to 10 coaches · shared library · club branding</div>
           </div>
           <div class="pw-plan-price">€99<small>/yr after trial</small></div>
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Save-play prompt (shown after first draw for non-logged-in users) -->
+<div class="modal-backdrop" id="modal-save-prompt">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title">Don't lose your play!</span>
+      <button class="modal-close" aria-label="Close" onclick="closeSavePrompt()">✕</button>
+    </div>
+    <div class="save-prompt-body">
+      <div class="sp-icon">💾</div>
+      <h3>Your play will disappear</h3>
+      <p>It'll be gone when you close this tab. Create a <strong>free account</strong> to save it — takes 10 seconds, no credit card needed.</p>
+      <button class="btn-accent" onclick="closeSavePrompt(true)">Create free account →</button>
+      <button class="save-prompt-skip" onclick="closeSavePrompt()">Continue without saving</button>
     </div>
   </div>
 </div>
@@ -2625,7 +2649,15 @@ function onUp(e) {
   if (state.tool === 'eraser') { eraseAt(nx, ny); previewObj = null; redrawAll(); return; }
   if (dx < 3 && dy < 3) { previewObj = null; return; }
   const obj = buildObject(state.startNX, state.startNY, nx, ny, state.points);
-  if (obj) { saveUndo(); state.objects.push(obj); saveCurrentPhase(); }
+  if (obj) {
+    saveUndo(); state.objects.push(obj); saveCurrentPhase();
+    // Show save-play prompt on first completed shape for non-logged-in users (once per session)
+    if (!window.__currentUser && !sessionStorage.getItem('cd_save_prompt_shown')) {
+      sessionStorage.setItem('cd_save_prompt_shown', '1');
+      setTimeout(() => openModal('modal-save-prompt'), 900);
+      gtag('event', 'save_prompt_shown', { event_category: 'engagement' });
+    }
+  }
   previewObj = null;
   redrawAll();
 }
@@ -3697,12 +3729,22 @@ function deleteTactic(i) {
 // ══════════════════════════════════════════════
 // PAYWALL & CHECKOUT
 // ══════════════════════════════════════════════
+function closeSavePrompt(goSignup = false) {
+  closeModal('modal-save-prompt');
+  if (goSignup) {
+    gtag('event', 'save_prompt_signup_click', { event_category: 'engagement' });
+    window.location.href = '/login.html?next=' + encodeURIComponent(location.pathname) + '&mode=signup';
+  }
+}
+
 function openPaywall(reason) {
   document.getElementById('paywall-reason').textContent = reason || 'Upgrade to Pro to unlock all 38+ sport courts and unlimited saves.';
   openModal('modal-paywall');
 }
 
 async function startCheckout(planKey) {
+  // GA4 — track checkout intent (mark 'begin_checkout' as a Key Event in GA4 → Admin → Events)
+  gtag('event', 'begin_checkout', { plan: planKey, event_category: 'ecommerce' });
   const user = window.__currentUser;
   if (!user) {
     // Save the intended plan so we can auto-trigger checkout after login

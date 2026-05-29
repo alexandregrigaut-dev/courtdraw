@@ -359,6 +359,8 @@
         sub.textContent = 'Free to start — no credit card required.';
       }
     };
+    // Auto-switch to signup tab when linked from the save-play prompt (?mode=signup)
+    if (params.get('mode') === 'signup') switchTab('signup');
 
     function rememberMe() {
       return document.getElementById('remember-me')?.checked !== false;

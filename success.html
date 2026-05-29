@@ -72,14 +72,16 @@
     <a class="btn" href="/courtdraw-app.html">Open the app →</a>
   </div>
   <script>
-    const params = new URLSearchParams(window.location.search);
-    if (!params.get('session_id')) window.location.href = '/';
+    const params    = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
+    if (!sessionId) window.location.href = '/';
     // Optimistic update — shows Pro immediately while webhook processes in the background
     localStorage.setItem('courtdraw_pro', '1');
     // Detect plan type and trial status from URL params
     const plan    = params.get('plan');
     const isTrial = params.get('trial') === 'true';
     const value   = parseFloat(params.get('value') || '0');
+
     if (plan === 'club' && isTrial) {
       document.getElementById('success-title').textContent = 'Your 7-Day Club Trial Has Started!';
       document.getElementById('success-body').textContent  = 'You have full Club access for 7 days — no charge until your trial ends. Go explore the shared library, invite your coaches, and set up your club branding. Cancel anytime before day 7 and you won\'t be billed.';
@@ -90,19 +92,41 @@
       document.getElementById('success-body').textContent  = 'Your Club plan is active. All Pro features are unlocked plus your shared team library, club branding on exports, and the admin dashboard.';
       document.querySelector('.btn').href = '/club-admin.html';
       document.querySelector('.btn').textContent = 'Open Club Admin →';
+    } else if (plan === 'pro' && isTrial) {
+      document.getElementById('success-title').textContent = 'Your 3-Day Pro Trial Has Started!';
+      document.getElementById('success-body').textContent  = 'You have full Pro access for 3 days — no charge until your trial ends. All 38+ courts, unlimited saves, clean PNG exports, and more are unlocked. Cancel anytime before day 3 and you won\'t be billed.';
     } else {
       document.getElementById('success-title').textContent = 'Welcome to CourtDraw Pro!';
       document.getElementById('success-body').textContent  = 'Your subscription is active. All 38+ courts, unlimited saves, clean PNG exports, and more are now unlocked.';
     }
 
-    // Meta Pixel — conversion event
-    // Trials fire StartTrial (no charge yet); paid plans fire Purchase with the exact EUR value.
+    // ── Meta Pixel — conversion events ───────────────────────────────────────
+    // Trials fire StartTrial (no charge yet); paid plans fire Purchase with exact EUR value.
     if (typeof fbq === 'function') {
-      if (plan === 'club' && isTrial) {
-        fbq('track', 'StartTrial', { content_name: 'Club Trial', currency: 'EUR', value: 0 });
+      if (isTrial) {
+        const trialName = plan === 'club' ? 'Club Trial' : 'Pro Trial';
+        fbq('track', 'StartTrial', { content_name: trialName, currency: 'EUR', value: 0 });
       } else {
         const contentName = plan === 'club' ? 'Club Plan' : 'Pro Plan';
         fbq('track', 'Purchase', { content_name: contentName, currency: 'EUR', value });
+      }
+    }
+
+    // ── Google Analytics — purchase / trial_start key events ─────────────────
+    // GA4 'purchase' is a standard recommended key event (mark it in GA4 → Admin → Events).
+    // 'pro_trial_start' / 'club_trial_start' should also be marked as key events.
+    if (typeof gtag === 'function') {
+      if (isTrial) {
+        gtag('event', plan === 'club' ? 'club_trial_start' : 'pro_trial_start', {
+          currency: 'EUR', value: 0, plan
+        });
+      } else {
+        gtag('event', 'purchase', {
+          transaction_id: sessionId,
+          value,
+          currency: 'EUR',
+          items: [{ item_id: plan, item_name: plan === 'club' ? 'Club Plan' : 'Pro Plan', price: value, quantity: 1 }]
+        });
       }
     }
   </script>

@@ -25,8 +25,11 @@ const VALUE_BY_PRICE = {
   [process.env.STRIPE_PRICE_ID_CLUB]:        99
 };
 
-// Club plan gets a 7-day free trial — Pro plans remain freemium (no trial)
+// Trial periods: Club = 7 days, Pro = 3 days
+// Card required upfront for both. Stripe auto-charges on trial end.
+// If user cancels before trial ends, no charge — customer.subscription.deleted fires and access is revoked.
 const CLUB_TRIAL_DAYS = 7;
+const PRO_TRIAL_DAYS  = 3;
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -49,14 +52,21 @@ exports.handler = async (event) => {
   try { ({ priceId } = JSON.parse(event.body || '{}')); } catch { return { statusCode: 400, body: 'Bad JSON' }; }
   if (!priceId) return { statusCode: 400, body: 'Missing priceId' };
 
-  const plan = PLAN_BY_PRICE[priceId];
+  const plan   = PLAN_BY_PRICE[priceId];
   const isClub = plan === 'club';
+  const isPro  = plan === 'pro';
   const value  = VALUE_BY_PRICE[priceId] ?? 0;
 
-  // Append &trial=true for Club and &value=X for all plans so success.html can
-  // show the right message and fire an accurate Meta Pixel Purchase event.
-  const planParam = plan || 'pro';
-  const successUrl = `${process.env.PUBLIC_URL}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${planParam}&value=${value}${isClub ? '&trial=true' : ''}`;
+  // All plans get a free trial. Card required upfront; no charge until trial ends.
+  // If the user cancels before trial end: no charge, access revoked automatically via webhook.
+  const trialDays = isClub ? CLUB_TRIAL_DAYS : isPro ? PRO_TRIAL_DAYS : 0;
+
+  // Append &trial=true and &value=0 for trials so success.html shows the right message
+  // and Meta Pixel fires StartTrial (no revenue) instead of Purchase.
+  const planParam  = plan || 'pro';
+  const isTrial    = trialDays > 0;
+  const pixelValue = isTrial ? 0 : value;
+  const successUrl = `${process.env.PUBLIC_URL}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${planParam}&value=${pixelValue}${isTrial ? '&trial=true' : ''}`;
 
   let session;
   try {
@@ -68,9 +78,8 @@ exports.handler = async (event) => {
       success_url: successUrl,
       cancel_url:  `${process.env.PUBLIC_URL}/#pricing`,
       metadata: { userId: decoded.uid, priceId },
-      // Club only: 7-day free trial. Card required upfront; no charge until day 8.
-      // Pro plans are freemium — no trial needed.
-      ...(isClub ? { subscription_data: { trial_period_days: CLUB_TRIAL_DAYS } } : {})
+      // All plans: free trial. Card required upfront; no charge until trial ends.
+      ...(trialDays > 0 ? { subscription_data: { trial_period_days: trialDays } } : {})
     });
   } catch (err) {
     console.error('Stripe error:', err.message);
