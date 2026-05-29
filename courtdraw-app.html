@@ -4103,22 +4103,32 @@ function exportPNG() {
     URL.revokeObjectURL(url);
     const savedW = canvasW, savedH = canvasH;
     canvasW = W; canvasH = H;
+
+    // Scale factor: how much larger the export canvas is vs the live canvas.
+    // e.g. live canvasH≈234px, export H=720 → scale≈3.08
+    // All token sizes are derived from this so the export matches the live app exactly.
+    const exportScale  = savedH > 0 ? H / savedH : 3;
+    const playerRadius = Math.round(16 * exportScale);          // live CSS radius = 16px (32px token)
+    const playerFont   = Math.round(10 * exportScale);          // live CSS font = 10px
+    const playerStroke = Math.max(1, Math.round(2 * exportScale)); // live CSS border = 2px
+    const ballDiam     = Math.round(16 * exportScale);          // live CSS ball = 16px × 16px
+
     for (const obj of state.objects) drawObject(oc, obj);
     // Draw player tokens (non-ball) synchronously; ball tokens need async SVG load
     for (const t of state.tokenPositions) {
       if (t.team === 'ball') continue;
       const x = t.pct[0] * W, y = t.pct[1] * H;
-      oc.beginPath(); oc.arc(x, y, 24, 0, Math.PI*2);
+      oc.beginPath(); oc.arc(x, y, playerRadius, 0, Math.PI*2);
       oc.fillStyle = t.team === 'red' ? (state.teamColorB || '#dc2626') : (state.teamColorA || '#60a5fa');
-      oc.fill(); oc.strokeStyle = 'rgba(255,255,255,0.8)'; oc.lineWidth = 3; oc.stroke();
-      oc.fillStyle = 'white'; oc.font = 'bold 18px system-ui';
+      oc.fill();
+      oc.strokeStyle = 'rgba(255,255,255,0.7)'; oc.lineWidth = playerStroke; oc.stroke();
+      oc.fillStyle = 'white'; oc.font = `bold ${playerFont}px system-ui`;
       oc.textAlign = 'center'; oc.textBaseline = 'middle';
       oc.fillText(t.label, x, y);
     }
     canvasW = savedW; canvasH = savedH;
 
     // ── Draw ball tokens async (SVG → canvas image) ─────────────────────────
-    const BALL_PX = 24; // ball diameter in export pixels — half of player token diameter (48px), matching live canvas ratio
     const ballTokens = state.tokenPositions.filter(t => t.team === 'ball');
     const ballPromises = ballTokens.map(t => new Promise(resolve => {
       const svgStr = getBallSvg(state.courtId);
@@ -4127,7 +4137,7 @@ function exportPNG() {
       const bi = new Image();
       bi.onload = () => {
         const bx = t.pct[0] * W, by = t.pct[1] * H;
-        oc.drawImage(bi, bx - BALL_PX / 2, by - BALL_PX / 2, BALL_PX, BALL_PX);
+        oc.drawImage(bi, bx - ballDiam / 2, by - ballDiam / 2, ballDiam, ballDiam);
         URL.revokeObjectURL(ballUrl);
         resolve();
       };
@@ -4219,27 +4229,34 @@ function exportPDF() {
     URL.revokeObjectURL(url);
     const savedW = canvasW, savedH = canvasH;
     canvasW = W; canvasH = H;
+
+    // Same scale-factor approach as PNG export — sizes match the live app exactly
+    const pdfScale      = savedH > 0 ? H / savedH : 6;
+    const pdfPlayerRad  = Math.round(16 * pdfScale);
+    const pdfPlayerFont = Math.round(10 * pdfScale);
+    const pdfStroke     = Math.max(1, Math.round(2 * pdfScale));
+    const pdfBallDiam   = Math.round(16 * pdfScale);
+
     for (const obj of state.objects) drawObject(oc, obj);
     // Draw player tokens synchronously; ball tokens rendered async below
     for (const t of state.tokenPositions) {
       if (t.team === 'ball') continue;
       const x = t.pct[0] * W, y = t.pct[1] * H;
-      oc.beginPath(); oc.arc(x, y, 28, 0, Math.PI * 2);
+      oc.beginPath(); oc.arc(x, y, pdfPlayerRad, 0, Math.PI * 2);
       oc.fillStyle = t.team === 'red' ? (state.teamColorB || '#dc2626') : (state.teamColorA || '#60a5fa');
       oc.fill();
-      oc.strokeStyle = 'rgba(255,255,255,0.8)'; oc.lineWidth = 4; oc.stroke();
+      oc.strokeStyle = 'rgba(255,255,255,0.7)'; oc.lineWidth = pdfStroke; oc.stroke();
       oc.fillStyle = 'white';
-      oc.font = 'bold 22px system-ui'; oc.textAlign = 'center'; oc.textBaseline = 'middle';
+      oc.font = `bold ${pdfPlayerFont}px system-ui`; oc.textAlign = 'center'; oc.textBaseline = 'middle';
       oc.fillText(t.label, x, y);
     }
     // Draw ball tokens as proper SVG images
-    const BALL_PX_PDF = 28; // half of player token diameter (56px), matching live canvas ratio
     const pdfBallPromises = state.tokenPositions.filter(t => t.team === 'ball').map(t => new Promise(resolve => {
       const bsvg = getBallSvg(state.courtId);
       const burl = URL.createObjectURL(new Blob([bsvg], { type: 'image/svg+xml' }));
       const bi = new Image();
       bi.onload = () => {
-        oc.drawImage(bi, t.pct[0]*W - BALL_PX_PDF/2, t.pct[1]*H - BALL_PX_PDF/2, BALL_PX_PDF, BALL_PX_PDF);
+        oc.drawImage(bi, t.pct[0]*W - pdfBallDiam/2, t.pct[1]*H - pdfBallDiam/2, pdfBallDiam, pdfBallDiam);
         URL.revokeObjectURL(burl); resolve();
       };
       bi.onerror = () => { URL.revokeObjectURL(burl); resolve(); };
