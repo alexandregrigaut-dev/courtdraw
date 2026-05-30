@@ -445,6 +445,52 @@ button {
   font-size: 11px; color: var(--text2); margin-top: 3px;
   font-style: italic; line-height: 1.45; white-space: pre-wrap; word-break: break-word;
 }
+/* ── Session Builder ──────────────────────────────────────────────────────── */
+#session-nav-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 900;
+  background: rgba(10,22,40,0.97); backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(59,130,246,0.35);
+  padding: 10px 14px; display: flex; align-items: center; gap: 8px;
+}
+.snb-info { flex: 1; min-width: 0; }
+.snb-name { font-size: 13px; font-weight: 700; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.snb-prog { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+.snb-btn { padding: 7px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; flex-shrink: 0; }
+.snb-nav { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3) !important; }
+.snb-nav:disabled { opacity: 0.3; cursor: default; }
+.snb-exit { background: rgba(220,38,38,0.15); color: #f87171; border: 1px solid rgba(220,38,38,0.3) !important; }
+.snb-pdf { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3) !important; }
+.session-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.session-row-info { flex: 1; min-width: 0; }
+.session-row-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.session-row-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.session-play-item {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 10px; border-radius: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  margin-bottom: 5px;
+}
+.spi-num { font-size: 11px; font-weight: 700; color: var(--text2); width: 18px; text-align: center; flex-shrink: 0; }
+.spi-name { flex: 1; font-size: 13px; font-weight: 600; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spi-dur { width: 48px; padding: 4px 5px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 12px; text-align: center; font-family: inherit; }
+.spi-dur-lbl { font-size: 10px; color: var(--text2); flex-shrink: 0; }
+.spi-move { padding: 3px 7px; border-radius: 5px; font-size: 12px; font-weight: 700; background: var(--surface); color: var(--text2); border: 1px solid var(--border); cursor: pointer; }
+.spi-remove { padding: 3px 8px; border-radius: 5px; font-size: 12px; font-weight: 700; background: rgba(220,38,38,0.08); color: #f87171; border: 1px solid rgba(220,38,38,0.2); cursor: pointer; }
+.session-pick-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  margin-bottom: 5px;
+}
+.spr-name { flex: 1; font-size: 13px; font-weight: 600; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spr-meta { font-size: 11px; color: var(--text2); flex-shrink: 0; }
+.spr-add { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; background: var(--accent-dim); border: 1px solid var(--accent); color: var(--accent); cursor: pointer; flex-shrink: 0; }
+.session-sec-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2); margin: 12px 0 7px; }
 .save-bar { display: flex; gap: 8px; }
 .save-bar input {
   flex: 1; padding: 10px 14px; border-radius: 10px;
@@ -1407,6 +1453,9 @@ body.portrait-mode .player-token:active {
   <button class="tb-btn" title="My saved tactics" onclick="openLibrary()">
     <span class="icon">💼</span><span>My Plays</span>
   </button>
+  <button class="tb-btn" title="Training Sessions — chain plays into a plan" onclick="openSessionBuilder()">
+    <span class="icon">📅</span><span>Sessions</span>
+  </button>
   <!-- Point 1: save counter pill — shown for free users only -->
   <span id="save-counter" role="status" aria-live="polite" title="Upgrade to Pro for unlimited saves"></span>
   <button class="tb-btn" title="Export PNG" onclick="exportPNG()">
@@ -1515,6 +1564,55 @@ body.portrait-mode .player-token:active {
   </div>
 </div>
 
+<!-- Modal: Session Builder -->
+<div class="modal-backdrop" id="modal-session">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title" id="session-modal-title">Training Sessions</span>
+      <button class="modal-close" aria-label="Close" onclick="closeSessionModal()">✕</button>
+    </div>
+    <!-- List view -->
+    <div id="session-list-view" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+      <div style="padding:12px 20px 6px;flex-shrink:0;">
+        <button class="btn-accent" style="width:100%;padding:12px;" onclick="openNewSession()">＋ New Session</button>
+      </div>
+      <div id="session-list-body" style="flex:1;overflow-y:auto;padding:8px 20px 20px;"></div>
+    </div>
+    <!-- Edit view -->
+    <div id="session-edit-view" style="display:none;flex-direction:column;flex:1;min-height:0;">
+      <div style="padding:12px 20px 8px;border-bottom:1px solid var(--border);flex-shrink:0;">
+        <input type="text" id="session-name-input" placeholder="Session name, e.g. Tuesday Training…" maxlength="50"
+          style="width:100%;padding:10px 14px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:16px;font-family:inherit;outline:none;">
+      </div>
+      <div id="session-edit-scroll" style="flex:1;overflow-y:auto;padding:10px 20px;">
+        <div class="session-sec-label">Plays in Session</div>
+        <div id="session-plays-list"></div>
+        <div class="session-sec-label" style="margin-top:14px;">Add Plays from Library</div>
+        <input type="search" id="session-pick-search" placeholder="Search…" autocomplete="off"
+          style="width:100%;padding:7px 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:15px;font-family:inherit;outline:none;margin-bottom:8px;"
+          oninput="renderSessionPickList()">
+        <div id="session-pick-list"></div>
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;">
+        <button class="btn-accent" style="flex:1;padding:12px;" onclick="saveSessionDraft()">Save Session</button>
+        <button onclick="showSessionListView()" style="padding:12px 16px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;">Back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Session nav bar — present mode overlay -->
+<div id="session-nav-bar" style="display:none;">
+  <div class="snb-info">
+    <div class="snb-name" id="snb-name"></div>
+    <div class="snb-prog" id="snb-prog"></div>
+  </div>
+  <button class="snb-btn snb-pdf" onclick="exportSessionPDF()" title="Export all plays as PDF">PDF</button>
+  <button class="snb-btn snb-nav" id="snb-prev" onclick="sessionNavPrev()">← Prev</button>
+  <button class="snb-btn snb-nav" id="snb-next" onclick="sessionNavNext()">Next →</button>
+  <button class="snb-btn snb-exit" onclick="exitSessionPresent()">✕ Exit</button>
+</div>
+
 <!-- Modal: Paywall -->
 <!-- Pro → Club upgrade modal -->
 <div class="modal-backdrop" id="modal-pro-upgrade">
@@ -1552,6 +1650,7 @@ body.portrait-mode .player-token:active {
         <li>All 38+ sport courts + Whiteboard</li>
         <li>Unlimited tactic saves</li>
         <li>Personal Playbook — notes, tags, star ratings &amp; search</li>
+        <li>Training Sessions — chain plays into a session plan &amp; export PDF</li>
         <li>PNG &amp; PDF export — no watermark</li>
         <li>Jersey numbers &amp; custom player labels</li>
         <li>Phase-by-phase animation</li>
@@ -2523,6 +2622,7 @@ const state = {
   teamColorB: null,  // Club custom "red" team color (hex)
   freeCourt: null,
   savedTactics: [],
+  savedSessions: [],
   theme: 'dark',
   tokenPositions: [],
   phases: null,       // array of {objects, tokens}
@@ -2587,6 +2687,7 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
     const t = localStorage.getItem(tacticsKey());
     state.savedTactics = t ? JSON.parse(t) : [];
   } catch { state.savedTactics = []; }
+  loadSessionsFromStorage();
   // Deep-link: if the user arrived from club-admin "Open" button, load that tactic
   if (isClub) {
     try {
@@ -4228,6 +4329,397 @@ function deleteTactic(i) {
 }
 
 // ══════════════════════════════════════════════
+// R-2 — SESSION BUILDER
+// ══════════════════════════════════════════════
+
+let _sessionDraft     = { name: '', plays: [] };  // { tacticId, duration }
+let _sessionEditIdx   = null;  // index in state.savedSessions (null = new)
+let _presentSession   = null;  // session being presented
+let _presentPlayIdx   = 0;
+
+// Storage helpers
+function sessionsKey() {
+  const uid = window.__currentUser && window.__currentUser.uid;
+  return uid ? 'courtdraw_sessions_' + uid : 'courtdraw_sessions_guest';
+}
+function saveSessionsToStorage() {
+  localStorage.setItem(sessionsKey(), JSON.stringify(state.savedSessions));
+}
+function loadSessionsFromStorage() {
+  try {
+    const raw = localStorage.getItem(sessionsKey());
+    state.savedSessions = raw ? JSON.parse(raw) : [];
+  } catch { state.savedSessions = []; }
+}
+
+// Open the sessions modal (Pro/Club gated)
+function openSessionBuilder() {
+  if (!state.isPro && !state.isClub) {
+    showFeaturePreview('session', 'Training Sessions are a Pro feature. Chain 3–8 plays into a session plan, set drill durations, and export the whole session as a PDF.');
+    return;
+  }
+  showSessionListView();
+  openModal('modal-session');
+}
+
+function closeSessionModal() { closeModal('modal-session'); }
+
+function showSessionListView() {
+  document.getElementById('session-list-view').style.display = 'flex';
+  document.getElementById('session-edit-view').style.display = 'none';
+  document.getElementById('session-modal-title').textContent = 'Training Sessions';
+  renderSessionList();
+}
+
+function showSessionEditView(title) {
+  document.getElementById('session-list-view').style.display = 'none';
+  const ev = document.getElementById('session-edit-view');
+  ev.style.display = 'flex';
+  document.getElementById('session-modal-title').textContent = title || 'New Session';
+}
+
+// ── List view ────────────────────────────────
+function renderSessionList() {
+  const body = document.getElementById('session-list-body');
+  const sessions = state.savedSessions;
+  const e = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if (!sessions.length) {
+    body.innerHTML = `<div class="empty-state"><div class="es-icon">📅</div><h3>No sessions yet</h3><p>Chain your saved plays into a training plan.</p></div>`;
+    return;
+  }
+  body.innerHTML = '';
+  for (let i = sessions.length - 1; i >= 0; i--) {
+    const s = sessions[i];
+    const count = (s.plays || []).length;
+    const totalMin = (s.plays || []).reduce((acc, p) => acc + (p.duration || 0), 0);
+    const row = document.createElement('div');
+    row.className = 'session-row';
+    row.innerHTML = `
+      <div class="session-row-info">
+        <div class="session-row-name">${e(s.name)}</div>
+        <div class="session-row-meta">${count} play${count !== 1 ? 's' : ''}${totalMin ? ' · ' + totalMin + ' min' : ''} · ${new Date(s.ts).toLocaleDateString()}</div>
+      </div>
+      <button class="spi-move" title="Present session" style="color:var(--accent);border-color:var(--accent);">▶</button>
+      <button class="spi-move" title="Edit session">✏</button>
+      <button class="spi-remove" title="Delete session">✕</button>`;
+    row.querySelector('[title="Present session"]').addEventListener('click', () => { closeSessionModal(); presentSession(i); });
+    row.querySelector('[title="Edit session"]').addEventListener('click', () => editSession(i));
+    row.querySelector('[title="Delete session"]').addEventListener('click', () => deleteSession(i));
+    body.appendChild(row);
+  }
+}
+
+// ── Edit view ────────────────────────────────
+function openNewSession() {
+  _sessionDraft = { name: '', plays: [] };
+  _sessionEditIdx = null;
+  document.getElementById('session-name-input').value = '';
+  document.getElementById('session-pick-search').value = '';
+  showSessionEditView('New Session');
+  renderSessionPlaysList();
+  renderSessionPickList();
+  document.getElementById('session-name-input').focus();
+}
+
+function editSession(i) {
+  const s = state.savedSessions[i];
+  _sessionDraft = { name: s.name, plays: JSON.parse(JSON.stringify(s.plays || [])) };
+  _sessionEditIdx = i;
+  document.getElementById('session-name-input').value = s.name;
+  document.getElementById('session-pick-search').value = '';
+  showSessionEditView('Edit Session');
+  renderSessionPlaysList();
+  renderSessionPickList();
+}
+
+function renderSessionPlaysList() {
+  const list = document.getElementById('session-plays-list');
+  const e = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if (!_sessionDraft.plays.length) {
+    list.innerHTML = `<p style="font-size:12px;color:var(--text2);padding:4px 0 8px;">No plays added yet. Pick from your library below.</p>`;
+    return;
+  }
+  list.innerHTML = '';
+  _sessionDraft.plays.forEach((p, j) => {
+    const tactic = state.savedTactics.find(t => t.id === p.tacticId);
+    const name = tactic ? tactic.name : '(deleted play)';
+    const item = document.createElement('div');
+    item.className = 'session-play-item';
+    item.innerHTML = `
+      <span class="spi-num">${j + 1}</span>
+      <span class="spi-name">${e(name)}</span>
+      <input type="number" class="spi-dur" value="${p.duration || ''}" min="1" max="999" placeholder="—" title="Duration in minutes">
+      <span class="spi-dur-lbl">min</span>
+      <button class="spi-move" title="Move up" ${j === 0 ? 'disabled' : ''}>↑</button>
+      <button class="spi-move" title="Move down" ${j === _sessionDraft.plays.length - 1 ? 'disabled' : ''}>↓</button>
+      <button class="spi-remove" title="Remove">✕</button>`;
+    item.querySelector('[title="Duration in minutes"]').addEventListener('change', ev => {
+      const v = parseInt(ev.target.value, 10);
+      _sessionDraft.plays[j].duration = isNaN(v) || v < 1 ? 0 : v;
+    });
+    item.querySelector('[title="Move up"]').addEventListener('click', () => moveSessionPlay(j, -1));
+    item.querySelector('[title="Move down"]').addEventListener('click', () => moveSessionPlay(j, 1));
+    item.querySelector('[title="Remove"]').addEventListener('click', () => removeSessionPlay(j));
+    list.appendChild(item);
+  });
+}
+
+function renderSessionPickList() {
+  const list = document.getElementById('session-pick-list');
+  const e = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const search = (document.getElementById('session-pick-search')?.value || '').toLowerCase().trim();
+  const saves = state.savedTactics;
+  if (!saves.length) {
+    list.innerHTML = `<p style="font-size:12px;color:var(--text2);">No saved plays yet. Save some plays first.</p>`;
+    return;
+  }
+  list.innerHTML = '';
+  let shown = 0;
+  for (let i = saves.length - 1; i >= 0; i--) {
+    const t = saves[i];
+    if (search) {
+      const hay = [t.name, t.tags, t.courtId].join(' ').toLowerCase();
+      if (!hay.includes(search)) continue;
+    }
+    const court = COURTS.find(c => c.id === t.courtId);
+    const courtName = court ? court.name.replace(/ \(.*\)/, '') : (t.courtId || '');
+    const row = document.createElement('div');
+    row.className = 'session-pick-row';
+    row.innerHTML = `
+      <span class="spr-name">${e(t.name)}</span>
+      <span class="spr-meta">${e(courtName)}</span>
+      <button class="spr-add">+ Add</button>`;
+    row.querySelector('.spr-add').addEventListener('click', () => addPlayToSession(t.id));
+    list.appendChild(row);
+    shown++;
+  }
+  if (!shown) list.innerHTML = `<p style="font-size:12px;color:var(--text2);">No plays match your search.</p>`;
+}
+
+function addPlayToSession(tacticId) {
+  if (_sessionDraft.plays.length >= 20) { showToast('Max 20 plays per session.'); return; }
+  _sessionDraft.plays.push({ tacticId, duration: 0 });
+  renderSessionPlaysList();
+}
+
+function removeSessionPlay(j) {
+  _sessionDraft.plays.splice(j, 1);
+  renderSessionPlaysList();
+}
+
+function moveSessionPlay(j, dir) {
+  const plays = _sessionDraft.plays;
+  const target = j + dir;
+  if (target < 0 || target >= plays.length) return;
+  [plays[j], plays[target]] = [plays[target], plays[j]];
+  renderSessionPlaysList();
+}
+
+function saveSessionDraft() {
+  const name = document.getElementById('session-name-input').value.trim();
+  if (!name) { showToast('Please give your session a name.'); document.getElementById('session-name-input').focus(); return; }
+  if (!_sessionDraft.plays.length) { showToast('Add at least one play to the session.'); return; }
+  const session = { id: _sessionEditIdx !== null ? state.savedSessions[_sessionEditIdx].id : Date.now(), name, plays: _sessionDraft.plays, ts: Date.now() };
+  if (_sessionEditIdx !== null) {
+    state.savedSessions[_sessionEditIdx] = session;
+  } else {
+    state.savedSessions.push(session);
+  }
+  saveSessionsToStorage();
+  showToast(`"${name}" saved!`);
+  showSessionListView();
+}
+
+function deleteSession(i) {
+  if (!confirm('Delete this session? This cannot be undone.')) return;
+  state.savedSessions.splice(i, 1);
+  saveSessionsToStorage();
+  renderSessionList();
+  showToast('Session deleted.');
+}
+
+// ── Present mode ─────────────────────────────
+function presentSession(i) {
+  _presentSession = state.savedSessions[i];
+  _presentPlayIdx = 0;
+  if (!_presentSession || !_presentSession.plays.length) { showToast('This session has no plays.'); return; }
+  _loadSessionPlay(_presentPlayIdx);
+}
+
+function _loadSessionPlay(idx) {
+  if (!_presentSession) return;
+  const p = _presentSession.plays[idx];
+  if (!p) return;
+  const tactic = state.savedTactics.find(t => t.id === p.tacticId);
+  if (tactic) {
+    clearAuthorCredit();
+    state.objects = JSON.parse(JSON.stringify(tactic.objects || []));
+    state.tokenPositions = (tactic.tokens && tactic.tokens.length)
+      ? JSON.parse(JSON.stringify(tactic.tokens))
+      : (window.__getDefaultTokens ? window.__getDefaultTokens(tactic.courtId) : []);
+    state.phases = tactic.phases ? JSON.parse(JSON.stringify(tactic.phases)) : [{ objects: JSON.parse(JSON.stringify(tactic.objects || [])), tokens: JSON.parse(JSON.stringify(state.tokenPositions)) }];
+    state.currentPhase = tactic.currentPhase || 0;
+    switchCourt(tactic.courtId, false, true);
+    setTimeout(() => { syncCanvas(); renderTokensFromState(); updatePhaseUI(); }, 350);
+  } else {
+    showToast('Play not found — it may have been deleted.');
+  }
+  _updateSessionNavBar();
+}
+
+function _updateSessionNavBar() {
+  if (!_presentSession) return;
+  const total = _presentSession.plays.length;
+  const p     = _presentSession.plays[_presentPlayIdx];
+  const tactic = p ? state.savedTactics.find(t => t.id === p.tacticId) : null;
+  const playName = tactic ? tactic.name : `Play ${_presentPlayIdx + 1}`;
+  document.getElementById('snb-name').textContent = _presentSession.name;
+  const durStr = p && p.duration ? ` · ${p.duration} min` : '';
+  document.getElementById('snb-prog').textContent = `${playName}${durStr} (${_presentPlayIdx + 1} / ${total})`;
+  document.getElementById('snb-prev').disabled = _presentPlayIdx === 0;
+  document.getElementById('snb-next').disabled = _presentPlayIdx === total - 1;
+  document.getElementById('session-nav-bar').style.display = 'flex';
+}
+
+function sessionNavNext() {
+  if (!_presentSession || _presentPlayIdx >= _presentSession.plays.length - 1) return;
+  _presentPlayIdx++;
+  _loadSessionPlay(_presentPlayIdx);
+}
+
+function sessionNavPrev() {
+  if (!_presentSession || _presentPlayIdx <= 0) return;
+  _presentPlayIdx--;
+  _loadSessionPlay(_presentPlayIdx);
+}
+
+function exitSessionPresent() {
+  _presentSession = null;
+  document.getElementById('session-nav-bar').style.display = 'none';
+}
+
+// ── Export session as PDF ────────────────────
+async function exportSessionPDF() {
+  if (!_presentSession) return;
+  const plays = _presentSession.plays;
+  if (!plays.length) return;
+  showToast('Rendering session PDF…');
+
+  const W = 2400, H = 1440;
+  const dataUrls = [];
+
+  for (const p of plays) {
+    const tactic = state.savedTactics.find(t => t.id === p.tacticId);
+    if (!tactic) continue;
+    try {
+      const url = await _renderTacticDataUrl(tactic, W, H);
+      dataUrls.push({ url, name: tactic.name, duration: p.duration });
+    } catch(err) {
+      console.warn('Session PDF: failed to render play', tactic.name, err);
+    }
+  }
+
+  if (!dataUrls.length) { showToast('No plays could be rendered.'); return; }
+
+  const win = window.open('', '_blank');
+  if (!win) { showToast('Allow pop-ups to export session PDF.'); return; }
+  const sessionTitle = (_presentSession.name || 'Session').replace(/</g,'&lt;');
+  const e = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const imgBlocks = dataUrls.map((d, i) => {
+    const dur = d.duration ? ` · ${d.duration} min` : '';
+    return `<div class="play-page"><div class="play-label">${i+1}. ${e(d.name)}${e(dur)}</div><img src="${d.url}" alt="${e(d.name)}"></div>`;
+  }).join('');
+
+  win.document.write(`<!DOCTYPE html><html><head><title>${sessionTitle}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#fff;font-family:system-ui,sans-serif}
+.action-bar{display:flex;gap:12px;padding:12px 20px;background:#1d4ed8;align-items:center;position:sticky;top:0;z-index:10}
+.action-bar span{color:rgba(255,255,255,0.8);font-size:14px;font-weight:700;margin-right:auto}
+.btn-print{padding:8px 18px;border:none;border-radius:8px;background:#fff;color:#1d4ed8;font-size:14px;font-weight:700;cursor:pointer}
+.play-page{page-break-after:always;padding:0 0 32px;}
+.play-label{padding:10px 20px 6px;font-size:15px;font-weight:700;color:#0a1628;border-bottom:2px solid #e2e8f0;margin-bottom:0;}
+img{width:100%;height:auto;display:block}
+@media print{.action-bar{display:none}.play-page{page-break-after:always;padding:0}@page{margin:0;size:landscape}}
+</style></head><body>
+<div class="action-bar"><span>${sessionTitle}</span><button class="btn-print" onclick="window.print()">🖨 Print / Save PDF</button></div>
+${imgBlocks}
+</body></html>`);
+  win.document.close();
+  showToast('Session PDF ready!');
+}
+
+async function _renderTacticDataUrl(tactic, W, H) {
+  return new Promise((resolve, reject) => {
+    const off = document.createElement('canvas');
+    off.width = W; off.height = H;
+    const oc = off.getContext('2d');
+    const court = COURTS.find(c => c.id === tactic.courtId) || COURTS[0];
+    const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" width="${W}" height="${H}">${court.svg()}</svg>`;
+    const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Court SVG load failed')); };
+    img.onload = () => {
+      oc.drawImage(img, 0, 0, W, H);
+      URL.revokeObjectURL(url);
+
+      const savedW = canvasW, savedH = canvasH;
+      canvasW = W; canvasH = H;
+      const sc = savedH > 0 ? H / savedH : 6;
+      const pRad  = Math.round(16 * sc);
+      const pFont = Math.round(10 * sc);
+      const pStk  = Math.max(1, Math.round(2 * sc));
+      const bDiam = Math.round(16 * sc);
+
+      const objs   = tactic.objects || [];
+      const tokens = (tactic.tokens && tactic.tokens.length)
+        ? tactic.tokens
+        : (window.__getDefaultTokens ? window.__getDefaultTokens(tactic.courtId) : []);
+
+      // Temporarily swap global state for drawObject
+      const _savedObjs   = state.objects;
+      const _savedTokens = state.tokenPositions;
+      const _savedCourt  = state.courtId;
+      state.objects         = objs;
+      state.tokenPositions  = tokens;
+      state.courtId         = tactic.courtId;
+
+      for (const obj of objs) drawObject(oc, obj);
+
+      state.objects        = _savedObjs;
+      state.tokenPositions = _savedTokens;
+      state.courtId        = _savedCourt;
+      canvasW = savedW; canvasH = savedH;
+
+      for (const t of tokens) {
+        if (t.team === 'ball') continue;
+        const x = t.pct[0] * W, y = t.pct[1] * H;
+        oc.beginPath(); oc.arc(x, y, pRad, 0, Math.PI * 2);
+        oc.fillStyle = t.team === 'red' ? (state.teamColorB || '#dc2626') : (state.teamColorA || '#60a5fa');
+        oc.fill();
+        oc.strokeStyle = 'rgba(255,255,255,0.7)'; oc.lineWidth = pStk; oc.stroke();
+        oc.fillStyle = 'white';
+        oc.font = `bold ${pFont}px system-ui`; oc.textAlign = 'center'; oc.textBaseline = 'middle';
+        oc.fillText(t.label, x, y);
+      }
+
+      const ballPromises = tokens.filter(t => t.team === 'ball').map(t => new Promise(res => {
+        const bsvg = getBallSvg(tactic.courtId);
+        const burl = URL.createObjectURL(new Blob([bsvg], { type: 'image/svg+xml' }));
+        const bi = new Image();
+        bi.onload = () => { oc.drawImage(bi, t.pct[0]*W - bDiam/2, t.pct[1]*H - bDiam/2, bDiam, bDiam); URL.revokeObjectURL(burl); res(); };
+        bi.onerror = () => { URL.revokeObjectURL(burl); res(); };
+        bi.src = burl;
+      }));
+
+      Promise.all(ballPromises).then(() => resolve(off.toDataURL('image/png')));
+    };
+    img.src = url;
+  });
+}
+
+// ══════════════════════════════════════════════
 // PAYWALL & CHECKOUT
 // ══════════════════════════════════════════════
 // ══════════════════════════════════════════════
@@ -4297,6 +4789,7 @@ const FEATURE_PREVIEWS = {
   notes:     { icon: '📝', title: 'Coach Notes',                desc: 'Add context to every saved play — what it counters, when to run it, key coaching cues. Notes appear in your library for quick reference.' },
   tags:      { icon: '🏷', title: 'Play Tags',                 desc: 'Label each play with keywords like "set play", "press defense", or "U14 session". Filter your library by tag to find plays instantly.' },
   rating:    { icon: '⭐', title: 'Play Ratings',               desc: 'Rate your plays 1–5 stars to flag your best work. Filter your library by rating to find your go-to plays in seconds.' },
+  session:   { icon: '📅', title: 'Training Sessions',          desc: 'Chain 3–8 saved plays into a full training plan. Set drill durations, step through plays on the pitch, and export the whole session as a PDF to share with your coaching staff.' },
 };
 let _fpPaywallReason = '';
 
@@ -5624,6 +6117,7 @@ function saveToStorage() {
   localStorage.setItem('courtdraw_linewidth', String(state.lineWidth));
 }
 function loadFromStorage() {
+  loadSessionsFromStorage();
   try {
     const t = localStorage.getItem(tacticsKey());
     if (t) state.savedTactics = JSON.parse(t);
