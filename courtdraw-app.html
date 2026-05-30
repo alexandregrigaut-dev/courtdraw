@@ -3936,10 +3936,16 @@ function openLibrary() { renderLibrary(); if (state.isClub) loadClubLibrary(); o
 function renderLibrary() {
   const body   = document.getElementById('library-body');
   const saves  = state.savedTactics;
-  const search = (document.getElementById('library-search')?.value || '').toLowerCase().trim();
+  const hasPlaybook = state.isPro || state.isClub;
 
-  // Build filter pills from unique sport names + custom tags across all plays
+  // Search + filter are Pro/Club only — hidden for free users
+  const searchRow = document.getElementById('library-search-row');
   const filterRow = document.getElementById('lib-filter-row');
+  if (searchRow) searchRow.style.display = hasPlaybook ? '' : 'none';
+  if (filterRow) filterRow.style.display = hasPlaybook ? '' : 'none';
+  if (!hasPlaybook) { _libFilter = ''; }
+
+  const search = hasPlaybook ? (document.getElementById('library-search')?.value || '').toLowerCase().trim() : '';
   if (filterRow) {
     const allTags = new Set();
     saves.forEach(t => {
