@@ -936,12 +936,25 @@ body.portrait-mode #toolbar-toggle-btn { display: none !important; }
 #pt-bottom-hint {
   display: none;
   position: fixed;
-  bottom: 14px; right: 16px;
+  /* Positioned above Safari's bottom navigation bar + home indicator zone.
+     env(safe-area-inset-bottom) is ~34px on Face ID iPhones; adding 54px clears
+     Safari's ~83px bottom bar so the button is always in the tappable content area. */
+  bottom: max(88px, calc(env(safe-area-inset-bottom) + 54px));
+  right: 16px;
   z-index: 30;
-  font-size: 22px; letter-spacing: 2px;
-  color: rgba(255,255,255,0.55);
-  pointer-events: none;
+  font-size: 20px; letter-spacing: 2px;
+  color: rgba(255,255,255,0.75);
+  pointer-events: auto;
+  cursor: pointer;
+  background: rgba(29, 78, 216, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 6px 12px;
   transition: opacity 0.3s ease;
+  -webkit-tap-highlight-color: rgba(255,255,255,0.2);
+  user-select: none;
 }
 body.portrait-mode #pt-bottom-hint { display: block; }
 body.portrait-mode.pt-chrome-visible #pt-bottom-hint { opacity: 0; }
@@ -1304,7 +1317,8 @@ body.portrait-mode .player-token:active {
 <!-- Landscape immersive-mode tap-hint strips (hidden in portrait/desktop via CSS) -->
 <div id="ls-top-hint"    style="display:none;" aria-hidden="true"></div>
 <div id="ls-bottom-hint" style="display:none;" aria-hidden="true"></div>
-<div id="pt-bottom-hint" aria-hidden="true">···</div>
+<button id="pt-bottom-hint" role="button" aria-label="Show toolbar"
+  onclick="if(document.body.classList.contains('portrait-mode')&&window._showPtChrome){window._showPtChrome();}else if(window._showLsChrome){window._showLsChrome();}">⌃ menu</button>
 
 <!-- Select tool action bar -->
 <div id="select-action-bar" role="toolbar" aria-label="Selected object actions">
@@ -2784,7 +2798,7 @@ function updatePortraitLayout() {
       _ptWelcomeTimer = setTimeout(() => {
         if (!document.body.classList.contains('toolbar-pinned'))
           document.body.classList.remove('pt-chrome-visible');
-      }, 2500);
+      }, 6000); // 6 s so first-time users see all chrome before it hides
     }
     // transform applied by applyZoom() which is called from syncCanvas()
   } else {
@@ -6799,8 +6813,8 @@ document.addEventListener('DOMContentLoaded', init);
   // auto-hides after 3 s of inactivity.
   (function() {
     const HIDE_DELAY  = 3000;   // ms before chrome auto-hides
-    const TOP_ZONE    = 55;     // px from top that triggers show
-    const BOTTOM_ZONE = 65;     // px from bottom that triggers show
+    const TOP_ZONE    = 70;     // px from top that triggers show
+    const BOTTOM_ZONE = 100;    // px from bottom that triggers show (generous for Safari bar)
     let   hideTimer   = null;
 
     function isLandscapeMobile() {
@@ -6864,13 +6878,16 @@ document.addEventListener('DOMContentLoaded', init);
   })();
 
   // ── Portrait immersive mode chrome reveal ──────────────────────────────
-  // Tapping the top or bottom ~60-70 px reveals header/toolbar/phase-bar.
+  // Tapping the top or bottom edge reveals header/toolbar/phase-bar.
+  // BOTTOM_ZONE is intentionally large (120px) to account for Safari's bottom
+  // navigation bar (~83px) which overlaps the lower portion of the viewport on
+  // iPhones — touches in that area register at clientY > innerHeight - 120.
   // Chrome auto-hides after 3 s of inactivity (same pattern as landscape).
   // When toolbar-pinned is set, auto-hide is bypassed entirely.
   (function() {
     const HIDE_DELAY  = 3000;
-    const TOP_ZONE    = 60;
-    const BOTTOM_ZONE = 70;
+    const TOP_ZONE    = 80;
+    const BOTTOM_ZONE = 120;
     let   ptHideTimer = null;
 
     function isPinned() {
@@ -6894,7 +6911,10 @@ document.addEventListener('DOMContentLoaded', init);
     window._showPtChrome = showPtChrome;
 
     document.addEventListener('touchstart', function(e) {
-      if (!state.portraitRotated) return;
+      // Use body class as primary check (set by CSS/DOM) in addition to state flag,
+      // as a guard against state not being set yet on very fast taps after page load.
+      const isPortrait = state.portraitRotated || document.body.classList.contains('portrait-mode');
+      if (!isPortrait) return;
       const y = e.touches[0].clientY;
       const h = window.innerHeight;
       if (y < TOP_ZONE || y > h - BOTTOM_ZONE) {
