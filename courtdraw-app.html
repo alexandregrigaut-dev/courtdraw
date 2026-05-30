@@ -680,16 +680,37 @@ button {
 .pw-plan-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
 .pw-plan-price { font-weight: 900; font-size: 18px; color: var(--accent); }
 .pw-plan-price small { font-size: 12px; font-weight: 500; color: var(--text2); }
-/* Text input floating */
+/* Text input */
 #text-input-wrap {
   position: fixed; z-index: 200; display: none;
 }
 #text-input-wrap.show { display: block; }
+#text-input-bar { display: flex; gap: 8px; align-items: center; }
 #text-input-field {
   background: var(--surface); border: 2px solid var(--accent);
   border-radius: 8px; padding: 6px 10px; color: var(--text);
   font-size: 16px; font-family: inherit; outline: none;
   min-width: 140px; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+#text-input-submit {
+  display: none; /* desktop: hidden — Enter key submits */
+  padding: 8px 16px; border-radius: 8px;
+  background: var(--accent); color: #fff;
+  border: none; font-family: inherit; font-size: 15px; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+}
+/* Mobile: bottom bar that sits above the keyboard */
+@media (max-width: 599px) {
+  #text-input-wrap {
+    left: 0 !important; top: auto !important; right: 0; bottom: 0;
+    padding: 10px 14px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    background: #0d1f3c;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+  }
+  #text-input-field { flex: 1; min-width: 0; box-shadow: none; }
+  #text-input-submit { display: block; }
 }
 /* Confirm dialog */
 #modal-confirm .modal-sheet { max-width: 380px; }
@@ -1927,7 +1948,11 @@ body.portrait-mode .player-token:active {
 
 <!-- Floating text input -->
 <div id="text-input-wrap">
-  <input type="text" id="text-input-field" placeholder="Add label…" maxlength="30">
+  <div id="text-input-bar">
+    <input type="text" id="text-input-field" placeholder="Add label…" maxlength="30"
+           enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button type="button" id="text-input-submit">Add</button>
+  </div>
 </div>
 
 <!-- Toast -->
@@ -3754,30 +3779,67 @@ function buildSelectBar() {
 // ── Text tool ──
 function handleTextTool(e) {
   const { nx, ny } = getPos(e);
-  const p = n2c(nx, ny);
-  const wrap = document.getElementById('text-input-wrap');
+  const wrap  = document.getElementById('text-input-wrap');
   const field = document.getElementById('text-input-field');
-  const bRect = canvas.getBoundingClientRect();
-  wrap.style.left = (bRect.left + p.x) + 'px';
-  wrap.style.top = (bRect.top + p.y - 10) + 'px';
+
+  // Desktop: float the input near the tap point
+  if (window.innerWidth >= 600) {
+    const p = n2c(nx, ny);
+    const bRect = canvas.getBoundingClientRect();
+    wrap.style.left = (bRect.left + p.x) + 'px';
+    wrap.style.top  = (bRect.top  + p.y - 10) + 'px';
+  } else {
+    // Mobile: CSS positions it as a bottom bar — clear any inline styles
+    wrap.style.left = '';
+    wrap.style.top  = '';
+  }
+
   wrap.classList.add('show');
   field.value = '';
   field.focus();
-  field.onkeydown = (ev) => {
-    if (ev.key === 'Enter' || ev.key === 'Escape') {
-      if (ev.key === 'Enter' && field.value.trim()) {
-        saveUndo();
-        const fontSize = Math.max(14, state.lineWidth * 5) * 1.4;
-        state.objects.push({ type:'text', color:state.color, lineWidth:state.lineWidth, fontSize, nx, ny, text:field.value.trim() });
-        saveCurrentPhase();
-        redrawAll();
-      }
-      wrap.classList.remove('show');
+
+  // Store tap coordinates so the submit handler (button or Enter) can use them
+  wrap._pendingNx = nx;
+  wrap._pendingNy = ny;
+
+  // Shared commit — called by both Enter key and Add button
+  wrap._commit = () => {
+    const text = field.value.trim();
+    if (text) {
+      saveUndo();
+      const fontSize = Math.max(14, state.lineWidth * 5) * 1.4;
+      state.objects.push({ type:'text', color:state.color, lineWidth:state.lineWidth, fontSize,
+                           nx: wrap._pendingNx, ny: wrap._pendingNy, text });
+      saveCurrentPhase();
+      redrawAll();
     }
+    wrap.classList.remove('show');
+  };
+
+  field.onkeydown = (ev) => {
+    if (ev.key === 'Enter')  { ev.preventDefault(); wrap._commit(); }
+    if (ev.key === 'Escape') { wrap.classList.remove('show'); }
   };
 }
+
+// Submit button — mousedown preventDefault stops blur firing before click on desktop;
+// touchstart preventDefault does the same on iOS
+const _textSubmitBtn = document.getElementById('text-input-submit');
+_textSubmitBtn.addEventListener('mousedown',  e => e.preventDefault());
+_textSubmitBtn.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+_textSubmitBtn.addEventListener('click', () => {
+  const wrap = document.getElementById('text-input-wrap');
+  if (wrap._commit) wrap._commit();
+});
+
+// Blur: only dismiss if focus has left the entire text-input-wrap
 document.getElementById('text-input-field').addEventListener('blur', () => {
-  setTimeout(() => document.getElementById('text-input-wrap').classList.remove('show'), 200);
+  setTimeout(() => {
+    const wrap = document.getElementById('text-input-wrap');
+    if (!wrap.contains(document.activeElement)) {
+      wrap.classList.remove('show');
+    }
+  }, 100);
 });
 
 // ── Undo / Redo ──
