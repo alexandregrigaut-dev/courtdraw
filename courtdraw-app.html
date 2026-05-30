@@ -395,6 +395,20 @@ button {
 .empty-state { text-align: center; padding: 40px 20px; color: var(--text2); }
 .empty-state .es-icon { font-size: 40px; margin-bottom: 12px; }
 .empty-state h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+#tactic-notes-input {
+  width: 100%; box-sizing: border-box;
+  padding: 8px 12px; margin-bottom: 8px;
+  border-radius: 10px; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-size: 13px; font-family: inherit;
+  resize: none; outline: none; display: block; min-height: 52px;
+  transition: var(--transition);
+}
+#tactic-notes-input:focus { border-color: var(--accent); }
+#tactic-notes-input::placeholder { color: var(--text2); }
+.tactic-notes {
+  font-size: 11px; color: var(--text2); margin-top: 3px;
+  font-style: italic; line-height: 1.45; white-space: pre-wrap; word-break: break-word;
+}
 .save-bar { display: flex; gap: 8px; }
 .save-bar input {
   flex: 1; padding: 10px 14px; border-radius: 10px;
@@ -1437,6 +1451,9 @@ body.portrait-mode .player-token:active {
       <p style="font-size:11px;color:var(--text2);margin-top:4px;">Replaces the watermark on exports.</p>
     </div>
     <div class="modal-footer">
+      <textarea id="tactic-notes-input" rows="2" maxlength="400"
+        placeholder="📝 Coach notes (Pro) — e.g. 'Works vs high press, use in final third'"
+        onfocus="onNotesFocus()"></textarea>
       <div class="save-bar">
         <input type="text" id="tactic-name-input" placeholder="Name this play…" maxlength="40">
         <button class="btn-accent" onclick="saveTactic()">Save Play</button>
@@ -3882,13 +3899,15 @@ function renderLibrary() {
     const row = document.createElement('div');
     row.className = 'tactic-row';
     // Escape user-supplied tactic name to prevent XSS
-    const safeName = (t.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const safeName  = (t.name  || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const safeNotes = (t.notes || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const courtName = court ? court.name : (t.courtId || '—');
     const dateStr = new Date(t.ts).toLocaleDateString();
     row.innerHTML = `
       <div class="tactic-info">
         <div class="tactic-name">${safeName}</div>
         <div class="tactic-meta">${courtName} · ${dateStr}</div>
+        ${safeNotes ? `<div class="tactic-notes">${safeNotes}</div>` : ''}
       </div>
       <div class="tactic-actions">
         <button class="tac-btn load" data-idx="${i}">Load</button>
@@ -3924,6 +3943,12 @@ function openSaveDialog() {
   if (inp) inp.focus();
 }
 
+function onNotesFocus() {
+  if (state.isPro || state.isClub) return;
+  setTimeout(() => document.getElementById('tactic-notes-input').blur(), 0);
+  showFeaturePreview('notes', 'Coach notes are a Pro feature. Add context to every saved play — what it counters, when to run it, key cues.');
+}
+
 function saveTactic() {
   let name = document.getElementById('tactic-name-input').value.trim();
   if (!name) {
@@ -3939,9 +3964,12 @@ function saveTactic() {
     return;
   }
   saveCurrentPhase();
+  const notesEl = document.getElementById('tactic-notes-input');
+  const notes = (state.isPro || state.isClub) ? (notesEl ? notesEl.value.trim() : '') : '';
   const tactic = {
     id: Date.now(),
     name,
+    notes,
     courtId: state.courtId,
     objects: JSON.parse(JSON.stringify(state.objects)),
     tokens: JSON.parse(JSON.stringify(state.tokenPositions)),
@@ -3953,6 +3981,7 @@ function saveTactic() {
   saveToStorage();
   clearAuthorCredit();
   document.getElementById('tactic-name-input').value = '';
+  if (notesEl) notesEl.value = '';
   renderLibrary();
   updateSaveCounter(); // Point 1
   if (state.isClub) {
@@ -4069,6 +4098,7 @@ const FEATURE_PREVIEWS = {
   share:     { icon: '🔗', title: 'Live Shareable Board Links', desc: 'Generate a link to your play. Anyone with it can open the exact tactic in their browser — no account needed.' },
   animation: { icon: '▶️',  title: 'Animated Playback',         desc: 'Watch your tactical sequence play out automatically — perfect for showing your team the full flow of a play.' },
   export:    { icon: '🖼',  title: 'Clean Export — No Watermark', desc: 'Export your play as a high-resolution PNG or PDF with no watermark — ready for presentations, WhatsApp, or your club app.' },
+  notes:     { icon: '📝', title: 'Coach Notes',                desc: 'Add context to every saved play — what it counters, when to run it, key coaching cues. Notes appear in your library for quick reference.' },
 };
 let _fpPaywallReason = '';
 
