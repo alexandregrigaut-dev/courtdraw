@@ -696,6 +696,30 @@ button {
 .pw-plan-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
 .pw-plan-price { font-weight: 900; font-size: 18px; color: var(--accent); }
 .pw-plan-price small { font-size: 12px; font-weight: 500; color: var(--text2); }
+/* Share viewer footer */
+#share-footer {
+  display: none;
+  align-items: center; justify-content: center; gap: 10px;
+  padding: 0 16px env(safe-area-inset-bottom);
+  height: calc(42px + env(safe-area-inset-bottom));
+  min-height: calc(42px + env(safe-area-inset-bottom));
+  flex-shrink: 0;
+  background: #0a1628;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-size: 13px; color: rgba(255,255,255,0.65);
+}
+body.share-view #share-footer { display: flex; }
+#share-footer-text strong { color: #f1f5f9; font-weight: 700; }
+#share-footer-cta {
+  display: inline-flex; align-items: center;
+  background: #3b82f6; color: #fff; text-decoration: none;
+  border-radius: 8px; padding: 5px 13px;
+  font-size: 12px; font-weight: 700; white-space: nowrap;
+  flex-shrink: 0; transition: background 0.15s;
+}
+#share-footer-cta:hover { background: #2563eb; }
+@media (max-width: 400px) { #share-footer-text { display: none; } }
+
 /* Text input */
 #text-input-wrap {
   position: fixed; z-index: 200; display: none;
@@ -1659,6 +1683,21 @@ body.portrait-mode .player-token:active {
   <button class="tb-btn" id="btn-video" title="Video overlay — draw on top of match footage (Pro/Club)" onclick="openVideoUpload()">
     <span class="icon">📹</span><span>Video</span>
   </button>
+</div>
+
+<!-- Share viewer footer — shown only when opening a shared board link -->
+<div id="share-footer">
+  <svg width="18" height="18" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;opacity:0.9">
+    <rect width="28" height="28" rx="6" fill="#3b82f6"/>
+    <rect x="2" y="8.5" width="24" height="11" rx="1" fill="#1d4ed8"/>
+    <rect x="2" y="8.5" width="24" height="11" rx="1" stroke="white" stroke-width="0.9"/>
+    <line x1="14" y1="8.5" x2="14" y2="19.5" stroke="white" stroke-width="0.9"/>
+    <line x1="7.5" y1="9.8" x2="7.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+    <line x1="20.5" y1="9.8" x2="20.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+    <line x1="2" y1="14" x2="26" y2="14" stroke="white" stroke-width="0.75"/>
+  </svg>
+  <span id="share-footer-text">Draw your own plays at <strong>courtdraw.app</strong></span>
+  <a id="share-footer-cta" href="https://courtdraw.app/?utm_source=shared_board&utm_medium=viewer_footer&utm_campaign=viral_loop" target="_blank" rel="noopener">Start Free →</a>
 </div>
 
 <!-- Modal: Court Picker -->
@@ -6507,6 +6546,7 @@ function loadFromStorage() {
 function init() {
   loadFromStorage();
   const sharedBoard = loadFromHash();
+  if (sharedBoard) document.body.classList.add('share-view');
   buildColors();
   buildSelectBar();
   // Initialize team color pickers and apply saved/default colors
