@@ -40,6 +40,11 @@
   status = 301
 
 [[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
