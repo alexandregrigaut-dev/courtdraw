@@ -4305,6 +4305,7 @@ function saveTactic() {
     ts: Date.now()
   };
   state.savedTactics.push(tactic);
+  if (state.savedTactics.length === 1) successMomentUpsell('firstSave', "Your first play is saved. Build an unlimited library with Pro.");
   saveToStorage();
   // Track activity in Firestore for weekly digest (Pro/Club only, best-effort)
   if ((state.isPro || state.isClub) && typeof window.__trackPlaySaved === 'function') {
@@ -5136,15 +5137,7 @@ function exportPNG() {
       oc.fillText('courtdraw.app', W - 14, H - 21);
       oc.restore();
       finalizePng();
-      // Point 2: nudge to upgrade after export (once per session)
-      if (!sessionStorage.getItem('cd_export_nudge_shown')) {
-        sessionStorage.setItem('cd_export_nudge_shown', '1');
-        setTimeout(() => showUpgradeToast(
-          'Remove the watermark — try Pro free for 7 days',
-          'Try Pro →',
-          () => openPaywall('Export clean plays with no watermark.')
-        ), 1200);
-      }
+      successMomentUpsell('export', "That's a great play. Share it clean — no watermark — with Pro.");
     } else {
       finalizePng(); // Pro — no watermark
     }
@@ -6134,6 +6127,23 @@ function showToast(msg, ms = 2400) {
   toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 }
 
+// ── Success-moment upsells ────────────────────────────────────────────────────
+// Fires 20 s AFTER an impressive free-user action (once per session per key).
+// The delay lets the user enjoy the moment before the nudge appears.
+// Bails silently if the user upgraded during the wait.
+let _successUpsellTimer = null;
+function successMomentUpsell(key, msg) {
+  if (state.isPro || state.isClub) return;
+  const guardKey = 'cd_smup_' + key;
+  if (sessionStorage.getItem(guardKey)) return;
+  sessionStorage.setItem(guardKey, '1');
+  clearTimeout(_successUpsellTimer);
+  _successUpsellTimer = setTimeout(() => {
+    if (state.isPro || state.isClub) return; // upgraded during the wait
+    showUpgradeToast(msg, 'Try Pro free →', () => openPaywall(msg));
+  }, 20000);
+}
+
 // Point 2: upgrade toast with inline CTA button
 function showUpgradeToast(msg, ctaLabel, ctaFn, ms = 6000) {
   const t = document.getElementById('toast');
@@ -6827,6 +6837,7 @@ function addPlayer() {
   createTokenEl(idx);
   repositionTokens();
   showToast(`Player ${label} added.`);
+  if (state.tokenPositions.length === 3) successMomentUpsell('player3', "Your squad is set up. Export it without the watermark with Pro.");
 }
 
 function removePlayer(idx) {
