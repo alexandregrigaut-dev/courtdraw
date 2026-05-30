@@ -380,18 +380,51 @@ button {
 .pt-dot.active { background: #3b82f6; }
 .pt-cta { width: 100%; }
 /* Tactic library */
+/* Library search + filter */
+#library-search-row { padding: 8px 16px 6px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+#library-search {
+  width: 100%; box-sizing: border-box; padding: 8px 12px;
+  border-radius: 10px; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-size: 14px; font-family: inherit; outline: none;
+  transition: var(--transition);
+}
+#library-search:focus { border-color: var(--accent); }
+#lib-filter-row { display: flex; flex-wrap: wrap; gap: 5px; padding: 6px 16px 4px; flex-shrink: 0; min-height: 0; }
+.lib-filter-pill {
+  font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px;
+  cursor: pointer; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text2); transition: var(--transition); touch-action: manipulation;
+}
+.lib-filter-pill.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+/* Tactic row enhancements */
 .tactic-row {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: flex-start; gap: 12px;
   padding: 12px; background: var(--surface2); border-radius: 10px;
   margin-bottom: 8px; border: 1px solid var(--border);
 }
 .tactic-info { flex: 1; min-width: 0; }
 .tactic-name { font-weight: 600; font-size: 14px; }
 .tactic-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
-.tactic-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.tactic-rating { font-size: 13px; color: #f59e0b; margin-top: 2px; letter-spacing: 1px; }
+.tactic-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.tag-pill { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); color: var(--text2); }
+.tactic-actions { display: flex; gap: 6px; flex-shrink: 0; align-self: center; }
 .tac-btn { padding: 6px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; }
 .tac-btn.load { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); }
 .tac-btn.del { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+/* Save dialog — tags + rating */
+#tactic-tags-input {
+  width: 100%; box-sizing: border-box; padding: 8px 12px; margin-bottom: 8px;
+  border-radius: 10px; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); font-size: 13px; font-family: inherit; outline: none;
+  transition: var(--transition);
+}
+#tactic-tags-input:focus { border-color: var(--accent); }
+#tactic-tags-input::placeholder { color: var(--text2); }
+.save-rating-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.save-rating-label { font-size: 12px; color: var(--text2); flex-shrink: 0; }
+.save-star { font-size: 20px; cursor: pointer; color: var(--text2); line-height: 1; padding: 2px 1px; touch-action: manipulation; transition: color 0.1s; }
+.save-star.filled { color: #f59e0b; }
 .empty-state { text-align: center; padding: 40px 20px; color: var(--text2); }
 .empty-state .es-icon { font-size: 40px; margin-bottom: 12px; }
 .empty-state h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
@@ -1417,6 +1450,10 @@ body.portrait-mode .player-token:active {
       <span class="modal-title">My Saved Plays</span>
       <button class="modal-close" aria-label="Close" onclick="closeModal('modal-library')">✕</button>
     </div>
+    <div id="library-search-row">
+      <input type="search" id="library-search" placeholder="🔍 Search plays, tags, notes…" oninput="renderLibrary()" autocomplete="off">
+    </div>
+    <div id="lib-filter-row"></div>
     <div class="modal-body" id="library-body"></div>
     <div id="club-library-wrap" style="display:none;border-top:1px solid var(--border);padding:12px 20px 4px;flex-shrink:0;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -1454,6 +1491,17 @@ body.portrait-mode .player-token:active {
       <textarea id="tactic-notes-input" rows="2" maxlength="400"
         placeholder="📝 Coach notes (Pro) — e.g. 'Works vs high press, use in final third'"
         onfocus="onNotesFocus()"></textarea>
+      <input type="text" id="tactic-tags-input" maxlength="100"
+        placeholder="🏷 Tags (Pro) — comma separated, e.g. 'set play, press, U14'"
+        onfocus="onTagsFocus()">
+      <div class="save-rating-row">
+        <span class="save-rating-label">Rate (Pro):</span>
+        <span class="save-star" data-v="1" onclick="onRatingClick(1)">☆</span>
+        <span class="save-star" data-v="2" onclick="onRatingClick(2)">☆</span>
+        <span class="save-star" data-v="3" onclick="onRatingClick(3)">☆</span>
+        <span class="save-star" data-v="4" onclick="onRatingClick(4)">☆</span>
+        <span class="save-star" data-v="5" onclick="onRatingClick(5)">☆</span>
+      </div>
       <div class="save-bar">
         <input type="text" id="tactic-name-input" placeholder="Name this play…" maxlength="40">
         <button class="btn-accent" onclick="saveTactic()">Save Play</button>
@@ -3886,36 +3934,92 @@ function switchCourt(id, locked, skipReset) {
 function openLibrary() { renderLibrary(); if (state.isClub) loadClubLibrary(); openModal('modal-library'); }
 
 function renderLibrary() {
-  const body = document.getElementById('library-body');
-  const saves = state.savedTactics;
+  const body   = document.getElementById('library-body');
+  const saves  = state.savedTactics;
+  const search = (document.getElementById('library-search')?.value || '').toLowerCase().trim();
+
+  // Build filter pills from unique sport names + custom tags across all plays
+  const filterRow = document.getElementById('lib-filter-row');
+  if (filterRow) {
+    const allTags = new Set();
+    saves.forEach(t => {
+      const court = COURTS.find(c => c.id === t.courtId);
+      if (court) allTags.add(court.name.replace(/ \(.*\)/, ''));
+      (t.tags || '').split(',').map(s => s.trim()).filter(Boolean).forEach(tag => allTags.add(tag));
+    });
+    filterRow.innerHTML = '';
+    allTags.forEach(tag => {
+      const pill = document.createElement('span');
+      pill.className = 'lib-filter-pill' + (_libFilter === tag ? ' active' : '');
+      pill.textContent = tag;
+      pill.addEventListener('click', () => setLibFilter(tag));
+      filterRow.appendChild(pill);
+    });
+  }
+
   if (!saves.length) {
     body.innerHTML = `<div class="empty-state"><div class="es-icon">📋</div><h3>No plays saved yet</h3><p>Draw your first play and hit <strong>Save Play</strong> below.</p></div>`;
     return;
   }
+
+  const e = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
   body.innerHTML = '';
+  let shown = 0;
   for (let i = saves.length - 1; i >= 0; i--) {
     const t = saves[i];
-    const court = COURTS.find(c=>c.id===t.courtId);
+    const court     = COURTS.find(c => c.id === t.courtId);
+    const courtName = court ? court.name : (t.courtId || '—');
+    const sportShort = court ? court.name.replace(/ \(.*\)/, '') : '';
+    const tTags      = (t.tags || '').split(',').map(s => s.trim()).filter(Boolean);
+
+    // Tag/sport filter
+    if (_libFilter) {
+      if (sportShort !== _libFilter && !tTags.includes(_libFilter)) continue;
+    }
+    // Text search across name, notes, tags, court
+    if (search) {
+      const hay = [t.name, t.notes, t.tags, courtName].join(' ').toLowerCase();
+      if (!hay.includes(search)) continue;
+    }
+
+    shown++;
     const row = document.createElement('div');
     row.className = 'tactic-row';
-    // Escape user-supplied tactic name to prevent XSS
-    const safeName  = (t.name  || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const safeNotes = (t.notes || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const courtName = court ? court.name : (t.courtId || '—');
-    const dateStr = new Date(t.ts).toLocaleDateString();
+    const dateStr    = new Date(t.ts).toLocaleDateString();
+    const ratingHtml = t.rating ? `<div class="tactic-rating">${_starsHtml(t.rating)}</div>` : '';
+    const tagsHtml   = tTags.length ? `<div class="tactic-tags">${tTags.map(tag => `<span class="tag-pill">${e(tag)}</span>`).join('')}</div>` : '';
     row.innerHTML = `
       <div class="tactic-info">
-        <div class="tactic-name">${safeName}</div>
-        <div class="tactic-meta">${courtName} · ${dateStr}</div>
-        ${safeNotes ? `<div class="tactic-notes">${safeNotes}</div>` : ''}
+        <div class="tactic-name">${e(t.name)}</div>
+        ${ratingHtml}
+        <div class="tactic-meta">${e(courtName)} · ${dateStr}</div>
+        ${t.notes ? `<div class="tactic-notes">${e(t.notes)}</div>` : ''}
+        ${tagsHtml}
       </div>
       <div class="tactic-actions">
-        <button class="tac-btn load" data-idx="${i}">Load</button>
-        <button class="tac-btn del" data-idx="${i}">Del</button>
+        <button class="tac-btn load">Load</button>
+        <button class="tac-btn del">Del</button>
       </div>`;
     row.querySelector('.tac-btn.load').addEventListener('click', () => loadTactic(i));
     row.querySelector('.tac-btn.del').addEventListener('click', () => deleteTactic(i));
     body.appendChild(row);
+  }
+
+  if (!shown && saves.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.innerHTML = `<div class="es-icon">🔍</div><h3>No plays match</h3><p>Try a different search or clear your filters.</p>`;
+    const clearBtn = document.createElement('button');
+    clearBtn.textContent = 'Clear filters';
+    clearBtn.style.cssText = 'margin-top:12px;padding:8px 18px;border-radius:8px;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;';
+    clearBtn.addEventListener('click', () => {
+      _libFilter = '';
+      const s = document.getElementById('library-search'); if (s) s.value = '';
+      renderLibrary();
+    });
+    empty.appendChild(clearBtn);
+    body.appendChild(empty);
   }
 }
 
@@ -3943,10 +4047,48 @@ function openSaveDialog() {
   if (inp) inp.focus();
 }
 
+let _libFilter = '';     // active tag/sport filter in library
+let _tacticRating = 0;  // star rating being set in save dialog
+
 function onNotesFocus() {
   if (state.isPro || state.isClub) return;
   setTimeout(() => document.getElementById('tactic-notes-input').blur(), 0);
   showFeaturePreview('notes', 'Coach notes are a Pro feature. Add context to every saved play — what it counters, when to run it, key cues.');
+}
+
+function onTagsFocus() {
+  if (state.isPro || state.isClub) return;
+  setTimeout(() => document.getElementById('tactic-tags-input').blur(), 0);
+  showFeaturePreview('tags', 'Play tags are a Pro feature. Label each play and filter your library in seconds.');
+}
+
+function onRatingClick(n) {
+  if (!state.isPro && !state.isClub) {
+    showFeaturePreview('rating', 'Play ratings are a Pro feature. Star your best plays and find them instantly.');
+    return;
+  }
+  _tacticRating = (_tacticRating === n) ? 0 : n;
+  _updateSaveStars();
+}
+
+function _updateSaveStars() {
+  document.querySelectorAll('.save-star').forEach(s => {
+    const v = parseInt(s.dataset.v);
+    s.classList.toggle('filled', v <= _tacticRating);
+    s.textContent = v <= _tacticRating ? '★' : '☆';
+  });
+}
+
+function _starsHtml(rating) {
+  if (!rating) return '';
+  let s = '';
+  for (let i = 1; i <= 5; i++) s += i <= rating ? '★' : '☆';
+  return s;
+}
+
+function setLibFilter(tag) {
+  _libFilter = (_libFilter === tag) ? '' : tag;
+  renderLibrary();
 }
 
 function saveTactic() {
@@ -3965,11 +4107,17 @@ function saveTactic() {
   }
   saveCurrentPhase();
   const notesEl = document.getElementById('tactic-notes-input');
-  const notes = (state.isPro || state.isClub) ? (notesEl ? notesEl.value.trim() : '') : '';
+  const tagsEl  = document.getElementById('tactic-tags-input');
+  const isPro = state.isPro || state.isClub;
+  const notes  = isPro ? (notesEl ? notesEl.value.trim() : '') : '';
+  const tags   = isPro ? (tagsEl  ? tagsEl.value.trim()  : '') : '';
+  const rating = isPro ? _tacticRating : 0;
   const tactic = {
     id: Date.now(),
     name,
     notes,
+    tags,
+    rating,
     courtId: state.courtId,
     objects: JSON.parse(JSON.stringify(state.objects)),
     tokens: JSON.parse(JSON.stringify(state.tokenPositions)),
@@ -3982,6 +4130,9 @@ function saveTactic() {
   clearAuthorCredit();
   document.getElementById('tactic-name-input').value = '';
   if (notesEl) notesEl.value = '';
+  if (tagsEl)  tagsEl.value  = '';
+  _tacticRating = 0;
+  _updateSaveStars();
   renderLibrary();
   updateSaveCounter(); // Point 1
   if (state.isClub) {
@@ -4099,6 +4250,8 @@ const FEATURE_PREVIEWS = {
   animation: { icon: '▶️',  title: 'Animated Playback',         desc: 'Watch your tactical sequence play out automatically — perfect for showing your team the full flow of a play.' },
   export:    { icon: '🖼',  title: 'Clean Export — No Watermark', desc: 'Export your play as a high-resolution PNG or PDF with no watermark — ready for presentations, WhatsApp, or your club app.' },
   notes:     { icon: '📝', title: 'Coach Notes',                desc: 'Add context to every saved play — what it counters, when to run it, key coaching cues. Notes appear in your library for quick reference.' },
+  tags:      { icon: '🏷', title: 'Play Tags',                 desc: 'Label each play with keywords like "set play", "press defense", or "U14 session". Filter your library by tag to find plays instantly.' },
+  rating:    { icon: '⭐', title: 'Play Ratings',               desc: 'Rate your plays 1–5 stars to flag your best work. Filter your library by rating to find your go-to plays in seconds.' },
 };
 let _fpPaywallReason = '';
 
