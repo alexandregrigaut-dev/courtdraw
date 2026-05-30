@@ -7,6 +7,11 @@
 [functions."drip-emails"]
   schedule = "0 9 * * *"
 
+# R-3 — Weekly digest: runs every Monday at 08:00 UTC
+# Sends personalised play recap to Pro/Club users; re-engagement nudge to free users
+[functions."weekly-digest"]
+  schedule = "0 8 * * 1"
+
 # Firebase client-side API keys are intentionally public — they are not secrets.
 # Firebase security is enforced by Firebase Security Rules, not key secrecy.
 # This disables Netlify's false-positive secret scanning failure for this repo.

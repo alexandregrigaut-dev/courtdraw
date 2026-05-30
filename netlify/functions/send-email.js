@@ -433,6 +433,93 @@ const templates = {
     };
   },
 
+  // ── Weekly digest: Pro/Club user who saved plays last week ───────────────────
+  weeklyDigestActive: (email, opts = {}) => {
+    const { count = 1, spotlightName = 'Your latest play', spotlightSport = '', suggestionSport = null } = opts;
+    const sportIcon = { Football: '⚽', Basketball: '🏀', Tennis: '🎾', Volleyball: '🏐', Handball: '🤾', Rugby: '🏉', 'American Football': '🏈', 'Ice Hockey': '🏒', Baseball: '⚾', Padel: '🏓', Pickleball: '🏓', Badminton: '🏸', Futsal: '⚽', Hockey: '🏑' };
+    const icon = sportIcon[spotlightSport] || '📋';
+    const suggestionLine = suggestionSport
+      ? `<br><br>💡 <em>It's been a while since you drew a ${suggestionSport} play — your next session might be coming up.</em>`
+      : '';
+    const spotlight = `
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border-radius:10px;background:#132238;border:1px solid #1e3a5f;overflow:hidden;">
+        <tr>
+          <td style="padding:16px 20px;vertical-align:middle;width:48px;font-size:28px;">${icon}</td>
+          <td style="padding:16px 0 16px 4px;vertical-align:middle;">
+            <div style="font-size:14px;font-weight:700;color:#f1f5f9;">${spotlightName}</div>
+            <div style="font-size:12px;color:#64748b;margin-top:2px;">${spotlightSport}</div>
+          </td>
+          <td style="padding:16px 20px;vertical-align:middle;text-align:right;">
+            <span style="font-size:11px;font-weight:700;color:#3b82f6;letter-spacing:0.05em;text-transform:uppercase;">Latest</span>
+          </td>
+        </tr>
+      </table>`;
+    const data = {
+      label: 'Your week in CourtDraw',
+      labelColor: '#3b82f6',
+      title: `You saved ${count} ${count === 1 ? 'play' : 'plays'} this week`,
+      body: `Good work. Here's your latest:${spotlight}Keep building — consistent prep is what separates good coaches from great ones.${suggestionLine}`,
+      ctaText: 'Open the app →',
+      ctaUrl: `${APP_URL}/courtdraw-app.html`,
+      footerNote: "You're receiving this weekly digest because you have an active CourtDraw Pro subscription. Reply to unsubscribe."
+    };
+    return {
+      from: FROM, reply_to: REPLY_TO, to: email,
+      subject: `You saved ${count} ${count === 1 ? 'play' : 'plays'} this week — keep it up`,
+      html: layout(data), text: toPlainText(data),
+    };
+  },
+
+  // ── Weekly digest: Pro/Club user who saved nothing last week ─────────────────
+  weeklyDigestLapsed: (email, opts = {}) => {
+    const { lastPlayName = null, lastPlaySport = '', daysSince = null, suggestionSport = null } = opts;
+    const sportIcon = { Football: '⚽', Basketball: '🏀', Tennis: '🎾', Volleyball: '🏐', Handball: '🤾', Rugby: '🏉', 'American Football': '🏈', 'Ice Hockey': '🏒', Baseball: '⚾', Padel: '🏓', Pickleball: '🏓', Badminton: '🏸', Futsal: '⚽', Hockey: '🏑' };
+    const recapLine = lastPlayName
+      ? `<br><br>Your last play was <strong>${lastPlayName}</strong>${lastPlaySport ? ` (${lastPlaySport})` : ''}${daysSince ? ` — ${daysSince} days ago` : ''}.`
+      : '';
+    const suggestionLine = suggestionSport
+      ? `<br><br>💡 <em>You haven't drawn a ${suggestionSport} play in a while — if a session is coming up, now's a good time to prep.</em>`
+      : '';
+    const data = {
+      label: 'Weekly check-in',
+      labelColor: '#f59e0b',
+      title: "Quiet week — what's on the schedule?",
+      body: `No new plays saved last week.${recapLine}${suggestionLine}<br><br>Jump back in whenever you're ready — your library is waiting.`,
+      ctaText: 'Open the app →',
+      ctaUrl: `${APP_URL}/courtdraw-app.html`,
+      footerNote: "You're receiving this weekly digest because you have an active CourtDraw Pro subscription. Reply to unsubscribe."
+    };
+    return {
+      from: FROM, reply_to: REPLY_TO, to: email,
+      subject: "Your CourtDraw plays are waiting — what's on this week?",
+      html: layout(data), text: toPlainText(data),
+    };
+  },
+
+  // ── Weekly digest: Free user re-engagement ───────────────────────────────────
+  weeklyDigestFree: (email) => {
+    const data = {
+      label: 'Your saved plays',
+      labelColor: '#3b82f6',
+      title: 'Your 3 saves are waiting',
+      body: `Your saved plays are ready whenever you need them — load one up and build on it before your next session.<br><br>
+             On the free plan you get 3 saves. When you're ready to build a full library, Pro gives you unlimited saves, all 38+ courts, phase animation, and more. First 7 days are free.`,
+      ctaText: 'Open the app →',
+      ctaUrl: `${APP_URL}/courtdraw-app.html`,
+      features: [
+        { icon: '💾', label: 'Unlimited saves' },
+        { icon: '🏟', label: '38+ courts' },
+        { icon: '📐', label: 'Phase animation' },
+      ],
+      footerNote: "You're receiving this because you have a CourtDraw account. Reply to unsubscribe."
+    };
+    return {
+      from: FROM, reply_to: REPLY_TO, to: email,
+      subject: 'Your CourtDraw plays are waiting',
+      html: layout(data), text: toPlainText(data),
+    };
+  },
+
   // Sent when a Club trial converts to a paid subscription (day 8 charge succeeds)
   clubTrialConverted: (email) => {
     const data = {

@@ -4306,6 +4306,12 @@ function saveTactic() {
   };
   state.savedTactics.push(tactic);
   saveToStorage();
+  // Track activity in Firestore for weekly digest (Pro/Club only, best-effort)
+  if ((state.isPro || state.isClub) && typeof window.__trackPlaySaved === 'function') {
+    const court = COURTS.find(c => c.id === state.courtId);
+    const sport = court ? court.name.replace(/ \(.*\)/, '') : '';
+    window.__trackPlaySaved(name, sport);
+  }
   clearAuthorCredit();
   document.getElementById('tactic-name-input').value = '';
   if (notesEl) notesEl.value = '';
@@ -6891,7 +6897,22 @@ document.addEventListener('DOMContentLoaded', init);
 <script type="module">
   import { auth, db } from '/src/firebase.js';
   import { onAuthStateChanged, signOut } from 'firebase/auth';
-  import { doc, getDoc } from 'firebase/firestore';
+  import { doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore';
+
+  // Expose play-save activity tracker so saveTactic() (global scope) can write to Firestore
+  window.__trackPlaySaved = async (name, sport) => {
+    const user = window.__currentUser;
+    if (!user) return;
+    try {
+      const entry = { name, sport, savedAt: Date.now() };
+      const update = { recentActivity: arrayUnion(entry) };
+      if (sport) update[`lastSaved_${sport}`] = entry.savedAt;
+      await setDoc(doc(db, 'users', user.uid), update, { merge: true });
+    } catch (e) {
+      // Non-critical — don't surface to user
+      console.warn('Activity track failed:', e.message);
+    }
+  };
 
   // Expose sign-out globally so the account menu button can call it
   window.__signOut = async () => {
