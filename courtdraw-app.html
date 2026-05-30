@@ -381,6 +381,9 @@ button {
 .pt-cta { width: 100%; }
 /* Tactic library */
 /* Library search + filter */
+#library-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+#library-scroll::-webkit-scrollbar { display: none; }
+#library-body { padding: 16px 20px; }
 #library-search-row { padding: 8px 16px 6px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 #library-search {
   width: 100%; box-sizing: border-box; padding: 8px 12px;
@@ -1454,8 +1457,9 @@ body.portrait-mode .player-token:active {
       <input type="search" id="library-search" placeholder="🔍 Search plays, tags, notes…" oninput="renderLibrary()" autocomplete="off">
     </div>
     <div id="lib-filter-row"></div>
-    <div class="modal-body" id="library-body"></div>
-    <div id="club-library-wrap" style="display:none;border-top:1px solid var(--border);padding:12px 20px 4px;flex-shrink:0;">
+    <div id="library-scroll">
+    <div id="library-body"></div>
+    <div id="club-library-wrap" style="display:none;border-top:1px solid var(--border);padding:12px 20px 4px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <span class="cat-label">Club Library</span>
         <button onclick="loadClubLibrary()" style="font-size:11px;color:var(--accent);font-weight:700;padding:2px 8px;border-radius:5px;background:var(--accent-dim);border:1px solid var(--accent);">↻ Refresh</button>
@@ -1463,12 +1467,12 @@ body.portrait-mode .player-token:active {
       <div id="club-library-body"><p style="font-size:12px;color:var(--text2);padding:8px 0;">Loading club tactics…</p></div>
     </div>
     <!-- Join a club prompt — shown for logged-in users who are not in any club -->
-    <div id="join-club-prompt" style="display:none;border-top:1px solid var(--border);padding:12px 20px;flex-shrink:0;text-align:center;">
+    <div id="join-club-prompt" style="display:none;border-top:1px solid var(--border);padding:12px 20px;text-align:center;">
       <p style="font-size:12px;color:var(--text2);margin:0 0 8px;">Have a club code from your coach?</p>
       <a href="/join-club.html" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#3b82f6;text-decoration:none;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);padding:6px 14px;border-radius:8px;">🔑 Join a Club</a>
     </div>
     <!-- "My Club" panel — shown for club members (non-owners) -->
-    <div id="my-club-wrap" style="display:none;border-top:1px solid var(--border);padding:12px 20px 8px;flex-shrink:0;">
+    <div id="my-club-wrap" style="display:none;border-top:1px solid var(--border);padding:12px 20px 8px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
         <img id="my-club-logo" src="" alt="" style="height:28px;max-width:90px;object-fit:contain;border-radius:4px;display:none;">
         <span id="my-club-name" class="cat-label" style="color:var(--purple);">My Club</span>
@@ -1479,7 +1483,7 @@ body.portrait-mode .player-token:active {
       <a href="/club-admin.html" style="display:none;font-size:11px;color:var(--accent);text-decoration:none;" id="my-club-admin-link">⚙ Club Admin →</a>
     </div>
 
-    <div id="club-name-wrap" style="display:none;border-top:1px solid var(--border);padding:10px 20px;flex-shrink:0;">
+    <div id="club-name-wrap" style="display:none;border-top:1px solid var(--border);padding:10px 20px;">
       <div style="display:flex;gap:8px;align-items:center;">
         <input type="text" id="club-name-input" placeholder="Club name (on exports)…" maxlength="50"
           style="flex:1;padding:7px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:16px;outline:none;">
@@ -1487,6 +1491,7 @@ body.portrait-mode .player-token:active {
       </div>
       <p style="font-size:11px;color:var(--text2);margin-top:4px;">Replaces the watermark on exports.</p>
     </div>
+    </div><!-- /#library-scroll -->
     <div class="modal-footer">
       <textarea id="tactic-notes-input" rows="2" maxlength="400"
         placeholder="📝 Coach notes (Pro) — e.g. 'Works vs high press, use in final third'"
@@ -3953,6 +3958,13 @@ function renderLibrary() {
       if (court) allTags.add(court.name.replace(/ \(.*\)/, ''));
       (t.tags || '').split(',').map(s => s.trim()).filter(Boolean).forEach(tag => allTags.add(tag));
     });
+    // Also include sports from club library
+    if (window.__clubTactics) {
+      Object.values(window.__clubTactics).forEach(t => {
+        const court = COURTS.find(c => c.id === t.courtId);
+        if (court) allTags.add(court.name.replace(/ \(.*\)/, ''));
+      });
+    }
     filterRow.innerHTML = '';
     allTags.forEach(tag => {
       const pill = document.createElement('span');
@@ -4027,6 +4039,20 @@ function renderLibrary() {
     empty.appendChild(clearBtn);
     body.appendChild(empty);
   }
+
+  filterClubLibraryDisplay();
+}
+
+function filterClubLibraryDisplay() {
+  const search = (document.getElementById('library-search')?.value || '').toLowerCase().trim();
+  document.querySelectorAll('#club-library-body .tactic-row').forEach(row => {
+    const text = (row.querySelector('.tactic-name')?.textContent || '') + ' ' +
+                 (row.querySelector('.tactic-meta')?.textContent || '');
+    const lo = text.toLowerCase();
+    const okSearch = !search || lo.includes(search);
+    const okFilter = !_libFilter || lo.includes(_libFilter.toLowerCase());
+    row.style.display = okSearch && okFilter ? '' : 'none';
+  });
 }
 
 function openSaveDialog() {
@@ -5002,6 +5028,9 @@ async function loadClubLibrary() {
       });
       body.appendChild(row);
     }
+    // Apply any active search/filter to freshly rendered club rows
+    filterClubLibraryDisplay();
+    renderLibrary(); // rebuild filter pills to include club sports
   } catch (err) {
     const msg = err && err.message ? err.message : 'Check your connection.';
     body.innerHTML = `<p style="font-size:12px;color:var(--text2);padding:8px 0;">Could not load club tactics — ${msg}</p>`;
