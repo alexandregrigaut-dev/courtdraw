@@ -4150,9 +4150,9 @@ function showDrawNudge() {
   const nudge = document.getElementById('draw-nudge');
   if (!btn || !nudge) return;
   const rect = btn.getBoundingClientRect();
-  if (rect.top < 0 || rect.bottom > window.innerHeight + 60) return;
-  nudge.style.left = (rect.left + rect.width / 2) + 'px';
-  nudge.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
+  const btnVisible = rect.top >= 0 && rect.bottom <= window.innerHeight + 60;
+  nudge.style.left  = btnVisible ? (rect.left + rect.width / 2) + 'px' : '80px';
+  nudge.style.bottom = btnVisible ? (window.innerHeight - rect.top + 8) + 'px' : '80px';
   nudge.style.display = 'flex';
   btn.classList.add('nudge-pulse');
 }
@@ -4166,13 +4166,6 @@ function dismissDrawNudge() {
   if (btn) btn.classList.remove('nudge-pulse');
 }
 
-function hideDrawNudge() {
-  const nudge = document.getElementById('draw-nudge');
-  if (!nudge) return;
-  nudge.style.display = 'none';
-  const btn = document.querySelector('.tb-btn[data-tool="arrow"]');
-  if (btn) btn.classList.remove('nudge-pulse');
-}
 
 function closeSavePrompt(goSignup = false) {
   closeModal('modal-save-prompt');
@@ -6182,7 +6175,6 @@ document.addEventListener('DOMContentLoaded', init);
       if (isPinned()) return; // never auto-hide when pinned
       document.body.classList.remove('ls-chrome-visible');
       clearTimeout(hideTimer);
-      hideDrawNudge();
     }
 
     // Expose so toggleToolbarPin() can restart the auto-hide timer when unpinning in landscape
@@ -6250,7 +6242,6 @@ document.addEventListener('DOMContentLoaded', init);
       if (isPinned()) return; // never auto-hide when pinned
       document.body.classList.remove('pt-chrome-visible');
       clearTimeout(ptHideTimer);
-      hideDrawNudge();
     }
 
     // Expose so toggleToolbarPin() can restart the auto-hide timer when unpinning
