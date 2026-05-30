@@ -3802,9 +3802,11 @@ function handleTextTool(e) {
   wrap._pendingNx = nx;
   wrap._pendingNy = ny;
 
-  // Shared commit — called by both Enter key and Add button
+  // Shared commit — self-nulls after first call to prevent any double-fire
   wrap._commit = () => {
+    wrap._commit = null;
     const text = field.value.trim();
+    wrap.classList.remove('show');
     if (text) {
       saveUndo();
       const fontSize = Math.max(14, state.lineWidth * 5) * 1.4;
@@ -3813,33 +3815,47 @@ function handleTextTool(e) {
       saveCurrentPhase();
       redrawAll();
     }
-    wrap.classList.remove('show');
   };
 
+  // keydown handles desktop Enter + physical keyboard Done
+  // keyup is a fallback — some mobile browsers don't fire keydown for the Done key
   field.onkeydown = (ev) => {
-    if (ev.key === 'Enter')  { ev.preventDefault(); wrap._commit(); }
-    if (ev.key === 'Escape') { wrap.classList.remove('show'); }
+    if (ev.key === 'Enter')  { ev.preventDefault(); if (wrap._commit) wrap._commit(); }
+    if (ev.key === 'Escape') { wrap._commit = null; wrap.classList.remove('show'); }
+  };
+  field.onkeyup = (ev) => {
+    if (ev.key === 'Enter' && wrap._commit) { ev.preventDefault(); wrap._commit(); }
   };
 }
 
-// Submit button — mousedown preventDefault stops blur firing before click on desktop;
-// touchstart preventDefault does the same on iOS
+// Add button:
+//   mousedown preventDefault — keeps desktop input focused until click fires
+//   touchend — fires immediately on iOS before the synthesised click;
+//              preventDefault() on touchend stops the click from also firing
+//   click — desktop fallback (mousedown already kept focus so this arrives cleanly)
+// NOTE: touchstart preventDefault was intentionally removed — on iOS it cancels
+//       the entire touch sequence and the click event never fires.
 const _textSubmitBtn = document.getElementById('text-input-submit');
-_textSubmitBtn.addEventListener('mousedown',  e => e.preventDefault());
-_textSubmitBtn.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+_textSubmitBtn.addEventListener('mousedown', e => e.preventDefault());
+_textSubmitBtn.addEventListener('touchend', (e) => {
+  e.preventDefault(); // stops the synthesised click from also firing
+  const wrap = document.getElementById('text-input-wrap');
+  if (wrap._commit) wrap._commit();
+}, { passive: false });
 _textSubmitBtn.addEventListener('click', () => {
   const wrap = document.getElementById('text-input-wrap');
   if (wrap._commit) wrap._commit();
 });
 
-// Blur: only dismiss if focus has left the entire text-input-wrap
+// Blur: dismiss only if focus truly left the wrap (not moving to the Add button)
 document.getElementById('text-input-field').addEventListener('blur', () => {
   setTimeout(() => {
     const wrap = document.getElementById('text-input-wrap');
     if (!wrap.contains(document.activeElement)) {
+      wrap._commit = null;
       wrap.classList.remove('show');
     }
-  }, 100);
+  }, 150);
 });
 
 // ── Undo / Redo ──
