@@ -538,12 +538,19 @@ exports.handler = async (event) => {
 
   if (!hasValidSecret) {
     // Fallback: require a valid Firebase ID token for client-side calls,
-    // and restrict to the 'welcome' template only to prevent abuse.
+    // restrict to the 'welcome' template only, and verify the email matches
+    // the authenticated user to prevent spoofed welcome emails.
     if (template !== 'welcome') return { statusCode: 401, body: 'Unauthorized' };
     const authHeader = event.headers.authorization || '';
     const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
     if (!idToken) return { statusCode: 401, body: 'Unauthorized' };
-    try { await admin.auth().verifyIdToken(idToken); }
+    try {
+      const decoded = await admin.auth().verifyIdToken(idToken);
+      // Email in the request must match the authenticated user's email
+      if (decoded.email && decoded.email.toLowerCase() !== email.toLowerCase()) {
+        return { statusCode: 403, body: 'Email mismatch' };
+      }
+    }
     catch { return { statusCode: 401, body: 'Invalid token' }; }
   }
 

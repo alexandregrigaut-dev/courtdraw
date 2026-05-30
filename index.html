@@ -34,7 +34,7 @@
   <meta property="og:url" content="https://courtdraw.app/" />
   <meta property="og:title" content="CourtDraw — Tactics Board for Every Sport" />
   <meta property="og:description" content="Draw plays, share strategy, and animate formations for 38+ sports. Free for coaches. No install required." />
-  <meta property="og:image" content="https://courtdraw.app/assets/og-image.svg" />
+  <meta property="og:image" content="https://courtdraw.app/assets/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:site_name" content="CourtDraw" />
@@ -1918,6 +1918,7 @@
 
   window.landingSignOut = async () => {
     try { await signOut(auth); } catch {}
+    localStorage.removeItem('cd_auth_hint');
     window.location.reload();
   };
 
@@ -1935,20 +1936,10 @@
     } catch { alert('Could not open billing portal. Please try again.'); }
   };
 
-  window.landingUpgradeToClub = async () => {
-    try {
-      const user = auth.currentUser;
-      if (!user) { window.location.href = '/login.html?checkout=club'; return; }
-      const token = await user.getIdToken();
-      const res = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ priceId: 'price_1TXcWHPJqd0y6tXmf0AclVdB' })
-      });
-      if (!res.ok) throw new Error('server error');
-      const { url } = await res.json();
-      if (url) window.location.href = url;
-    } catch { alert('Could not start checkout. Please try again.'); }
+  window.landingUpgradeToClub = () => {
+    // Always route through login.html which handles both logged-in and logged-out states
+    // and maps 'club' to the correct Stripe price ID server-side.
+    window.location.href = '/login.html?checkout=club';
   };
 
   window.landingLeaveClub = async () => {
@@ -1977,8 +1968,21 @@
 
   // ── Auth state listener ───────────────────────────────────────────────────
 
+  // Immediately hide the guest CTA if a previous session left an auth hint.
+  // This prevents the "Sign in / Try Free" buttons flashing before onAuthStateChanged fires.
+  if (localStorage.getItem('cd_auth_hint') === '1') {
+    document.getElementById('nav-cta-guest').style.visibility = 'hidden';
+  }
+
   onAuthStateChanged(auth, async user => {
-    if (!user) return; // guest — leave default UI as-is
+    if (!user) {
+      // Clear the hint so logged-out users always see the guest CTA
+      localStorage.removeItem('cd_auth_hint');
+      document.getElementById('nav-cta-guest').style.visibility = '';
+      return;
+    }
+    // Persist the hint so future page loads skip the flash
+    localStorage.setItem('cd_auth_hint', '1');
 
     // Show skeleton section immediately while Firestore loads
     document.getElementById('acct-section').style.display = 'block';
