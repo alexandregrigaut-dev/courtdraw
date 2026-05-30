@@ -1200,10 +1200,22 @@ body.portrait-mode .player-token:active {
 }
 #pro-library-modal.open { display: flex; }
 #pro-lib-panel {
-  background: var(--surface); border-radius: 16px; border: 1px solid var(--border);
+  background: #0f1c35; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);
   width: min(900px, 96vw); max-height: 88vh; display: flex; flex-direction: column;
-  overflow: hidden;
+  overflow: hidden; color: #f1f5f9;
 }
+#pro-lib-panel #pro-lib-sport-tabs,
+#pro-lib-panel #pro-lib-filter-bar { border-color: rgba(255,255,255,0.08); }
+#pro-lib-panel .lib-sport-tab { color: #94a3b8; border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); }
+#pro-lib-panel .lib-sport-tab.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+#pro-lib-panel .lib-filter-btn { color: #94a3b8; border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); }
+#pro-lib-panel .lib-filter-btn.active { background: rgba(59,130,246,0.2); color: #60a5fa; border-color: #3b82f6; }
+#pro-lib-panel #pro-lib-header { border-color: rgba(255,255,255,0.08); }
+#pro-lib-panel .lib-card { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); }
+#pro-lib-panel .lib-card:hover { border-color: #3b82f6; background: rgba(59,130,246,0.12); }
+#pro-lib-panel .lib-card-name { color: #f1f5f9; }
+#pro-lib-panel .lib-card-meta { color: #94a3b8; }
+#pro-lib-panel .lib-empty { color: #94a3b8; }
 #pro-lib-header {
   display: flex; align-items: center; gap: 12px; padding: 16px 20px;
   border-bottom: 1px solid var(--border); flex-shrink: 0;
@@ -1233,6 +1245,20 @@ body.portrait-mode .player-token:active {
 #pro-lib-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 14px; padding: 16px 20px; overflow-y: auto; flex: 1;
+}
+@media (max-width: 599px) {
+  #pro-lib-panel { border-radius: 16px; width: 94vw; max-height: 86vh; }
+  #pro-lib-grid { grid-template-columns: 1fr; gap: 6px; padding: 10px 14px; }
+  .lib-card { flex-direction: row; align-items: center; border-radius: 10px; }
+  .lib-card-thumb { display: none; }
+  .lib-card-body { padding: 12px 14px; flex: 1; }
+  .lib-card-name { font-size: 14px; }
+  .lib-card-meta { font-size: 12px; margin-top: 2px; }
+  #pro-lib-sport-tabs { padding: 8px 14px; gap: 6px; }
+  .lib-sport-tab { font-size: 12px; padding: 5px 11px; }
+  #pro-lib-filter-bar { padding: 6px 14px; }
+  #pro-lib-header { padding: 13px 16px; }
+  #pro-lib-header h2 { font-size: 15px; }
 }
 .lib-card {
   background: var(--surface2); border-radius: 12px; border: 1px solid var(--border);
