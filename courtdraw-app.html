@@ -55,7 +55,6 @@
 
 <!-- Canonical -->
 <link rel="canonical" href="https://courtdraw.app/">
-<link rel="prefetch" href="/login.html">
 
 <link rel="manifest" href="manifest.json">
   <link rel="modulepreload" href="/src/sports-config.js">
@@ -933,35 +932,22 @@ body.portrait-mode.pt-chrome-visible #phase-bar  { transform: translateY(0); }
 body.portrait-mode.pt-chrome-visible #toolbar    { transform: translateY(0); }
 /* Hide the floating toolbar-toggle circle in portrait (replaced by tap-to-reveal) */
 body.portrait-mode #toolbar-toggle-btn { display: none !important; }
-/* Three-dot hint at bottom-right — tappable, shows in portrait, hides when chrome is visible */
+/* Three-dot hint at bottom-right — shows in portrait, hides when chrome is visible */
 #pt-bottom-hint {
   display: none;
   position: fixed;
-  /* Positioned above Safari's home-indicator zone so the tap target is always
-     in the accessible content area, not behind the browser UI. */
-  bottom: max(72px, calc(env(safe-area-inset-bottom) + 48px));
-  right: 16px;
+  bottom: 14px; right: 16px;
   z-index: 30;
-  font-size: 22px; letter-spacing: 3px;
-  color: rgba(255,255,255,0.6);
-  pointer-events: auto;
-  cursor: pointer;
+  font-size: 22px; letter-spacing: 2px;
+  color: rgba(255,255,255,0.55);
+  pointer-events: none;
   transition: opacity 0.3s ease;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  /* Generous tap target without visual chrome */
-  padding: 10px 4px;
-  background: none;
-  border: none;
-  line-height: 1;
 }
 body.portrait-mode #pt-bottom-hint { display: block; }
-/* When chrome is visible: fade out AND disable touches so the invisible button
-   doesn't intercept drawing gestures and keep resetting the hide timer */
-body.portrait-mode.pt-chrome-visible #pt-bottom-hint { opacity: 0; pointer-events: none; }
+body.portrait-mode.pt-chrome-visible #pt-bottom-hint { opacity: 0; }
 @media (max-width: 900px) and (orientation: landscape) {
   #pt-bottom-hint { display: block; }
-  body.ls-chrome-visible #pt-bottom-hint { opacity: 0; pointer-events: none; }
+  body.ls-chrome-visible #pt-bottom-hint { opacity: 0; }
 }
 
 /* ── Toolbar pin button ──────────────────────────────────────────────────── */
@@ -1318,8 +1304,7 @@ body.portrait-mode .player-token:active {
 <!-- Landscape immersive-mode tap-hint strips (hidden in portrait/desktop via CSS) -->
 <div id="ls-top-hint"    style="display:none;" aria-hidden="true"></div>
 <div id="ls-bottom-hint" style="display:none;" aria-hidden="true"></div>
-<button id="pt-bottom-hint" role="button" aria-label="Show toolbar"
-  onclick="if(document.body.classList.contains('portrait-mode')&&window._showPtChrome){window._showPtChrome();}else if(window._showLsChrome){window._showLsChrome();}">···</button>
+<div id="pt-bottom-hint" aria-hidden="true">···</div>
 
 <!-- Select tool action bar -->
 <div id="select-action-bar" role="toolbar" aria-label="Selected object actions">
@@ -1541,10 +1526,9 @@ body.portrait-mode .player-token:active {
         <input type="text" id="tactic-name-input" placeholder="Name this play…" maxlength="40">
         <button class="btn-accent" onclick="saveTactic()">Save Play</button>
       </div>
-      <!-- Coach notes: hidden for free users, shown for Pro/Club in __updatePro -->
-      <textarea id="tactic-notes-input" placeholder="📝 Coach notes — e.g. 'Use when down by 2 in the 4th'" maxlength="300"
-        style="display:none;width:100%;margin-top:8px;padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;resize:none;min-height:56px;transition:border-color 0.15s;"
-        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      <textarea id="tactic-notes-input" placeholder="📝 Coach notes — e.g. 'Use when down by 2 in the 4th' (Pro)" maxlength="300"
+        style="width:100%;margin-top:8px;padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;resize:none;min-height:56px;transition:border-color 0.15s;"
+        onfocus="if(!state.isPro&&!state.isClub){openPaywall('Coach notes on saved plays is a Pro feature.');this.blur();return;}this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
       <input type="text" id="tactic-tags-input" placeholder="🏷 Tags: press defence, U14, set play (Pro — comma-separated)" maxlength="100"
         style="width:100%;margin-top:6px;padding:7px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border-color 0.15s;"
         onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
@@ -1784,13 +1768,14 @@ body.portrait-mode .player-token:active {
 <div class="modal-backdrop" id="modal-feature-preview">
   <div class="modal-sheet">
     <div class="modal-header">
-      <span class="modal-title" id="fp-modal-title">Pro Feature</span>
-      <button class="modal-close" aria-label="Close" onclick="dismissFeaturePreview()">✕</button>
+      <span class="modal-title" id="fp-modal-title">Feature Preview</span>
+      <button class="modal-close" aria-label="Close" onclick="skipFeaturePreview()">✕</button>
     </div>
     <div class="fp-body">
       <div class="fp-icon" id="fp-icon">⚡</div>
       <div class="fp-title" id="fp-title">Pro Feature</div>
       <div class="fp-desc" id="fp-desc"></div>
+      <div class="fp-progress"><div class="fp-progress-bar" id="fp-progress-bar"></div></div>
       <button class="btn-accent fp-cta" onclick="skipFeaturePreview()">See pricing →</button>
     </div>
   </div>
@@ -1801,7 +1786,7 @@ body.portrait-mode .player-token:active {
   <div class="modal-sheet">
     <div class="modal-header">
       <span class="modal-title">Phase Animation</span>
-      <button class="modal-close" aria-label="Close" onclick="clearTimeout(_ptTimer);closeModal('modal-phase-teaser')">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="skipPhaseTeaser()">✕</button>
     </div>
     <div class="pt-body">
       <div class="pt-title">See your play come to life</div>
@@ -2698,9 +2683,6 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
   // Phase button: show lock hint for non-Pro users
   const phaseBtn = document.getElementById('btn-add-phase');
   if (phaseBtn) phaseBtn.textContent = isPro ? '+ Phase' : '+ Phase 🔒';
-  // Coach notes textarea: only visible for Pro/Club users
-  const notesEl = document.getElementById('tactic-notes-input');
-  if (notesEl) notesEl.style.display = (isPro || isClub) ? 'block' : 'none';
   // Apply/remove pro-lock visual cue on gated toolbar buttons
   const hasPro = isPro || isClub;
   ['btn-print', 'btn-share', 'btn-video', 'btn-session'].forEach(id => {
@@ -2802,7 +2784,7 @@ function updatePortraitLayout() {
       _ptWelcomeTimer = setTimeout(() => {
         if (!document.body.classList.contains('toolbar-pinned'))
           document.body.classList.remove('pt-chrome-visible');
-      }, 6000); // 6 s so first-time users see all chrome before it hides
+      }, 2500);
     }
     // transform applied by applyZoom() which is called from syncCanvas()
   } else {
@@ -2864,20 +2846,7 @@ const resizeObs = new ResizeObserver(scheduleSyncCanvas);
 resizeObs.observe(container);
 resizeObs.observe(container.parentElement);  // also watch board-area for portrait resize
 // Also sync on orientation change — iOS doesn't always fire resize
-// Sync canvas immediately when the viewport settles after rotation.
-// 'resize' fires once the new dimensions are ready (better than a fixed delay).
-// A 500 ms fallback handles the rare case where 'resize' never fires.
-window.addEventListener('orientationchange', () => {
-  let fallback = setTimeout(syncCanvas, 500);
-  const onResize = () => {
-    clearTimeout(fallback);
-    window.removeEventListener('resize', onResize);
-    syncCanvas();
-  };
-  window.addEventListener('resize', onResize);
-});
-// Also re-sync on any viewport resize (browser chrome show/hide, split-screen, etc.)
-window.addEventListener('resize', scheduleSyncCanvas);
+window.addEventListener('orientationchange', () => { setTimeout(syncCanvas, 120); });
 
 function n2c(nx, ny) {
   return { x: nx / 1000 * canvasW, y: ny / 600 * canvasH };
@@ -4403,19 +4372,24 @@ function showFeaturePreview(featureKey, paywallReason) {
   document.getElementById('fp-icon').textContent = preview.icon;
   document.getElementById('fp-title').textContent = preview.title;
   document.getElementById('fp-desc').textContent = preview.desc;
+  // Reset + animate progress bar
+  const bar = document.getElementById('fp-progress-bar');
+  bar.style.transition = 'none'; bar.style.width = '0%';
   openModal('modal-feature-preview');
-  // No auto-advance timer — user must click "See pricing" or close manually
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      bar.style.transition = 'width 2.5s linear';
+      bar.style.width = '100%';
+    });
+  });
+  clearTimeout(_fpTimer);
+  _fpTimer = setTimeout(skipFeaturePreview, 2600);
 }
 
 function skipFeaturePreview() {
-  // Called only from "See pricing →" button — never automatically
+  clearTimeout(_fpTimer);
   closeModal('modal-feature-preview');
   openPaywall(_fpPaywallReason);
-}
-
-function dismissFeaturePreview() {
-  // Called from the ✕ close button — just closes, no redirect
-  closeModal('modal-feature-preview');
 }
 
 // ══════════════════════════════════════════════
@@ -4435,8 +4409,11 @@ function _ptAdvance() {
   _ptTimer = setTimeout(() => {
     _ptPhase = (_ptPhase + 1) % 3;
     updatePhaseTeaserUI();
-    // Loop the animation continuously — never auto-redirect to paywall
-    _ptAdvance();
+    if (_ptPhase < 2) _ptAdvance();
+    else {
+      // After showing all 3 phases, wait 1s then auto-open paywall
+      _ptTimer = setTimeout(skipPhaseTeaser, 1200);
+    }
   }, 1100);
 }
 
@@ -6822,8 +6799,8 @@ document.addEventListener('DOMContentLoaded', init);
   // auto-hides after 3 s of inactivity.
   (function() {
     const HIDE_DELAY  = 3000;   // ms before chrome auto-hides
-    const TOP_ZONE    = 60;     // px from top that triggers show
-    const BOTTOM_ZONE = 80;     // px from bottom that triggers show
+    const TOP_ZONE    = 55;     // px from top that triggers show
+    const BOTTOM_ZONE = 65;     // px from bottom that triggers show
     let   hideTimer   = null;
 
     function isLandscapeMobile() {
@@ -6887,15 +6864,13 @@ document.addEventListener('DOMContentLoaded', init);
   })();
 
   // ── Portrait immersive mode chrome reveal ──────────────────────────────
-  // Tapping the top or bottom edge reveals header/toolbar/phase-bar.
+  // Tapping the top or bottom ~60-70 px reveals header/toolbar/phase-bar.
   // Chrome auto-hides after 3 s of inactivity (same pattern as landscape).
   // When toolbar-pinned is set, auto-hide is bypassed entirely.
-  // The interactive #pt-bottom-hint button (above Safari's bottom bar) is the
-  // primary tap target; edge zones are a secondary fallback.
   (function() {
     const HIDE_DELAY  = 3000;
     const TOP_ZONE    = 60;
-    const BOTTOM_ZONE = 80;
+    const BOTTOM_ZONE = 70;
     let   ptHideTimer = null;
 
     function isPinned() {
@@ -6919,10 +6894,7 @@ document.addEventListener('DOMContentLoaded', init);
     window._showPtChrome = showPtChrome;
 
     document.addEventListener('touchstart', function(e) {
-      // Use body class as primary check (set by CSS/DOM) in addition to state flag,
-      // as a guard against state not being set yet on very fast taps after page load.
-      const isPortrait = state.portraitRotated || document.body.classList.contains('portrait-mode');
-      if (!isPortrait) return;
+      if (!state.portraitRotated) return;
       const y = e.touches[0].clientY;
       const h = window.innerHeight;
       if (y < TOP_ZONE || y > h - BOTTOM_ZONE) {
