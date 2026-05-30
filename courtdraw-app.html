@@ -4060,6 +4060,18 @@ function openSaveDialog() {
   renderLibrary();
   if (state.isClub) loadClubLibrary();
   openModal('modal-library');
+  // Remove "(Pro)" labels for Pro/Club users — they already have access
+  const isPro = state.isPro || state.isClub;
+  const notesEl = document.getElementById('tactic-notes-input');
+  const tagsEl  = document.getElementById('tactic-tags-input');
+  const rateLabel = document.querySelector('.save-rating-label');
+  if (notesEl) notesEl.placeholder = isPro
+    ? "📝 Coach notes — e.g. 'Works vs high press, use in final third'"
+    : "📝 Coach notes (Pro) — e.g. 'Works vs high press, use in final third'";
+  if (tagsEl) tagsEl.placeholder = isPro
+    ? "🏷 Tags — comma separated, e.g. 'set play, press, U14'"
+    : "🏷 Tags (Pro) — comma separated, e.g. 'set play, press, U14'";
+  if (rateLabel) rateLabel.textContent = isPro ? 'Rate this play:' : 'Rate (Pro):';
   const inp = document.getElementById('tactic-name-input');
   if (inp && !inp.value.trim()) {
     const court = COURTS.find(c => c.id === state.courtId);
