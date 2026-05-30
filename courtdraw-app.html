@@ -1248,10 +1248,14 @@ body.portrait-mode .player-token:active {
   -webkit-overflow-scrolling: touch;
 }
 @media (max-width: 599px) {
-  #pro-lib-panel { border-radius: 16px; width: 94vw; max-height: 86dvh; }
-  #pro-lib-grid { grid-template-columns: 1fr; gap: 5px; padding: 10px 14px; min-height: 0; }
-  /* Never wrap filter pills — horizontal scroll instead, so height is always predictable */
-  #pro-lib-filter-bar { flex-wrap: nowrap; overflow-x: auto; padding: 6px 14px; scrollbar-width: none; }
+  /* height (not max-height) gives iOS Safari a real bounded flex context so the grid scrolls */
+  #pro-lib-panel { border-radius: 16px; width: 94vw; height: 88dvh; max-height: 88dvh; }
+  #pro-lib-grid {
+    grid-template-columns: 1fr; gap: 5px; padding: 10px 14px;
+    min-height: 0; overflow-y: scroll; -webkit-overflow-scrolling: touch;
+  }
+  /* Filter pills scroll horizontally — never wrap, so height is always one fixed row */
+  #pro-lib-filter-bar { flex-wrap: nowrap !important; overflow-x: auto; padding: 6px 14px; scrollbar-width: none; }
   #pro-lib-filter-bar::-webkit-scrollbar { display: none; }
   .lib-filter-btn { flex-shrink: 0; }
   .lib-card { flex-direction: row; align-items: stretch; border-radius: 10px; overflow: visible; }
