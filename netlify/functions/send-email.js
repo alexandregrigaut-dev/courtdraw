@@ -465,15 +465,14 @@ const templates = {
     };
   },
 
-  // Weekly nudge for free users
-  weeklyDigestFree: (email, savesUsed) => {
-    const remaining = Math.max(0, 3 - (savesUsed || 0));
+  // Weekly nudge for free users (account ≥7 days old)
+  weeklyDigestFree: (email) => {
     const data = {
       label: 'Your Playbook',
       labelColor: '#64748b',
-      title: `Your ${savesUsed || 0} saved play${savesUsed !== 1 ? 's' : ''} ${savesUsed > 0 ? 'are' : 'is'} waiting`,
-      body: `You're on the free plan with up to 3 saved plays. ${remaining > 0 ? `You have <strong>${remaining} save${remaining > 1 ? 's' : ''} left</strong>.` : `You've used all 3 free saves.`}<br><br>
-             Upgrade to Pro to save unlimited plays, export clean PNGs, and build a full coaching library — 7 days free, cancel anytime.`,
+      title: 'Your plays are waiting — new week, new tactics',
+      body: `You're on the free plan with up to 3 saved plays and 1 free court.<br><br>
+             Upgrade to Pro to save unlimited plays, unlock all 38+ courts, export clean PNGs, and build a full coaching library — <strong>7 days free</strong>, cancel anytime.`,
       ctaText: 'Try Pro free for 7 days →',
       ctaUrl: `${APP_URL}/#pricing`,
       features: [

@@ -83,9 +83,12 @@ exports.handler = async () => {
         const isPro  = plan === 'pro' || plan === 'club';
         const isFree = plan === 'free';
 
-        // Free users: only nudge if they have saved at least one play
-        const savedCount = data.tacticCount || 0;
-        if (isFree && savedCount === 0) { skipped++; continue; }
+        // Free users: only nudge if account is at least 7 days old (they've had a chance to use the app)
+        // We can't check localStorage saves server-side, so we use account age as a proxy
+        if (isFree) {
+          const createdMs = new Date(user.metadata.creationTime).getTime();
+          if ((now - createdMs) < WEEK_MS) { skipped++; continue; } // too new — skip
+        }
 
         try {
           if (isPro) {
@@ -120,7 +123,7 @@ exports.handler = async () => {
             });
           } else {
             // Free user with at least one save
-            await sendDigest(user.email, 'weeklyDigestFree', { savesUsed: savedCount });
+            await sendDigest(user.email, 'weeklyDigestFree', {});
           }
 
           // Mark as sent for this week
