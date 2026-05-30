@@ -4304,11 +4304,34 @@ function exportPNG() {
     // ── Branding / watermark ────────────────────────────────────────────────
     const FOOT_H = 48, FOOT_PAD = 16;
     const finalizePng = () => {
-      const a = document.createElement('a');
-      a.download = `courtdraw-${state.courtId}.png`;
-      a.href = off.toDataURL('image/png');
-      a.click();
-      showToast('Play exported!');
+      const filename = `courtdraw-${state.courtId}.png`;
+      off.toBlob(blob => {
+        const file = new File([blob], filename, { type: 'image/png' });
+        let canShare = false;
+        try { canShare = !!navigator.canShare && navigator.canShare({ files: [file] }); } catch {}
+        if (canShare) {
+          navigator.share({ files: [file], title: 'Tactic from CourtDraw' })
+            .then(() => {
+              gtag('event', 'share_play_native', { event_category: 'engagement', court_id: state.courtId });
+              showToast('Shared!');
+            })
+            .catch(err => {
+              if (err.name !== 'AbortError') {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.download = filename; a.href = url; a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                showToast('Play exported!');
+              }
+            });
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.download = filename; a.href = url; a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          showToast('Play exported!');
+        }
+      }, 'image/png');
     };
 
     if (state.isClub && (state.clubLogoUrl || state.clubName)) {
