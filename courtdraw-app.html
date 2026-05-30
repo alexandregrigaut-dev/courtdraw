@@ -55,6 +55,7 @@
 
 <!-- Canonical -->
 <link rel="canonical" href="https://courtdraw.app/">
+<link rel="prefetch" href="/login.html">
 
 <link rel="manifest" href="manifest.json">
   <link rel="modulepreload" href="/src/sports-config.js">
@@ -957,10 +958,12 @@ body.portrait-mode #toolbar-toggle-btn { display: none !important; }
   user-select: none;
 }
 body.portrait-mode #pt-bottom-hint { display: block; }
-body.portrait-mode.pt-chrome-visible #pt-bottom-hint { opacity: 0; }
+/* When chrome is visible: fade out AND disable touches so the invisible button
+   doesn't intercept drawing gestures and keep resetting the hide timer */
+body.portrait-mode.pt-chrome-visible #pt-bottom-hint { opacity: 0; pointer-events: none; }
 @media (max-width: 900px) and (orientation: landscape) {
   #pt-bottom-hint { display: block; }
-  body.ls-chrome-visible #pt-bottom-hint { opacity: 0; }
+  body.ls-chrome-visible #pt-bottom-hint { opacity: 0; pointer-events: none; }
 }
 
 /* ── Toolbar pin button ──────────────────────────────────────────────────── */
@@ -2863,7 +2866,20 @@ const resizeObs = new ResizeObserver(scheduleSyncCanvas);
 resizeObs.observe(container);
 resizeObs.observe(container.parentElement);  // also watch board-area for portrait resize
 // Also sync on orientation change — iOS doesn't always fire resize
-window.addEventListener('orientationchange', () => { setTimeout(syncCanvas, 120); });
+// Sync canvas immediately when the viewport settles after rotation.
+// 'resize' fires once the new dimensions are ready (better than a fixed delay).
+// A 500 ms fallback handles the rare case where 'resize' never fires.
+window.addEventListener('orientationchange', () => {
+  let fallback = setTimeout(syncCanvas, 500);
+  const onResize = () => {
+    clearTimeout(fallback);
+    window.removeEventListener('resize', onResize);
+    syncCanvas();
+  };
+  window.addEventListener('resize', onResize);
+});
+// Also re-sync on any viewport resize (browser chrome show/hide, split-screen, etc.)
+window.addEventListener('resize', scheduleSyncCanvas);
 
 function n2c(nx, ny) {
   return { x: nx / 1000 * canvasW, y: ny / 600 * canvasH };
@@ -6808,8 +6824,8 @@ document.addEventListener('DOMContentLoaded', init);
   // auto-hides after 3 s of inactivity.
   (function() {
     const HIDE_DELAY  = 3000;   // ms before chrome auto-hides
-    const TOP_ZONE    = 70;     // px from top that triggers show
-    const BOTTOM_ZONE = 100;    // px from bottom that triggers show (generous for Safari bar)
+    const TOP_ZONE    = 60;     // px from top that triggers show
+    const BOTTOM_ZONE = 80;     // px from bottom that triggers show
     let   hideTimer   = null;
 
     function isLandscapeMobile() {
@@ -6874,15 +6890,14 @@ document.addEventListener('DOMContentLoaded', init);
 
   // ── Portrait immersive mode chrome reveal ──────────────────────────────
   // Tapping the top or bottom edge reveals header/toolbar/phase-bar.
-  // BOTTOM_ZONE is intentionally large (120px) to account for Safari's bottom
-  // navigation bar (~83px) which overlaps the lower portion of the viewport on
-  // iPhones — touches in that area register at clientY > innerHeight - 120.
   // Chrome auto-hides after 3 s of inactivity (same pattern as landscape).
   // When toolbar-pinned is set, auto-hide is bypassed entirely.
+  // The interactive #pt-bottom-hint button (above Safari's bottom bar) is the
+  // primary tap target; edge zones are a secondary fallback.
   (function() {
     const HIDE_DELAY  = 3000;
-    const TOP_ZONE    = 80;
-    const BOTTOM_ZONE = 120;
+    const TOP_ZONE    = 60;
+    const BOTTOM_ZONE = 80;
     let   ptHideTimer = null;
 
     function isPinned() {
