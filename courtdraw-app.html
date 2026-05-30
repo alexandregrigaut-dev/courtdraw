@@ -933,29 +933,27 @@ body.portrait-mode.pt-chrome-visible #phase-bar  { transform: translateY(0); }
 body.portrait-mode.pt-chrome-visible #toolbar    { transform: translateY(0); }
 /* Hide the floating toolbar-toggle circle in portrait (replaced by tap-to-reveal) */
 body.portrait-mode #toolbar-toggle-btn { display: none !important; }
-/* Three-dot hint at bottom-right — shows in portrait, hides when chrome is visible */
+/* Three-dot hint at bottom-right — tappable, shows in portrait, hides when chrome is visible */
 #pt-bottom-hint {
   display: none;
   position: fixed;
-  /* Positioned above Safari's bottom navigation bar + home indicator zone.
-     env(safe-area-inset-bottom) is ~34px on Face ID iPhones; adding 54px clears
-     Safari's ~83px bottom bar so the button is always in the tappable content area. */
-  bottom: max(88px, calc(env(safe-area-inset-bottom) + 54px));
+  /* Positioned above Safari's home-indicator zone so the tap target is always
+     in the accessible content area, not behind the browser UI. */
+  bottom: max(72px, calc(env(safe-area-inset-bottom) + 48px));
   right: 16px;
   z-index: 30;
-  font-size: 20px; letter-spacing: 2px;
-  color: rgba(255,255,255,0.75);
+  font-size: 22px; letter-spacing: 3px;
+  color: rgba(255,255,255,0.6);
   pointer-events: auto;
   cursor: pointer;
-  background: rgba(29, 78, 216, 0.55);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 20px;
-  padding: 6px 12px;
   transition: opacity 0.3s ease;
-  -webkit-tap-highlight-color: rgba(255,255,255,0.2);
+  -webkit-tap-highlight-color: transparent;
   user-select: none;
+  /* Generous tap target without visual chrome */
+  padding: 10px 4px;
+  background: none;
+  border: none;
+  line-height: 1;
 }
 body.portrait-mode #pt-bottom-hint { display: block; }
 /* When chrome is visible: fade out AND disable touches so the invisible button
@@ -1321,7 +1319,7 @@ body.portrait-mode .player-token:active {
 <div id="ls-top-hint"    style="display:none;" aria-hidden="true"></div>
 <div id="ls-bottom-hint" style="display:none;" aria-hidden="true"></div>
 <button id="pt-bottom-hint" role="button" aria-label="Show toolbar"
-  onclick="if(document.body.classList.contains('portrait-mode')&&window._showPtChrome){window._showPtChrome();}else if(window._showLsChrome){window._showLsChrome();}">⌃ menu</button>
+  onclick="if(document.body.classList.contains('portrait-mode')&&window._showPtChrome){window._showPtChrome();}else if(window._showLsChrome){window._showLsChrome();}">···</button>
 
 <!-- Select tool action bar -->
 <div id="select-action-bar" role="toolbar" aria-label="Selected object actions">

@@ -224,20 +224,14 @@
     <div id="success-msg" class="success-msg"></div>
 
     <!-- Sign in form -->
-    <!-- type="button" + explicit onclick avoids iOS Safari's native form
-         submission racing with the async module script. The form element is
-         kept for semantic / Enter-key support but its default submit is
-         always blocked via onsubmit="return false". -->
-    <form id="form-signin" onsubmit="return false">
+    <form id="form-signin" onsubmit="handleSignin(event)">
       <div class="form-group">
         <label for="signin-email">Email</label>
-        <input type="email" id="signin-email" name="email" placeholder="coach@example.com" autocomplete="email"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();window.handleSignin&&window.handleSignin(event);}">
+        <input type="email" id="signin-email" name="email" placeholder="coach@example.com" required autocomplete="email">
       </div>
       <div class="form-group">
         <label for="signin-password">Password</label>
-        <input type="password" id="signin-password" name="password" placeholder="••••••••" autocomplete="current-password"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();window.handleSignin&&window.handleSignin(event);}">
+        <input type="password" id="signin-password" name="password" placeholder="••••••••" required autocomplete="current-password">
       </div>
       <div class="forgot-link">
         <a href="#" onclick="handleReset(event)">Forgot password?</a>
@@ -246,28 +240,24 @@
         <input type="checkbox" id="remember-me" checked>
         <label for="remember-me">Stay signed in</label>
       </div>
-      <button type="button" class="btn-submit" id="signin-btn"
-        onclick="window.handleSignin&&window.handleSignin(event)">Sign in</button>
+      <button type="submit" class="btn-submit" id="signin-btn">Sign in</button>
     </form>
 
     <!-- Sign up form -->
-    <form id="form-signup" style="display:none" onsubmit="return false">
+    <form id="form-signup" style="display:none" onsubmit="handleSignup(event)">
       <div class="form-group">
         <label for="signup-email">Email</label>
-        <input type="email" id="signup-email" name="email" placeholder="coach@example.com" autocomplete="email"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();window.handleSignup&&window.handleSignup(event);}">
+        <input type="email" id="signup-email" name="email" placeholder="coach@example.com" required autocomplete="email">
       </div>
       <div class="form-group">
         <label for="signup-password">Password</label>
-        <input type="password" id="signup-password" name="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();window.handleSignup&&window.handleSignup(event);}">
+        <input type="password" id="signup-password" name="password" placeholder="At least 8 characters" required minlength="8" autocomplete="new-password">
       </div>
       <div class="terms-row">
-        <input type="checkbox" id="terms-accepted" name="terms-accepted">
+        <input type="checkbox" id="terms-accepted" name="terms-accepted" required>
         <span>I agree to the <a href="/terms.html" target="_blank">Terms of Service</a> and <a href="/privacy.html" target="_blank">Privacy Policy</a></span>
       </div>
-      <button type="button" class="btn-submit" id="signup-btn"
-        onclick="window.handleSignup&&window.handleSignup(event)">Create account</button>
+      <button type="submit" class="btn-submit" id="signup-btn">Create account</button>
     </form>
 
     <div class="divider">or</div>
@@ -377,17 +367,17 @@
     }
 
     window.handleSignin = async (e) => {
-      if (e && e.preventDefault) e.preventDefault();
-      const email = document.getElementById('signin-email').value.trim();
-      const password = document.getElementById('signin-password').value;
-      if (!email || !password) { showError('Please enter your email and password.'); return; }
+      e.preventDefault();
       const btn = document.getElementById('signin-btn');
       btn.disabled = true; btn.textContent = 'Signing in…';
       clearMessages();
       handlingAuth = true;
       try {
         await setPersistence(auth, rememberMe() ? browserLocalPersistence : browserSessionPersistence);
-        const credential = await loginUser(email, password);
+        const credential = await loginUser(
+          document.getElementById('signin-email').value,
+          document.getElementById('signin-password').value
+        );
         await resolveRedirect(credential.user);
       } catch (err) {
         handlingAuth = false;
@@ -397,19 +387,17 @@
     };
 
     window.handleSignup = async (e) => {
-      if (e && e.preventDefault) e.preventDefault();
-      const email = document.getElementById('signup-email').value.trim();
-      const password = document.getElementById('signup-password').value;
-      if (!email || !password) { showError('Please enter your email and password.'); return; }
-      if (password.length < 8) { showError('Password must be at least 8 characters.'); return; }
-      if (!document.getElementById('terms-accepted').checked) { showError('Please accept the Terms of Service to continue.'); return; }
+      e.preventDefault();
       const btn = document.getElementById('signup-btn');
       btn.disabled = true; btn.textContent = 'Creating account…';
       clearMessages();
       handlingAuth = true;
       try {
         await setPersistence(auth, rememberMe() ? browserLocalPersistence : browserSessionPersistence);
-        const newUser = await registerUser(email, password);
+        const newUser = await registerUser(
+          document.getElementById('signup-email').value,
+          document.getElementById('signup-password').value
+        );
 
         // Await the email send before redirecting — avoids navigation cancelling
         // the request. Errors are silently ignored so signup always completes.
@@ -420,7 +408,7 @@
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
             body: JSON.stringify({
               template: 'welcome',
-              email: email
+              email: document.getElementById('signup-email').value
             })
           });
         } catch {}
