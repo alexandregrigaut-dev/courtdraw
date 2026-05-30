@@ -3002,7 +3002,8 @@ function drawObject(ctx, obj, preview) {
     case 'text': {
       const p = n2c(obj.nx, obj.ny);
       ctx.setLineDash([]);
-      const fs = Math.max(14, obj.lineWidth * 5) * (canvasW / 1000) * 1.4;
+      const fsNorm = obj.fontSize || Math.max(14, obj.lineWidth * 5) * 1.4;
+      const fs = fsNorm * (canvasW / 1000);
       ctx.font = `700 ${fs}px 'Cabinet Grotesk', system-ui, sans-serif`;
       ctx.textBaseline = 'top';
       ctx.fillStyle = obj.color;
@@ -3242,7 +3243,10 @@ function objectNearPoint(obj, nx, ny, r) {
       const rMaxY = obj.x !== undefined ? obj.y + obj.h : Math.max(obj.y1, obj.y2);
       return nx > rMinX - r && nx < rMaxX + r && ny > rMinY - r && ny < rMaxY + r;
     }
-    case 'text': return dist2(obj.nx,obj.ny,nx,ny) < r*r*2;
+    case 'text': {
+      const tb = getObjectBbox(obj);
+      return tb ? (nx >= tb.minX - r && nx <= tb.maxX + r && ny >= tb.minY - r && ny <= tb.maxY + r) : false;
+    }
     case 'arc': {
       // Sample points along the quadratic bezier to get accurate hit testing
       for (let t = 0; t <= 1; t += 0.1) {
@@ -3273,10 +3277,28 @@ function handleSelectDown(e, nx, ny) {
   const HANDLE_HIT = 32; // hit radius for corner resize handles
   const PAD        = 14; // must match drawSelectionHighlight
 
-  // If a shape is already selected, check corner handles first
+  // If a shape is already selected, check resize/endpoint handles first
   if (state.selectedIdx >= 0) {
-    const bbox = getObjectBbox(state.objects[state.selectedIdx]);
-    if (bbox) {
+    const selObj = state.objects[state.selectedIdx];
+    const bbox   = getObjectBbox(selObj);
+
+    if (ARROW_TYPES.includes(selObj.type)) {
+      // Lines/arrows/arcs: drag either endpoint directly
+      const eps = getArrowEndpoints(selObj);
+      for (const [i, [epx, epy]] of eps.entries()) {
+        if (Math.sqrt((nx - epx) ** 2 + (ny - epy) ** 2) < HANDLE_HIT) {
+          state.selectResizeHandle = 'ep' + i;
+          state.selectBboxSnapshot = bbox ? { ...bbox } : {};
+          state.selectDragStart    = { nx, ny };
+          state.selectObjSnapshot  = JSON.parse(JSON.stringify(selObj));
+          state.preDragObjects     = JSON.parse(JSON.stringify(state.objects));
+          state.isDrawing          = true;
+          canvas.setPointerCapture(e.pointerId);
+          return;
+        }
+      }
+    } else if (bbox) {
+      // All other shapes: corner bbox handles
       const corners = {
         tl: [bbox.minX - PAD, bbox.minY - PAD],
         tr: [bbox.maxX + PAD, bbox.minY - PAD],
@@ -3288,11 +3310,11 @@ function handleSelectDown(e, nx, ny) {
           state.selectResizeHandle = key;
           state.selectBboxSnapshot = { ...bbox };
           state.selectDragStart    = { nx, ny };
-          state.selectObjSnapshot  = JSON.parse(JSON.stringify(state.objects[state.selectedIdx]));
+          state.selectObjSnapshot  = JSON.parse(JSON.stringify(selObj));
           state.preDragObjects     = JSON.parse(JSON.stringify(state.objects));
           state.isDrawing          = true;
           canvas.setPointerCapture(e.pointerId);
-          return; // resize mode — skip shape hit test
+          return;
         }
       }
     }
@@ -3379,8 +3401,24 @@ function moveObject(obj, dnx, dny) {
 }
 
 function applyResize(nx, ny) {
+  const handle = state.selectResizeHandle;
+
+  // Endpoint dragging for lines/arrows/arcs — move one endpoint directly to cursor
+  if (handle === 'ep0' || handle === 'ep1') {
+    const obj = JSON.parse(JSON.stringify(state.selectObjSnapshot));
+    state.objects[state.selectedIdx] = obj;
+    if (obj.points) {
+      const i = handle === 'ep0' ? 0 : obj.points.length - 1;
+      obj.points[i] = [nx, ny];
+    } else if (handle === 'ep0') {
+      obj.x1 = nx; obj.y1 = ny;
+    } else {
+      obj.x2 = nx; obj.y2 = ny;
+    }
+    return;
+  }
+
   const origBbox = state.selectBboxSnapshot;
-  const handle   = state.selectResizeHandle;
   const PAD      = 14; // must match drawSelectionHighlight
   const MIN_SIZE = 20; // minimum bbox size in normalized units
 
@@ -3447,10 +3485,12 @@ function applyResize(nx, ny) {
         obj.x2 = tx(obj.x2); obj.y2 = ty(obj.y2);
       }
       break;
-    case 'text':
+    case 'text': {
       obj.nx = tx(obj.nx); obj.ny = ty(obj.ny);
-      if (obj.fontSize) obj.fontSize = Math.max(8, Math.round(obj.fontSize * (sx + sy) / 2));
+      const fsCur = obj.fontSize || Math.max(14, (obj.lineWidth || 3) * 5) * 1.4;
+      obj.fontSize = Math.max(8, Math.round(fsCur * (sx + sy) / 2));
       break;
+    }
   }
 }
 
@@ -3470,10 +3510,21 @@ function getObjectBbox(obj) {
     case 'rect':
       if (obj.x !== undefined) return { minX: obj.x, maxX: obj.x + obj.w, minY: obj.y, maxY: obj.y + obj.h };
       return { minX: Math.min(obj.x1,obj.x2), maxX: Math.max(obj.x1,obj.x2), minY: Math.min(obj.y1,obj.y2), maxY: Math.max(obj.y1,obj.y2) };
-    case 'text':
-      return { minX: obj.nx - 30, maxX: obj.nx + 100, minY: obj.ny - 20, maxY: obj.ny + 12 };
+    case 'text': {
+      const fsNorm = obj.fontSize || Math.max(14, (obj.lineWidth || 3) * 5) * 1.4;
+      const textW  = (obj.text ? obj.text.length : 5) * fsNorm * 0.58;
+      return { minX: obj.nx, maxX: obj.nx + textW, minY: obj.ny, maxY: obj.ny + fsNorm };
+    }
     default: return null;
   }
+}
+
+const ARROW_TYPES = ['arrow', 'dashed-arrow', 'line', 'arc'];
+
+function getArrowEndpoints(obj) {
+  if (obj.points && obj.points.length >= 2)
+    return [obj.points[0], obj.points[obj.points.length - 1]];
+  return [[obj.x1, obj.y1], [obj.x2, obj.y2]];
 }
 
 function drawSelectionHighlight(ctx, obj) {
@@ -3488,14 +3539,25 @@ function drawSelectionHighlight(ctx, obj) {
   ctx.setLineDash([6, 4]);
   ctx.globalAlpha = 0.85;
   ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
-  // Corner handles — white ring + blue fill, large enough to tap on mobile
   ctx.setLineDash([]);
-  [[a.x, a.y],[b.x, a.y],[a.x, b.y],[b.x, b.y]].forEach(([hx, hy]) => {
-    ctx.beginPath(); ctx.arc(hx, hy, 8, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff'; ctx.fill();
-    ctx.beginPath(); ctx.arc(hx, hy, 6, 0, Math.PI * 2);
-    ctx.fillStyle = '#3b82f6'; ctx.fill();
-  });
+  if (ARROW_TYPES.includes(obj.type)) {
+    // For lines/arrows/arcs: handles at the actual endpoints, not bbox corners
+    getArrowEndpoints(obj).forEach(([epx, epy]) => {
+      const p = n2c(epx, epy);
+      ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff'; ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#3b82f6'; ctx.fill();
+    });
+  } else {
+    // Corner handles — white ring + blue fill, large enough to tap on mobile
+    [[a.x, a.y],[b.x, a.y],[a.x, b.y],[b.x, b.y]].forEach(([hx, hy]) => {
+      ctx.beginPath(); ctx.arc(hx, hy, 8, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff'; ctx.fill();
+      ctx.beginPath(); ctx.arc(hx, hy, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#3b82f6'; ctx.fill();
+    });
+  }
   ctx.restore();
 }
 
@@ -3570,7 +3632,8 @@ function handleTextTool(e) {
     if (ev.key === 'Enter' || ev.key === 'Escape') {
       if (ev.key === 'Enter' && field.value.trim()) {
         saveUndo();
-        state.objects.push({ type:'text', color:state.color, lineWidth:state.lineWidth, nx, ny, text:field.value.trim() });
+        const fontSize = Math.max(14, state.lineWidth * 5) * 1.4;
+        state.objects.push({ type:'text', color:state.color, lineWidth:state.lineWidth, fontSize, nx, ny, text:field.value.trim() });
         saveCurrentPhase();
         redrawAll();
       }
