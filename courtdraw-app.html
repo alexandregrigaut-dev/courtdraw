@@ -6316,6 +6316,23 @@ function updateAccountUI(user, isPro, isClub, isClubOwner) {
 // ── Pro Tactics Library ──────────────────────────────────
 let proLibState = { sport: null, filter: 'All' };
 
+function _fixLibGridHeight() {
+  if (window.innerWidth >= 600) return;
+  const panel  = document.getElementById('pro-lib-panel');
+  const header = document.getElementById('pro-lib-header');
+  const tabs   = document.getElementById('pro-lib-sport-tabs');
+  const filter = document.getElementById('pro-lib-filter-bar');
+  const grid   = document.getElementById('pro-lib-grid');
+  if (!panel || !grid) return;
+  const panelH = Math.round(window.innerHeight * 0.88);
+  const used   = (header?.offsetHeight||0) + (tabs?.offsetHeight||0) + (filter?.offsetHeight||0);
+  const gridH  = Math.max(120, panelH - used - 4);
+  grid.style.height    = gridH + 'px';
+  grid.style.maxHeight = gridH + 'px';
+  grid.style.overflowY = 'scroll';
+  grid.style.flex      = 'none';
+}
+
 function openProLibrary() {
   if (!window.TACTICS_LIBRARY) {
     showToast('Tactics library not loaded.'); return;
@@ -6327,6 +6344,7 @@ function openProLibrary() {
   renderProLibSportTabs(sports);
   renderProLibFilterBar();
   renderProLibGrid();
+  setTimeout(_fixLibGridHeight, 50);
   const badge = document.getElementById('pro-lib-tier-badge');
   if (badge) {
     const total = window.TACTICS_LIBRARY.length;
@@ -6351,6 +6369,7 @@ function proLibSelectSport(sport) {
   document.querySelectorAll('.lib-sport-tab').forEach(b => b.classList.toggle('active', b.textContent === sport));
   renderProLibFilterBar();
   renderProLibGrid();
+  setTimeout(_fixLibGridHeight, 50);
 }
 
 function renderProLibFilterBar() {
@@ -6366,6 +6385,7 @@ function proLibSetFilter(cat) {
   proLibState.filter = cat;
   document.querySelectorAll('.lib-filter-btn').forEach(b => b.classList.toggle('active', b.textContent === cat));
   renderProLibGrid();
+  setTimeout(_fixLibGridHeight, 50);
 }
 
 function renderProLibGrid() {
