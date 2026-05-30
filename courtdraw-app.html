@@ -127,7 +127,7 @@ button {
   font-size: 12px; font-weight: 500; color: var(--text2);
   cursor: pointer; transition: var(--transition);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  max-width: 140px; min-height: 36px;
+  max-width: 180px; min-height: 36px;
 }
 #court-name-chip:hover { border-color: var(--accent); color: var(--accent); }
 .header-right { display: flex; align-items: center; gap: 4px; }
@@ -806,7 +806,7 @@ body.presentation-mode #presentation-overlay { display: flex; }
 /* Responsive */
 @media (max-width: 480px) {
   .app-title { display: none; }
-  #court-name-chip { max-width: 110px; }
+  #court-name-chip { max-width: 140px; }
   /* On very small screens the cumulative/loop toggles don't fit in the phase bar */
   #btn-cumulative, #btn-loop { display: none !important; }
   /* Compact speed selector */
@@ -1707,6 +1707,26 @@ body.portrait-mode .player-token:active {
 // ══════════════════════════════════════════════
 // COURTS DATA
 // ══════════════════════════════════════════════
+const COURT_EMOJI = {
+  tennis_singles:'🎾', tennis_doubles:'🎾', padel:'🎾', pickleball:'🏓',
+  badminton_singles:'🏸', badminton_doubles:'🏸', squash:'🎾', table_tennis:'🏓',
+  racquetball:'🎾', beach_tennis:'🎾',
+  handball:'🤾', futsal:'⚽', basketball_full:'🏀', basketball_half:'🏀',
+  volleyball:'🏐', floorball:'🏒', korfball:'🏀', netball:'🏀', futsal_mini:'⚽',
+  football_full:'⚽', football_half:'⚽', rugby_union:'🏉', rugby_league:'🏉',
+  field_hockey:'🏑', gaelic_football:'⚽', hurling:'🏑', american_football:'🏈',
+  australian_rules:'🏉', ice_hockey:'🏒', roller_hockey:'🏒',
+  beach_volleyball:'🏐', beach_handball:'🤾', beach_soccer:'⚽',
+  padbol:'🏓', indoor_hockey:'🏑', lacrosse:'🥍', water_polo:'🤽',
+  fistball:'🏐', whiteboard:'📋',
+};
+
+function setCourtChip(court) {
+  const emoji = COURT_EMOJI[court.id] || '🏟';
+  document.getElementById('court-name-chip').textContent = `${emoji} ${court.name} ▾`;
+  document.title = `${emoji} ${court.name} — CourtDraw`;
+}
+
 const COURTS = [
   // ── RACKET SPORTS ──
   {
@@ -3817,7 +3837,7 @@ function switchCourt(id, locked, skipReset) {
   }
   const court = COURTS.find(c => c.id === id);
   if (!court) return;
-  document.getElementById('court-name-chip').textContent = court.name;
+  setCourtChip(court);
   const svg = document.getElementById('court-svg');
   svg.classList.add('switching');
   setTimeout(() => {
@@ -5413,7 +5433,7 @@ function init() {
   const court = COURTS.find(c => c.id === startCourtId) || COURTS[0];
   state.courtId = court.id;
   document.getElementById('court-svg').innerHTML = court.svg();
-  document.getElementById('court-name-chip').textContent = court.name;
+  setCourtChip(court);
   updateUndoButtons();
   // Update Pro badge (pre-Firebase: set text/class/onclick from localStorage)
   if (state.isPro) {
@@ -5702,7 +5722,7 @@ function loadLibTactic(t) {
   const courtEntry = COURTS.find(c => c.id === t.courtId);
   if (courtEntry) {
     state.courtId = t.courtId;
-    document.getElementById('court-name-chip').textContent = courtEntry.name;
+    setCourtChip(courtEntry);
     const svg = document.getElementById('court-svg');
     svg.innerHTML = courtEntry.svg();
     setTimeout(syncCanvas, 80);
