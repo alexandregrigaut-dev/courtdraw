@@ -5132,7 +5132,7 @@ async function exportSessionPDF() {
       if (tk.team === 'ball') continue;
       const tx = tk.pct[0] * W, ty = tk.pct[1] * H;
       oc.beginPath(); oc.arc(tx, ty, spdPlayerRad, 0, Math.PI * 2);
-      oc.fillStyle = tk.team === 'red' ? '#dc2626' : '#60a5fa';
+      oc.fillStyle = tk.team === 'red' ? (state.teamColorB || '#dc2626') : (state.teamColorA || '#60a5fa');
       oc.fill();
       oc.strokeStyle = 'rgba(255,255,255,0.7)'; oc.lineWidth = spdStroke; oc.stroke();
       oc.fillStyle = 'white';

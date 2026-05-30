@@ -51,3 +51,6 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    # Broad but safe CSP: allows inline scripts (app uses them extensively),
+    # Firebase, Stripe, Google/Meta analytics, Resend, Bunny Fonts.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://js.stripe.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://fonts.googleapis.com; font-src 'self' https://fonts.bunny.net https://fonts.gstatic.com; img-src 'self' data: blob: https://www.facebook.com https://api.producthunt.com https://firebasestorage.googleapis.com; connect-src 'self' https://firebaseinstallations.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://www.facebook.com; worker-src 'self'; manifest-src 'self'; frame-src 'none';"
