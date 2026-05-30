@@ -506,8 +506,118 @@ button {
 }
 [data-theme="dark"] .btn-accent { color: #1e3a8a; }
 .btn-accent:hover { filter: brightness(1.1); }
-/* Paywall */
-#modal-paywall .modal-sheet { max-width: 480px; }
+/* ── Paywall ─────────────────────────────────────────────────────────────── */
+#modal-paywall .modal-sheet {
+  max-width: 480px;
+  background: #0a1a35;
+  color: #f1f5f9;
+}
+#modal-paywall .modal-header {
+  border-bottom: none; padding-bottom: 4px;
+}
+#modal-paywall .modal-close { color: rgba(255,255,255,0.45); }
+#modal-paywall .modal-close:hover { background: rgba(255,255,255,0.07); color: #f1f5f9; }
+#modal-paywall .modal-body { padding: 0 0 4px; }
+
+.pw-hero {
+  padding: 0 24px 20px; text-align: center;
+}
+.pw-hero-icon {
+  width: 54px; height: 54px; border-radius: 16px;
+  background: linear-gradient(135deg, #1d4ed8 0%, #6d28d9 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; margin: 0 auto 14px;
+  box-shadow: 0 8px 24px rgba(29,78,216,0.45);
+}
+.pw-hero h2 {
+  font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+  font-size: 23px; font-weight: 900; color: #f1f5f9;
+  letter-spacing: -0.025em; margin: 0 0 6px;
+}
+.pw-hero-reason {
+  color: rgba(255,255,255,0.55); font-size: 13px; line-height: 1.5; margin: 0;
+}
+
+.pw-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 6px; padding: 0 16px 14px;
+}
+.pw-cell {
+  display: flex; align-items: flex-start; gap: 9px;
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 10px 12px;
+}
+.pw-check {
+  width: 17px; height: 17px; border-radius: 50%;
+  background: rgba(59,130,246,0.18);
+  border: 1.5px solid rgba(96,165,250,0.4);
+  color: #60a5fa; font-size: 9px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px; line-height: 1;
+}
+.pw-feat { font-size: 12px; font-weight: 700; color: #f1f5f9; line-height: 1.3; }
+.pw-feat-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; line-height: 1.3; }
+
+.pw-club-note {
+  text-align: center; font-size: 11px; color: rgba(255,255,255,0.3);
+  padding: 0 20px 16px; line-height: 1.6;
+  border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px;
+  margin: 0 16px 16px; border-radius: 0;
+}
+
+.pw-cta-primary {
+  display: block; width: calc(100% - 32px); margin: 0 16px 8px;
+  background: linear-gradient(135deg, #1d4ed8 0%, #4f46e5 100%);
+  border: none; border-radius: 14px; padding: 15px 18px;
+  cursor: pointer; text-align: left; color: #fff;
+  transition: filter 0.15s, transform 0.12s; font-family: inherit;
+  box-shadow: 0 4px 20px rgba(29,78,216,0.4);
+}
+.pw-cta-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.pw-cta-primary:active { transform: translateY(0); filter: brightness(0.96); }
+.pw-cta-row { display: flex; align-items: center; justify-content: space-between; }
+.pw-cta-text { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
+.pw-trial-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: #4ade80; background: rgba(74,222,128,0.15);
+  border: 1px solid rgba(74,222,128,0.3); border-radius: 6px; padding: 3px 8px;
+  flex-shrink: 0;
+}
+.pw-cta-sub { font-size: 11.5px; color: rgba(255,255,255,0.55); margin-top: 5px; }
+
+.pw-sec-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; padding: 0 16px 20px;
+}
+.pw-sec-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 12px; padding: 12px 14px;
+  cursor: pointer; text-align: left; font-family: inherit;
+  color: #f1f5f9; transition: border-color 0.15s, background 0.15s;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.pw-sec-btn:hover { border-color: rgba(96,165,250,0.45); background: rgba(255,255,255,0.07); }
+.pw-sec-name { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.75); }
+.pw-sec-price { font-size: 18px; font-weight: 900; color: #93c5fd; line-height: 1.1; }
+.pw-sec-price small { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.4); }
+.pw-sec-badge {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  color: #4ade80; background: rgba(74,222,128,0.1);
+  border: 1px solid rgba(74,222,128,0.2);
+  border-radius: 4px; padding: 2px 6px;
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+.pw-sec-badge.club-badge {
+  color: #c084fc; background: rgba(192,132,252,0.1);
+  border-color: rgba(192,132,252,0.25);
+}
+
+/* remove old paywall styles */
+.pw-features, .pw-plans, .pw-plan, .pw-plan-name, .pw-plan-sub, .pw-plan-price,
+.paywall-hero { display: revert; }
+
 /* ── Welcome overlay ─────────────────────────────────────────────────────── */
 #modal-welcome .modal-sheet { max-width: 420px; }
 #modal-welcome .modal-header { border-bottom: none; padding-bottom: 0; }
@@ -1670,49 +1780,77 @@ body.portrait-mode .player-token:active {
 <div class="modal-backdrop" id="modal-paywall">
   <div class="modal-sheet">
     <div class="modal-header">
-      <span class="modal-title">Upgrade Your Plan</span>
+      <span></span>
       <button class="modal-close" aria-label="Close" onclick="closeModal('modal-paywall')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="paywall-hero">
-        <div class="pw-icon">⚡</div>
+
+      <div class="pw-hero">
+        <div class="pw-hero-icon">⚡</div>
         <h2>Unlock Everything</h2>
-        <p id="paywall-reason">Upgrade to Pro to unlock all 38+ sport courts and unlimited saves.</p>
+        <p class="pw-hero-reason" id="paywall-reason">Upgrade to Pro to unlock all 38+ sport courts and unlimited saves.</p>
       </div>
-      <ul class="pw-features">
-        <li>💾 <strong>Unlimited saved plays</strong> — no ceiling, ever</li>
-        <li>🏟 <strong>All 38+ sport courts</strong> + Whiteboard</li>
-        <li>📐 <strong>Phase animation (up to 5)</strong> + animated playback</li>
-        <li>📤 <strong>Clean PNG &amp; PDF export</strong> — no watermark</li>
-        <li>📹 <strong>Video overlay</strong> — draw tactics on match footage</li>
-        <li>📋 <strong>200+ play templates</strong> — Football, Basketball, Tennis &amp; more</li>
-        <li>🔗 <strong>Shareable board links</strong> — one link, anyone can open the play</li>
-        <li>📅 <strong>Training Sessions</strong> — chain plays into a full session plan</li>
-        <li style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);font-size:12px;color:var(--text2);">Club plan adds: shared library · team colors · presentation mode · branded exports · up to 10 coaches</li>
-      </ul>
-      <div class="pw-plans">
-        <button class="pw-plan featured" onclick="startCheckout('proMonthly')">
-          <div>
-            <div class="pw-plan-name">Pro Monthly — <span style="color:#4ade80;font-size:12px;font-weight:700;">7-day free trial</span></div>
-            <div class="pw-plan-sub">Everything unlocked · cancel anytime</div>
-          </div>
-          <div class="pw-plan-price">€6<small>/mo</small></div>
+
+      <div class="pw-grid">
+        <div class="pw-cell">
+          <span class="pw-check">✓</span>
+          <div><div class="pw-feat">Unlimited saves</div><div class="pw-feat-sub">no ceiling, ever</div></div>
+        </div>
+        <div class="pw-cell">
+          <span class="pw-check">✓</span>
+          <div><div class="pw-feat">All 38+ courts</div><div class="pw-feat-sub">every sport unlocked</div></div>
+        </div>
+        <div class="pw-cell">
+          <span class="pw-check">✓</span>
+          <div><div class="pw-feat">Phase animation</div><div class="pw-feat-sub">up to 5 phases + playback</div></div>
+        </div>
+        <div class="pw-cell">
+          <span class="pw-check">✓</span>
+          <div><div class="pw-feat">Clean export</div><div class="pw-feat-sub">PNG &amp; PDF, no watermark</div></div>
+        </div>
+        <div class="pw-cell">
+          <span class="pw-check">✓</span>
+          <div><div class="pw-feat">Video overlay</div><div class="pw-feat-sub">draw on match footage</div></div>
+        </div>
+        <div class="pw-cell">
+          <span class="pw-check">✓</span>
+          <div><div class="pw-feat">200+ templates</div><div class="pw-feat-sub">Football, Basketball &amp; more</div></div>
+        </div>
+        <div class="pw-cell">
+          <span class="pw-check">✓</span>
+          <div><div class="pw-feat">Share links</div><div class="pw-feat-sub">one link, anyone can view</div></div>
+        </div>
+        <div class="pw-cell">
+          <span class="pw-check">✓</span>
+          <div><div class="pw-feat">Training Sessions</div><div class="pw-feat-sub">chain plays into a plan</div></div>
+        </div>
+      </div>
+
+      <div class="pw-club-note">
+        Club adds: shared library · team colors · 10 coaches · presentation mode
+      </div>
+
+      <button class="pw-cta-primary" onclick="startCheckout('proMonthly')">
+        <div class="pw-cta-row">
+          <span class="pw-cta-text">Start 7-Day Free Trial →</span>
+          <span class="pw-trial-badge">Free</span>
+        </div>
+        <div class="pw-cta-sub">Pro Monthly · €6/mo after trial · cancel anytime</div>
+      </button>
+
+      <div class="pw-sec-row">
+        <button class="pw-sec-btn" onclick="startCheckout('proYearly')">
+          <div class="pw-sec-name">Pro Yearly</div>
+          <div class="pw-sec-price">€49<small>/yr</small></div>
+          <div class="pw-sec-badge">Save 32%</div>
         </button>
-        <button class="pw-plan" onclick="startCheckout('proYearly')">
-          <div>
-            <div class="pw-plan-name">Pro Yearly — <span style="color:#4ade80;font-size:12px;font-weight:700;">7-day free trial</span></div>
-            <div class="pw-plan-sub">Save 32% · best value</div>
-          </div>
-          <div class="pw-plan-price">€49<small>/yr</small></div>
-        </button>
-        <button class="pw-plan" onclick="startCheckout('club')">
-          <div>
-            <div class="pw-plan-name">Club — <span style="color:#4ade80;font-size:12px;font-weight:700;">7-day free trial</span> ✦</div>
-            <div class="pw-plan-sub">Up to 10 coaches · shared library · club branding</div>
-          </div>
-          <div class="pw-plan-price">€99<small>/yr after trial</small></div>
+        <button class="pw-sec-btn" onclick="startCheckout('club')">
+          <div class="pw-sec-name">Club ✦</div>
+          <div class="pw-sec-price">€99<small>/yr</small></div>
+          <div class="pw-sec-badge club-badge">10 coaches</div>
         </button>
       </div>
+
     </div>
   </div>
 </div>
