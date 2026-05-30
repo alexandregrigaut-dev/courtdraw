@@ -25,11 +25,11 @@ const VALUE_BY_PRICE = {
   [process.env.STRIPE_PRICE_ID_CLUB]:        99
 };
 
-// Trial periods: Club = 7 days, Pro = 3 days
+// Trial periods: Club = 7 days, Pro = 7 days (extended from 3 to 7 for better activation)
 // Card required upfront for both. Stripe auto-charges on trial end.
 // If user cancels before trial ends, no charge — customer.subscription.deleted fires and access is revoked.
 const CLUB_TRIAL_DAYS = 7;
-const PRO_TRIAL_DAYS  = 3;
+const PRO_TRIAL_DAYS  = 7;
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {

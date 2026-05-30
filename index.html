@@ -1084,6 +1084,21 @@
         <h3>Coach Notes on Tactics <span style="font-size:11px;background:rgba(168,85,247,.15);color:#a855f7;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">CLUB</span></h3>
         <p>Every play in the club library can carry coach notes — situational tips, when to use it, what it counters. Your shared library becomes a living coaching document, not just a folder of diagrams.</p>
       </div>
+      <div class="feature-card" style="border-color:rgba(147,197,253,0.3);background:linear-gradient(135deg,rgba(147,197,253,0.08) 0%,transparent 100%);">
+        <div class="feature-icon">📝</div>
+        <h3>Coach Notes &amp; Play Tags <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
+        <p>Add situational notes to every saved play — "use when down by 2 in the 4th". Tag plays with custom labels like "set play", "press defence", or "U14" and search your entire playbook in seconds.</p>
+      </div>
+      <div class="feature-card" style="border-color:rgba(147,197,253,0.3);background:linear-gradient(135deg,rgba(147,197,253,0.08) 0%,transparent 100%);">
+        <div class="feature-icon">📅</div>
+        <h3>Session Builder <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
+        <p>Chain 3–8 saved plays into a full training session. Set minutes per drill, drag to reorder, then export as a multi-page PDF to hand to your assistant coaches.</p>
+      </div>
+      <div class="feature-card" style="border-color:rgba(147,197,253,0.3);background:linear-gradient(135deg,rgba(147,197,253,0.08) 0%,transparent 100%);">
+        <div class="feature-icon">📲</div>
+        <h3>Share to WhatsApp in One Tap</h3>
+        <p>After exporting a PNG, hit Share and the native iOS/Android share sheet opens — one tap sends it straight to your team's WhatsApp group. The way 80% of coaches actually share plays.</p>
+      </div>
       <div class="feature-card">
         <div class="feature-icon">📱</div>
         <h3>Touch-First on Mobile</h3>
@@ -1360,12 +1375,12 @@
     <div class="section-header">
       <span class="badge">Pricing</span>
       <h2>Start Free. Upgrade When You're Ready.</h2>
-      <p>No credit card required for the free plan. Pro includes a <strong>3-day free trial</strong>, Club includes a <strong>7-day free trial</strong> — cancel anytime before your trial ends, no charge.</p>
+      <p>No credit card required for the free plan. Pro includes a <strong>7-day free trial</strong>, Club includes a <strong>7-day free trial</strong> — cancel anytime before your trial ends, no charge.</p>
     </div>
 
     <div class="pricing-toggle">
-      <button class="toggle-btn" id="toggle-monthly" onclick="setPricing('monthly')">Monthly</button>
-      <button class="toggle-btn active" id="toggle-annual" onclick="setPricing('annual')">Annual <span class="save-pill">Save 32%</span></button>
+      <button class="toggle-btn active" id="toggle-monthly" onclick="setPricing('monthly')">Monthly</button>
+      <button class="toggle-btn" id="toggle-annual" onclick="setPricing('annual')">Annual <span class="save-pill">Save 32%</span></button>
     </div>
 
     <div class="pricing-grid">
@@ -1390,21 +1405,24 @@
 
       <!-- Pro -->
       <div class="pricing-card popular">
-        <div class="popular-badge">3-Day Free Trial</div>
+        <div class="popular-badge">7-Day Free Trial</div>
         <div class="plan-name">Pro</div>
-        <div class="plan-price" id="pro-price"><sup>€</sup>4<span class="period"> / mo</span></div>
-        <p class="plan-tagline" id="pro-tagline">3-day free trial, then €49/yr. €6/mo billed monthly. Cancel anytime.</p>
-        <a href="login.html?checkout=proYearly" class="btn btn-primary plan-btn" id="btn-pro-plan">Start 3-Day Free Trial</a>
+        <div class="plan-price" id="pro-price"><sup>€</sup>6<span class="period"> / mo</span></div>
+        <p class="plan-tagline" id="pro-tagline">7-day free trial, then €6/mo. Switch to annual — save 32%.</p>
+        <a href="login.html?checkout=proMonthly" class="btn btn-primary plan-btn" id="btn-pro-plan">Start 7-Day Free Trial</a>
         <ul class="plan-features">
           <li><span class="check">✓</span> <span><strong>All 38+ sport courts</strong> + Whiteboard</span></li>
           <li><span class="check">✓</span> <span><strong>Unlimited saved tactics</strong></span></li>
+          <li><span class="check">✓</span> <span><strong>Coach notes</strong> on every play</span></li>
+          <li><span class="check">✓</span> <span><strong>Play tags &amp; search</strong> — find any play instantly</span></li>
           <li><span class="check">✓</span> <span><strong>PNG &amp; PDF export</strong> — no watermark</span></li>
           <li><span class="check">✓</span> <span>Phase-by-phase animation + <strong>animated playback</strong></span></li>
           <li><span class="check">✓</span> <span><strong>Video overlay</strong> — draw on match footage</span></li>
           <li><span class="check">✓</span> <span><strong>200+ ready-made play templates</strong></span></li>
+          <li><span class="check">✓</span> <span><strong>Session Builder</strong> — chain plays into a training plan</span></li>
           <li><span class="check">✓</span> <span>Shareable board links</span></li>
+          <li><span class="check">✓</span> <span><strong>Weekly coaching digest</strong> email every Monday</span></li>
           <li><span class="check">✓</span> <span>Offline (PWA) + dark &amp; light mode</span></li>
-          <li><span class="check">✓</span> <span>Priority email support</span></li>
           <li><span class="cross">✗</span> <span style="color:#475569">Shared club library</span></li>
           <li><span class="cross">✗</span> <span style="color:#475569">Club branding on exports</span></li>
         </ul>
@@ -1543,11 +1561,11 @@
 
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">
-          How does the 3-day Pro trial work?
+          How does the 7-day Pro trial work?
           <span class="faq-chevron">▼</span>
         </button>
         <div class="faq-a"><div class="faq-a-inner">
-          When you start a Pro plan, you get 3 days of full Pro access at no charge. A card is required upfront, but nothing is charged until day 4. If you cancel before the trial ends — via the billing portal inside the app — your subscription ends immediately and you are never billed. If you keep it, your chosen plan (monthly or annual) is automatically charged when the trial converts. No manual steps, no refund requests needed.
+          When you start a Pro plan, you get 7 days of full Pro access at no charge. A card is required upfront, but nothing is charged until day 8. If you cancel before the trial ends — via the billing portal inside the app — your subscription ends immediately and you are never billed. If you keep it, your chosen plan (monthly or annual) is automatically charged when the trial converts. No manual steps, no refund requests needed.
         </div></div>
       </div>
 
@@ -1673,7 +1691,7 @@
 </footer>
 
 <script>
-  // Pricing toggle
+  // Pricing toggle — defaults to Monthly (lower perceived commitment for new visitors)
   function setPricing(mode) {
     const monthly = document.getElementById('toggle-monthly');
     const annual = document.getElementById('toggle-annual');
@@ -1683,13 +1701,13 @@
     if (mode === 'monthly') {
       monthly.classList.add('active'); annual.classList.remove('active');
       price.innerHTML = '<sup>€</sup>6<span class="period"> / mo</span>';
-      tagline.textContent = '3-day free trial, then €6/mo. Switch to annual to save 32%.';
-      if (proBtnEl) proBtnEl.href = 'login.html?checkout=proMonthly';
+      tagline.textContent = '7-day free trial, then €6/mo. Switch to annual — save 32%.';
+      if (proBtnEl) { proBtnEl.href = 'login.html?checkout=proMonthly'; proBtnEl.textContent = 'Start 7-Day Free Trial'; }
     } else {
       annual.classList.add('active'); monthly.classList.remove('active');
-      price.innerHTML = '<sup>€</sup>4<span class="period"> / mo</span>';
-      tagline.textContent = '3-day free trial, then €49/yr. €6/mo billed monthly. Cancel anytime.';
-      if (proBtnEl) proBtnEl.href = 'login.html?checkout=proYearly';
+      price.innerHTML = '<sup>€</sup>49<span class="period"> / yr</span>';
+      tagline.textContent = '7-day free trial, then €49/yr · saves 32% vs monthly. Cancel anytime.';
+      if (proBtnEl) { proBtnEl.href = 'login.html?checkout=proYearly'; proBtnEl.textContent = 'Start 7-Day Free Trial'; }
     }
   }
 
