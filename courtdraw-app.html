@@ -1493,14 +1493,14 @@ body.portrait-mode .player-token:active {
       <div class="pw-plans">
         <button class="pw-plan featured" onclick="startCheckout('proMonthly')">
           <div>
-            <div class="pw-plan-name">Pro Monthly — <span style="color:#4ade80;font-size:12px;font-weight:700;">3-day free trial</span></div>
+            <div class="pw-plan-name">Pro Monthly — <span style="color:#4ade80;font-size:12px;font-weight:700;">7-day free trial</span></div>
             <div class="pw-plan-sub">Everything unlocked · cancel anytime</div>
           </div>
           <div class="pw-plan-price">€6<small>/mo</small></div>
         </button>
         <button class="pw-plan" onclick="startCheckout('proYearly')">
           <div>
-            <div class="pw-plan-name">Pro Yearly — <span style="color:#4ade80;font-size:12px;font-weight:700;">3-day free trial</span></div>
+            <div class="pw-plan-name">Pro Yearly — <span style="color:#4ade80;font-size:12px;font-weight:700;">7-day free trial</span></div>
             <div class="pw-plan-sub">Save 32% · best value</div>
           </div>
           <div class="pw-plan-price">€49<small>/yr</small></div>
@@ -1598,7 +1598,7 @@ body.portrait-mode .player-token:active {
 <!-- Point 6: Return visitor banner -->
 <div id="return-visitor-banner" role="alert" aria-live="polite">
   <p>👋 You keep coming back — ready to unlock everything?</p>
-  <button class="rv-cta" onclick="closeReturnBanner(); openPaywall('Try Pro free for 3 days — unlock all courts, unlimited saves, and clean exports.')">Try Pro free →</button>
+  <button class="rv-cta" onclick="closeReturnBanner(); openPaywall('Try Pro free for 7 days — unlock all courts, unlimited saves, and clean exports.')">Try Pro free →</button>
   <button class="rv-dismiss" onclick="closeReturnBanner()" aria-label="Dismiss">✕</button>
 </div>
 
@@ -4359,7 +4359,7 @@ function exportPNG() {
       if (!sessionStorage.getItem('cd_export_nudge_shown')) {
         sessionStorage.setItem('cd_export_nudge_shown', '1');
         setTimeout(() => showUpgradeToast(
-          'Remove the watermark — try Pro free for 3 days',
+          'Remove the watermark — try Pro free for 7 days',
           'Try Pro →',
           () => openPaywall('Export clean plays with no watermark.')
         ), 1200);

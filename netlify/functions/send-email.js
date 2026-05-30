@@ -280,8 +280,8 @@ const templates = {
       body: `Most coaches draw their play once and call it done.<br><br>
              CourtDraw Pro lets you build it in <strong>phases</strong> — Phase 1 shows the initial positions, Phase 2 shows the first movement, Phase 3 shows the finish. Tap through them during a timeout so your players see exactly what to do.<br><br>
              There's also <strong>animated playback</strong> — hit play and watch the whole sequence run automatically.<br><br>
-             Give it a try. Your first 3 days are free — no charge until day 4, cancel anytime.`,
-      ctaText: 'Try Pro free for 3 days',
+             Give it a try. Your first 7 days are free — no charge until day 8, cancel anytime.`,
+      ctaText: 'Try Pro free for 7 days',
       ctaUrl: `${APP_URL}/#pricing`,
       features: [
         { icon: '📐', label: 'Phases' },
@@ -307,8 +307,8 @@ const templates = {
              CourtDraw Pro gives you <strong>unlimited saves</strong> — every play, every sport, every opponent, organised in one place.<br><br>
              <strong>What coaches say after upgrading:</strong><br>
              <em>"I have a full library now — I load the right play in 10 seconds on the sideline."</em><br><br>
-             Try Pro free for 3 days. No charge until day 4.`,
-      ctaText: 'Start my 3-day free trial',
+             Try Pro free for 7 days. No charge until day 4.`,
+      ctaText: 'Start my 7-day free trial',
       ctaUrl: `${APP_URL}/#pricing`,
       features: [
         { icon: '💾', label: 'Unlimited saves' },
@@ -329,12 +329,12 @@ const templates = {
     const data = {
       label: 'Your free trial is waiting',
       labelColor: '#10b981',
-      title: 'Your 3-day Pro trial — no charge until day 4',
+      title: 'Your 7-day Pro trial — no charge until day 8',
       body: `You've been using CourtDraw for a few days now. If you're serious about your coaching prep, Pro is worth trying.<br><br>
-             <strong>Everything unlocked for 3 days — completely free:</strong><br>
+             <strong>Everything unlocked for 7 days — completely free:</strong><br>
              All 38+ courts, unlimited saves, phase animation, video overlay, clean PNG exports, 200+ play templates, and shareable board links.<br><br>
              Card required upfront. No charge until day 4. Cancel before then and you won't be billed — no questions asked.`,
-      ctaText: 'Claim my free 3-day trial →',
+      ctaText: 'Claim my free 7-day trial →',
       ctaUrl: `${APP_URL}/#pricing`,
       features: [
         { icon: '🏟', label: '38+ courts' },
@@ -345,7 +345,7 @@ const templates = {
     };
     return {
       from: FROM, reply_to: REPLY_TO, to: email,
-      subject: 'Your 3-day CourtDraw Pro trial is waiting',
+      subject: 'Your 7-day CourtDraw Pro trial is waiting',
       html: layout(data), text: toPlainText(data),
     };
   },
@@ -353,7 +353,7 @@ const templates = {
   // Sent when a Pro trial checkout completes (no charge yet)
   proTrialStarted: (email) => {
     const data = {
-      label: '3-day free trial started',
+      label: '7-day free trial started',
       labelColor: '#f59e0b',
       title: 'Your Pro trial has started',
       body: `You have 3 full days to explore every Pro feature — all 38+ courts, unlimited saves, multi-phase plays, clean PNG exports, video overlay, and the tactics library.<br><br>
@@ -372,7 +372,7 @@ const templates = {
       from: FROM,
       reply_to: REPLY_TO,
       to: email,
-      subject: 'Your 3-day CourtDraw Pro trial has started',
+      subject: 'Your 7-day CourtDraw Pro trial has started',
       html: layout(data),
       text: toPlainText(data),
     };
@@ -384,7 +384,7 @@ const templates = {
       label: 'Pro plan active',
       labelColor: '#f59e0b',
       title: 'Your Pro subscription is now active',
-      body: `Your 3-day trial is over and your Pro subscription is now active. All Pro features remain fully unlocked.<br><br>
+      body: `Your 7-day trial is over and your Pro subscription is now active. All Pro features remain fully unlocked.<br><br>
              Manage your billing anytime from inside the app.`,
       ctaText: 'Open the app',
       ctaUrl: `${APP_URL}/courtdraw-app.html`,
