@@ -1540,9 +1540,10 @@ body.portrait-mode .player-token:active {
         <input type="text" id="tactic-name-input" placeholder="Name this play…" maxlength="40">
         <button class="btn-accent" onclick="saveTactic()">Save Play</button>
       </div>
-      <textarea id="tactic-notes-input" placeholder="📝 Coach notes — e.g. 'Use when down by 2 in the 4th' (Pro)" maxlength="300"
-        style="width:100%;margin-top:8px;padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;resize:none;min-height:56px;transition:border-color 0.15s;"
-        onfocus="if(!state.isPro&&!state.isClub){openPaywall('Coach notes on saved plays is a Pro feature.');this.blur();return;}this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      <!-- Coach notes: hidden for free users, shown for Pro/Club in __updatePro -->
+      <textarea id="tactic-notes-input" placeholder="📝 Coach notes — e.g. 'Use when down by 2 in the 4th'" maxlength="300"
+        style="display:none;width:100%;margin-top:8px;padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;resize:none;min-height:56px;transition:border-color 0.15s;"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
       <input type="text" id="tactic-tags-input" placeholder="🏷 Tags: press defence, U14, set play (Pro — comma-separated)" maxlength="100"
         style="width:100%;margin-top:6px;padding:7px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border-color 0.15s;"
         onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
@@ -1782,14 +1783,13 @@ body.portrait-mode .player-token:active {
 <div class="modal-backdrop" id="modal-feature-preview">
   <div class="modal-sheet">
     <div class="modal-header">
-      <span class="modal-title" id="fp-modal-title">Feature Preview</span>
-      <button class="modal-close" aria-label="Close" onclick="skipFeaturePreview()">✕</button>
+      <span class="modal-title" id="fp-modal-title">Pro Feature</span>
+      <button class="modal-close" aria-label="Close" onclick="dismissFeaturePreview()">✕</button>
     </div>
     <div class="fp-body">
       <div class="fp-icon" id="fp-icon">⚡</div>
       <div class="fp-title" id="fp-title">Pro Feature</div>
       <div class="fp-desc" id="fp-desc"></div>
-      <div class="fp-progress"><div class="fp-progress-bar" id="fp-progress-bar"></div></div>
       <button class="btn-accent fp-cta" onclick="skipFeaturePreview()">See pricing →</button>
     </div>
   </div>
@@ -1800,7 +1800,7 @@ body.portrait-mode .player-token:active {
   <div class="modal-sheet">
     <div class="modal-header">
       <span class="modal-title">Phase Animation</span>
-      <button class="modal-close" aria-label="Close" onclick="skipPhaseTeaser()">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="clearTimeout(_ptTimer);closeModal('modal-phase-teaser')">✕</button>
     </div>
     <div class="pt-body">
       <div class="pt-title">See your play come to life</div>
@@ -2697,6 +2697,9 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
   // Phase button: show lock hint for non-Pro users
   const phaseBtn = document.getElementById('btn-add-phase');
   if (phaseBtn) phaseBtn.textContent = isPro ? '+ Phase' : '+ Phase 🔒';
+  // Coach notes textarea: only visible for Pro/Club users
+  const notesEl = document.getElementById('tactic-notes-input');
+  if (notesEl) notesEl.style.display = (isPro || isClub) ? 'block' : 'none';
   // Apply/remove pro-lock visual cue on gated toolbar buttons
   const hasPro = isPro || isClub;
   ['btn-print', 'btn-share', 'btn-video', 'btn-session'].forEach(id => {
@@ -4386,24 +4389,19 @@ function showFeaturePreview(featureKey, paywallReason) {
   document.getElementById('fp-icon').textContent = preview.icon;
   document.getElementById('fp-title').textContent = preview.title;
   document.getElementById('fp-desc').textContent = preview.desc;
-  // Reset + animate progress bar
-  const bar = document.getElementById('fp-progress-bar');
-  bar.style.transition = 'none'; bar.style.width = '0%';
   openModal('modal-feature-preview');
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      bar.style.transition = 'width 2.5s linear';
-      bar.style.width = '100%';
-    });
-  });
-  clearTimeout(_fpTimer);
-  _fpTimer = setTimeout(skipFeaturePreview, 2600);
+  // No auto-advance timer — user must click "See pricing" or close manually
 }
 
 function skipFeaturePreview() {
-  clearTimeout(_fpTimer);
+  // Called only from "See pricing →" button — never automatically
   closeModal('modal-feature-preview');
   openPaywall(_fpPaywallReason);
+}
+
+function dismissFeaturePreview() {
+  // Called from the ✕ close button — just closes, no redirect
+  closeModal('modal-feature-preview');
 }
 
 // ══════════════════════════════════════════════
@@ -4423,11 +4421,8 @@ function _ptAdvance() {
   _ptTimer = setTimeout(() => {
     _ptPhase = (_ptPhase + 1) % 3;
     updatePhaseTeaserUI();
-    if (_ptPhase < 2) _ptAdvance();
-    else {
-      // After showing all 3 phases, wait 1s then auto-open paywall
-      _ptTimer = setTimeout(skipPhaseTeaser, 1200);
-    }
+    // Loop the animation continuously — never auto-redirect to paywall
+    _ptAdvance();
   }, 1100);
 }
 
