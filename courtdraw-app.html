@@ -123,18 +123,13 @@ button {
 }
 #court-name-chip {
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 20px; padding: 6px 10px 6px 12px;
+  border-radius: 20px; padding: 8px 12px;
   font-size: 12px; font-weight: 500; color: var(--text2);
   cursor: pointer; transition: var(--transition);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  max-width: 160px; min-height: 36px;
-  display: flex; align-items: center; gap: 4px;
-}
-#court-name-chip::after {
-  content: '▾'; font-size: 10px; opacity: 0.5; flex-shrink: 0;
+  max-width: 140px; min-height: 36px;
 }
 #court-name-chip:hover { border-color: var(--accent); color: var(--accent); }
-#court-name-chip:hover::after { opacity: 1; }
 .header-right { display: flex; align-items: center; gap: 4px; }
 .hdr-btn {
   width: 44px; height: 44px; border-radius: 8px;
@@ -316,7 +311,7 @@ button {
 #return-visitor-banner {
   display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 200;
   background: linear-gradient(135deg, #1d4ed8, #3b82f6);
-  padding: max(10px, env(safe-area-inset-top)) 16px 10px; align-items: center; gap: 10px;
+  padding: 10px 16px; align-items: center; gap: 10px;
   justify-content: center; flex-wrap: wrap;
 }
 #return-visitor-banner.visible { display: flex; animation: slideDown 0.3s ease; }
@@ -784,7 +779,7 @@ body.presentation-mode #presentation-overlay { display: flex; }
 /* Responsive */
 @media (max-width: 480px) {
   .app-title { display: none; }
-  #court-name-chip { max-width: 130px; }
+  #court-name-chip { max-width: 110px; }
   /* On very small screens the cumulative/loop toggles don't fit in the phase bar */
   #btn-cumulative, #btn-loop { display: none !important; }
   /* Compact speed selector */
@@ -1074,111 +1069,6 @@ body.portrait-mode .player-token:active {
 @media (min-width: 901px) {
   #toolbar-toggle-btn { display: none; }
 }
-/* ── Viral loop: shared board footer ───────────────────── */
-#viral-footer {
-  display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-  background: rgba(10, 20, 42, 0.92); backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(255,255,255,0.12);
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-  align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap;
-}
-#viral-footer.visible { display: flex; }
-#viral-footer p { color: rgba(255,255,255,0.7); font-size: 13px; margin: 0; }
-#viral-footer a {
-  background: #3b82f6; color: #fff; border-radius: 8px; padding: 7px 16px;
-  text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap;
-  transition: background 0.15s;
-}
-#viral-footer a:hover { background: #60a5fa; }
-/* ── R-2: Session Builder ───────────────────────────────── */
-#modal-session .modal-sheet { max-width: 600px; }
-.session-play-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; background: var(--surface2); border-radius: 10px;
-  margin-bottom: 6px; border: 1px solid var(--border); cursor: grab;
-  touch-action: none;
-}
-.session-play-row:active { cursor: grabbing; background: var(--accent-dim); border-color: var(--accent); }
-.session-play-row.drag-over { border-color: var(--accent); background: var(--accent-dim); }
-.session-play-drag { font-size: 16px; color: var(--text2); flex-shrink: 0; cursor: grab; }
-.session-play-info { flex: 1; min-width: 0; }
-.session-play-name { font-weight: 600; font-size: 14px; }
-.session-play-meta { font-size: 11px; color: var(--text2); margin-top: 1px; }
-.session-play-time {
-  width: 48px; padding: 4px 6px; border-radius: 6px;
-  background: var(--surface); border: 1px solid var(--border);
-  color: var(--text); font-size: 12px; text-align: center; font-family: inherit;
-}
-.session-play-remove { color: #ef4444; font-size: 16px; cursor: pointer; flex-shrink: 0; padding: 4px; }
-.session-empty { text-align: center; padding: 32px 16px; color: var(--text2); }
-.session-add-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-.session-add-pill {
-  padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
-  border: 1px solid var(--border); background: var(--surface2); color: var(--text2);
-  cursor: pointer; transition: all 0.15s;
-}
-.session-add-pill:hover { border-color: var(--accent); color: var(--accent); }
-/* ── QW-2: Share sheet modal after PNG export ───────────── */
-#share-sheet {
-  position: fixed; inset: 0; z-index: 600;
-  display: none; align-items: flex-end; justify-content: center;
-  background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
-  animation: fadein 0.15s ease;
-}
-#share-sheet.open { display: flex; }
-#share-sheet-box {
-  background: var(--surface); border-radius: 20px 20px 0 0;
-  width: 100%; max-width: 480px; padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
-  text-align: center;
-}
-@media (min-width: 600px) {
-  #share-sheet { align-items: center; }
-  #share-sheet-box { border-radius: 20px; max-width: 360px; }
-}
-#share-sheet h3 { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
-#share-sheet p { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
-.share-btn-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 10px; }
-.share-btn-main {
-  flex: 1; padding: 13px 10px; border-radius: 12px;
-  font-size: 14px; font-weight: 700; cursor: pointer; border: none;
-  display: flex; align-items: center; justify-content: center; gap: 7px;
-  transition: filter 0.15s;
-}
-.share-btn-main:hover { filter: brightness(1.08); }
-.share-btn-whatsapp { background: #25D366; color: #fff; }
-.share-btn-native   { background: var(--accent); color: #fff; }
-.share-btn-dismiss {
-  width: 100%; padding: 11px; border-radius: 10px; border: 1px solid var(--border);
-  background: none; color: var(--text2); font-size: 14px; font-weight: 600; cursor: pointer;
-}
-/* ── QW-1: First-draw tooltip nudge ─────────────────────── */
-#draw-nudge {
-  display: none;
-  position: fixed;
-  z-index: 500;
-  pointer-events: none;
-  animation: nudgePop 0.35s cubic-bezier(0.34,1.56,0.64,1);
-}
-#draw-nudge.visible { display: flex; flex-direction: column; align-items: center; }
-#draw-nudge-label {
-  background: #3b82f6; color: #fff;
-  border-radius: 8px; padding: 6px 12px;
-  font-size: 13px; font-weight: 700; white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(59,130,246,0.5);
-  pointer-events: none;
-}
-#draw-nudge-arrow {
-  font-size: 22px; color: #3b82f6; margin-top: 2px;
-  animation: nudgeBounce 0.8s ease-in-out infinite;
-}
-@keyframes nudgeBounce {
-  0%,100% { transform: translateY(0); }
-  50% { transform: translateY(5px); }
-}
-@keyframes nudgePop {
-  from { opacity:0; transform: scale(0.8) translateY(-6px); }
-  to   { opacity:1; transform: scale(1) translateY(0); }
-}
 /* ── Pro Library Modal ──────────────────────────────────── */
 #pro-library-modal {
   display: none; position: fixed; inset: 0; z-index: 9000;
@@ -1459,9 +1349,6 @@ body.portrait-mode .player-token:active {
   <button class="tb-btn" id="btn-video" title="Video overlay — draw on top of match footage (Pro/Club)" onclick="openVideoUpload()">
     <span class="icon">📹</span><span>Video</span>
   </button>
-  <button class="tb-btn" id="btn-session" title="Session Builder — chain plays into a training plan (Pro)" onclick="openSessionBuilder()">
-    <span class="icon">📅</span><span>Session</span>
-  </button>
 </div>
 
 <!-- Modal: Court Picker -->
@@ -1485,10 +1372,7 @@ body.portrait-mode .player-token:active {
       <span class="modal-title">My Saved Plays</span>
       <button class="modal-close" aria-label="Close" onclick="closeModal('modal-library')">✕</button>
     </div>
-    <div class="modal-body" style="overflow:hidden;display:flex;flex-direction:column;padding-bottom:0;">
-      <div id="lib-search-wrap" style="flex-shrink:0;padding-bottom:8px;"></div>
-      <div id="library-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;"></div>
-    </div>
+    <div class="modal-body" id="library-body"></div>
     <div id="club-library-wrap" style="display:none;border-top:1px solid var(--border);padding:12px 20px 4px;flex-shrink:0;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <span class="cat-label">Club Library</span>
@@ -1526,13 +1410,6 @@ body.portrait-mode .player-token:active {
         <input type="text" id="tactic-name-input" placeholder="Name this play…" maxlength="40">
         <button class="btn-accent" onclick="saveTactic()">Save Play</button>
       </div>
-      <textarea id="tactic-notes-input" placeholder="📝 Coach notes — e.g. 'Use when down by 2 in the 4th' (Pro)" maxlength="300"
-        style="width:100%;margin-top:8px;padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:inherit;outline:none;resize:none;min-height:56px;transition:border-color 0.15s;"
-        onfocus="if(!state.isPro&&!state.isClub){openPaywall('Coach notes on saved plays is a Pro feature.');this.blur();return;}this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
-      <input type="text" id="tactic-tags-input" placeholder="🏷 Tags: press defence, U14, set play (Pro — comma-separated)" maxlength="100"
-        style="width:100%;margin-top:6px;padding:7px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border-color 0.15s;"
-        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
-        onclick="if(!state.isPro&&!state.isClub){openPaywall('Play tags and search is a Pro feature.');this.blur();}">
     </div>
   </div>
 </div>
@@ -1585,15 +1462,15 @@ body.portrait-mode .player-token:active {
       <div class="pw-plans">
         <button class="pw-plan featured" onclick="startCheckout('proMonthly')">
           <div>
-            <div class="pw-plan-name">Pro Monthly — <span style="color:#4ade80;font-size:12px;font-weight:700;">7-day free trial</span></div>
+            <div class="pw-plan-name">Pro Monthly — <span style="color:#4ade80;font-size:12px;font-weight:700;">3-day free trial</span></div>
             <div class="pw-plan-sub">Everything unlocked · cancel anytime</div>
           </div>
           <div class="pw-plan-price">€6<small>/mo</small></div>
         </button>
         <button class="pw-plan" onclick="startCheckout('proYearly')">
           <div>
-            <div class="pw-plan-name">Pro Yearly — <span style="color:#4ade80;font-size:12px;font-weight:700;">7-day free trial</span> · Save 32%</div>
-            <div class="pw-plan-sub">€49/yr · best value</div>
+            <div class="pw-plan-name">Pro Yearly — <span style="color:#4ade80;font-size:12px;font-weight:700;">3-day free trial</span></div>
+            <div class="pw-plan-sub">Save 32% · best value</div>
           </div>
           <div class="pw-plan-price">€49<small>/yr</small></div>
         </button>
@@ -1687,80 +1564,10 @@ body.portrait-mode .player-token:active {
 <!-- Toast -->
 <div id="toast"></div>
 
-<!-- Viral loop: shared board viewer footer -->
-<div id="viral-footer" role="complementary" aria-label="Create your own plays">
-  <p>🏟 Draw your own plays at</p>
-  <a href="https://courtdraw.app" target="_blank" rel="noopener">courtdraw.app →</a>
-</div>
-
-<!-- R-2: Session Builder Modal -->
-<div class="modal-backdrop" id="modal-session">
-  <div class="modal-sheet">
-    <div class="modal-header">
-      <span class="modal-title">📅 Session Builder</span>
-      <button class="modal-close" aria-label="Close" onclick="closeModal('modal-session')">✕</button>
-    </div>
-    <div class="modal-body" id="session-body" style="overflow:hidden;display:flex;flex-direction:column;gap:0;">
-      <!-- Tabs: Builder | My Sessions -->
-      <div id="session-tabs" style="display:flex;gap:0;border-bottom:1px solid var(--border);flex-shrink:0;margin-bottom:12px;">
-        <button id="session-tab-build" onclick="switchSessionTab('build')"
-          style="flex:1;padding:10px;font-size:13px;font-weight:700;border:none;background:none;color:var(--accent);border-bottom:2px solid var(--accent);cursor:pointer;font-family:inherit;">
-          ✏️ Builder
-        </button>
-        <button id="session-tab-saved" onclick="switchSessionTab('saved')"
-          style="flex:1;padding:10px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;">
-          📂 My Sessions
-        </button>
-      </div>
-      <!-- Builder pane -->
-      <div id="session-pane-build" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
-        <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">Chain 3–8 plays into a training session. Drag to reorder, set time per drill. Export as PDF or save for later.</p>
-        <div id="session-play-list"></div>
-        <div class="session-add-bar" id="session-add-bar"></div>
-      </div>
-      <!-- Saved sessions pane (hidden by default) -->
-      <div id="session-pane-saved" style="display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
-        <div id="session-saved-list"></div>
-      </div>
-    </div>
-    <div class="modal-footer" id="session-footer" style="display:flex;gap:8px;align-items:center;">
-      <input type="text" id="session-name-input" placeholder="Name this session…" maxlength="50"
-        style="flex:1;padding:9px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;outline:none;">
-      <button class="btn-accent" onclick="exportSessionPDF()" title="Export all plays as PDF">Export PDF</button>
-      <button class="btn-accent" onclick="saveSession()" title="Save session to My Sessions"
-        style="background:var(--surface2);color:var(--text);border:1px solid var(--border);">Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- QW-2: Share sheet (shown after PNG export) -->
-<div id="share-sheet" role="dialog" aria-label="Share your play" onclick="if(event.target===this)closeShareSheet()">
-  <div id="share-sheet-box">
-    <h3>📤 Your play is ready!</h3>
-    <p>Share it directly to WhatsApp, or save to photos and share from there.</p>
-    <div class="share-btn-row">
-      <button class="share-btn-main share-btn-whatsapp" id="btn-share-whatsapp" onclick="shareToWhatsApp()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-        WhatsApp
-      </button>
-      <button class="share-btn-main share-btn-native" id="btn-share-native" onclick="shareNative()">
-        📤 Share
-      </button>
-    </div>
-    <button class="share-btn-dismiss" onclick="closeShareSheet()">Done</button>
-  </div>
-</div>
-
-<!-- QW-1: First-draw tooltip nudge -->
-<div id="draw-nudge" role="tooltip" aria-label="Tap here to start drawing">
-  <div id="draw-nudge-label">✏️ Tap here to start drawing</div>
-  <div id="draw-nudge-arrow">▼</div>
-</div>
-
 <!-- Point 6: Return visitor banner -->
 <div id="return-visitor-banner" role="alert" aria-live="polite">
   <p>👋 You keep coming back — ready to unlock everything?</p>
-  <button class="rv-cta" onclick="closeReturnBanner(); openPaywall('Try Pro free for 7 days — unlock all courts, unlimited saves, and clean exports.')">Try Pro free →</button>
+  <button class="rv-cta" onclick="closeReturnBanner(); openPaywall('Try Pro free for 3 days — unlock all courts, unlimited saves, and clean exports.')">Try Pro free →</button>
   <button class="rv-dismiss" onclick="closeReturnBanner()" aria-label="Dismiss">✕</button>
 </div>
 
@@ -1882,8 +1689,6 @@ const COURTS = [
       <line x1="500" y1="151" x2="500" y2="449" stroke="white" stroke-width="6"/>
       <line x1="268" y1="151" x2="268" y2="449" stroke="white" stroke-width="2"/>
       <line x1="732" y1="151" x2="732" y2="449" stroke="white" stroke-width="2"/>
-      <line x1="70" y1="192" x2="930" y2="192" stroke="white" stroke-width="2"/>
-      <line x1="70" y1="408" x2="930" y2="408" stroke="white" stroke-width="2"/>
       <line x1="268" y1="300" x2="732" y2="300" stroke="white" stroke-width="2"/>
       <line x1="70" y1="295" x2="70" y2="305" stroke="white" stroke-width="3"/>
       <line x1="930" y1="295" x2="930" y2="305" stroke="white" stroke-width="3"/>
@@ -2607,48 +2412,10 @@ const state = {
   portraitRotated: false,
   pinching: false, _pinchCooldown: null,
   videoObjectUrl: null,  // current video object URL (revoked on close)
-  savedSessions: [],     // R-2: persisted training sessions
 };
 
 const COLORS = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#ffffff','#111827','#a855f7','#f97316'];
 const FREE_SAVES = 3;
-
-// QW-4: Sport emoji map — keyed by court category or specific court id
-const SPORT_EMOJI = {
-  // By court ID (specific overrides)
-  tennis_singles:'🎾', tennis_doubles:'🎾', padel:'🎾', pickleball:'🎾',
-  badminton_singles:'🏸', badminton_doubles:'🏸', squash:'🏸', table_tennis:'🏓',
-  basketball_full:'🏀', basketball_half:'🏀', basketball_3x3:'🏀',
-  football:'⚽', soccer_full:'⚽', futsal:'⚽',
-  american_football:'🏈', american_football_half:'🏈',
-  rugby_union:'🏉', rugby_league:'🏉', rugby_sevens:'🏉',
-  handball:'🤾', handball_half:'🤾',
-  volleyball:'🏐', beach_volleyball:'🏐', sitting_volleyball:'🏐',
-  hockey:'🏒', field_hockey:'🏑',
-  ice_hockey:'🏒',
-  baseball:'⚾', softball:'⚾',
-  cricket_full:'🏏', cricket_t20:'🏏',
-  netball:'🏀',
-  lacrosse:'🥍',
-  water_polo:'🤽',
-  swimming:'🏊',
-  gymnastics:'🤸',
-  whiteboard:'📋',
-  // By category (fallback)
-  racket:'🎾', indoor:'🏀', field:'⚽', ice:'🏒', beach:'🏐', other:'🏟'
-};
-function getCourtEmoji(court) {
-  if (!court) return '🏟';
-  return SPORT_EMOJI[court.id] || SPORT_EMOJI[court.category] || '🏟';
-}
-function setCourtChip(court) {
-  const chip = document.getElementById('court-name-chip');
-  if (!chip || !court) return;
-  const emoji = getCourtEmoji(court);
-  chip.textContent = `${emoji} ${court.name}`;
-  // Update browser tab title with emoji
-  document.title = `${emoji} ${court.name} — CourtDraw`;
-}
 
 // ── Stripe price IDs — paste values from Stripe Dashboard → Products ──
 const STRIPE_PRICES = {
@@ -2685,7 +2452,7 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
   if (phaseBtn) phaseBtn.textContent = isPro ? '+ Phase' : '+ Phase 🔒';
   // Apply/remove pro-lock visual cue on gated toolbar buttons
   const hasPro = isPro || isClub;
-  ['btn-print', 'btn-share', 'btn-video', 'btn-session'].forEach(id => {
+  ['btn-print', 'btn-share', 'btn-video'].forEach(id => {
     const btn = document.getElementById(id);
     if (btn) btn.classList.toggle('pro-lock', !hasPro);
   });
@@ -2698,9 +2465,7 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
   try {
     const t = localStorage.getItem(tacticsKey());
     state.savedTactics = t ? JSON.parse(t) : [];
-    const s = localStorage.getItem(sessionsKey());
-    state.savedSessions = s ? JSON.parse(s) : [];
-  } catch { state.savedTactics = []; state.savedSessions = []; }
+  } catch { state.savedTactics = []; }
   // Deep-link: if the user arrived from club-admin "Open" button, load that tactic
   if (isClub) {
     try {
@@ -3896,8 +3661,6 @@ function setTool(t) {
   state.tool = t;
   document.querySelectorAll('.tb-btn[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
   canvas.style.cursor = t === 'eraser' ? 'cell' : t === 'text' ? 'text' : t === 'select' ? 'default' : 'crosshair';
-  // QW-1: Dismiss nudge on first tool tap
-  hideDrawNudge();
 }
 
 // ══════════════════════════════════════════════
@@ -4023,7 +3786,7 @@ function switchCourt(id, locked, skipReset) {
   }
   const court = COURTS.find(c => c.id === id);
   if (!court) return;
-  setCourtChip(court);
+  document.getElementById('court-name-chip').textContent = court.name;
   const svg = document.getElementById('court-svg');
   svg.classList.add('switching');
   setTimeout(() => {
@@ -4044,128 +3807,34 @@ function switchCourt(id, locked, skipReset) {
     }, 80);
   }, 150);
   closeModal('modal-court-picker');
-  // QW-1: Show first-draw nudge pointing at Arrow tool on first court selection
-  if (!localStorage.getItem('cd_nudge_shown') && !localStorage.getItem('cd_first_draw_done')) {
-    setTimeout(showDrawNudge, 400);
-  }
-}
-
-// ── Viral loop: show footer on shared board ─────────────────────────────────
-function showViralFooter() {
-  const el = document.getElementById('viral-footer');
-  if (el) el.classList.add('visible');
-}
-
-// ── Monetization: peak-moment paywall (show 30s after impressive action) ──
-let _peakMomentTimer = null;
-function triggerPeakMomentPaywall(context) {
-  if (state.isPro || state.isClub) return; // already Pro
-  if (sessionStorage.getItem('cd_peak_paywall_shown')) return; // shown once per session
-  clearTimeout(_peakMomentTimer);
-  _peakMomentTimer = setTimeout(() => {
-    sessionStorage.setItem('cd_peak_paywall_shown', '1');
-    showUpgradeToast(
-      context === 'players' ? 'Great setup! Share it clean — no watermark — with Pro.' : 'That\'s a great play. Share it clean — no watermark — with Pro.',
-      'Try Pro free for 7 days →',
-      () => openPaywall('Export and share your plays without a watermark.')
-    );
-  }, 30000);
-}
-
-function showDrawNudge() {
-  if (localStorage.getItem('cd_nudge_shown')) return;
-  const arrowBtn = document.querySelector('[data-tool="arrow"]');
-  if (!arrowBtn) return;
-  const nudge = document.getElementById('draw-nudge');
-  if (!nudge) return;
-  const rect = arrowBtn.getBoundingClientRect();
-  nudge.style.left = (rect.left + rect.width / 2 - 90) + 'px';
-  nudge.style.top  = (rect.top - 72) + 'px';
-  nudge.classList.add('visible');
-  localStorage.setItem('cd_nudge_shown', '1');
-}
-
-function hideDrawNudge() {
-  const nudge = document.getElementById('draw-nudge');
-  if (nudge) nudge.classList.remove('visible');
 }
 
 // ══════════════════════════════════════════════
 // TACTIC LIBRARY
 // ══════════════════════════════════════════════
-function openLibrary() {
-  // Clear any previous search so library opens fresh
-  const prev = document.getElementById('lib-search-input');
-  if (prev) { prev.value = ''; }
-  renderLibrary();
-  if (state.isClub) loadClubLibrary();
-  openModal('modal-library');
-}
+function openLibrary() { renderLibrary(); if (state.isClub) loadClubLibrary(); openModal('modal-library'); }
 
-function renderLibrary(filterQuery) {
+function renderLibrary() {
   const body = document.getElementById('library-body');
   const saves = state.savedTactics;
-  const hasPro = state.isPro || state.isClub;
-  const q = (filterQuery || '').toLowerCase().trim();
-
-  // R-1: Search/filter bar — inject once into lib-search-wrap (preserved across re-renders)
-  const searchWrap = document.getElementById('lib-search-wrap');
-  if (searchWrap && !document.getElementById('lib-search-input')) {
-    const inp = document.createElement('input');
-    inp.id = 'lib-search-input';
-    inp.type = 'search';
-    inp.placeholder = hasPro ? '🔍 Search plays by name, notes or tag…' : '🔒 Search plays (Pro)';
-    inp.disabled = !hasPro;
-    inp.style.cssText = 'width:100%;padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;outline:none;';
-    inp.addEventListener('input', () => renderLibrary(inp.value));
-    if (!hasPro) inp.addEventListener('focus', () => { openPaywall('Search and filter your saved plays is a Pro feature.'); inp.blur(); });
-    searchWrap.appendChild(inp);
-  }
-
   if (!saves.length) {
     body.innerHTML = `<div class="empty-state"><div class="es-icon">📋</div><h3>No plays saved yet</h3><p>Draw your first play and hit <strong>Save Play</strong> below.</p></div>`;
     return;
   }
-
-  // Filter list
-  let filtered = [];
+  body.innerHTML = '';
   for (let i = saves.length - 1; i >= 0; i--) {
     const t = saves[i];
-    if (q) {
-      const haystack = [(t.name||''), (t.notes||''), (t.courtId||''), ...(t.tags||[])].join(' ').toLowerCase();
-      if (!haystack.includes(q)) continue;
-    }
-    filtered.push({ t, i });
-  }
-
-  body.innerHTML = '';
-  if (!filtered.length) {
-    body.innerHTML = `<div class="empty-state"><div class="es-icon">🔍</div><h3>No plays found</h3><p>Try a different search term.</p></div>`;
-    return;
-  }
-
-  for (const { t, i } of filtered) {
     const court = COURTS.find(c=>c.id===t.courtId);
     const row = document.createElement('div');
     row.className = 'tactic-row';
-    // Escape user-supplied strings
-    const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const safeName  = esc(t.name);
-    const safeNotes = esc(t.notes);
-    const courtEmoji = court ? getCourtEmoji(court) : '🏟';
-    const courtName  = court ? court.name : (t.courtId || '—');
-    const dateStr    = new Date(t.ts).toLocaleDateString();
-    // Tags display (Pro only)
-    const tagsHtml = hasPro && t.tags && t.tags.length
-      ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;">${t.tags.map(tag=>`<span style="font-size:10px;padding:2px 7px;background:var(--accent-dim);color:var(--accent);border-radius:10px;border:1px solid var(--accent);">${esc(tag)}</span>`).join('')}</div>` : '';
-    // Notes display
-    const notesHtml = safeNotes
-      ? `<div style="font-size:11px;color:var(--text2);margin-top:3px;font-style:italic;line-height:1.4;">"${safeNotes}"</div>` : '';
+    // Escape user-supplied tactic name to prevent XSS
+    const safeName = (t.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const courtName = court ? court.name : (t.courtId || '—');
+    const dateStr = new Date(t.ts).toLocaleDateString();
     row.innerHTML = `
-      <div class="tactic-info" style="min-width:0;">
-        <div class="tactic-name">${courtEmoji} ${safeName}</div>
+      <div class="tactic-info">
+        <div class="tactic-name">${safeName}</div>
         <div class="tactic-meta">${courtName} · ${dateStr}</div>
-        ${notesHtml}${tagsHtml}
       </div>
       <div class="tactic-actions">
         <button class="tac-btn load" data-idx="${i}">Load</button>
@@ -4216,35 +3885,22 @@ function saveTactic() {
     return;
   }
   saveCurrentPhase();
-  const notesEl = document.getElementById('tactic-notes-input');
-  const notes = notesEl ? notesEl.value.trim() : '';
-  const tagsEl = document.getElementById('tactic-tags-input');
-  const tags = (state.isPro || state.isClub) && tagsEl
-    ? tagsEl.value.split(',').map(s=>s.trim()).filter(Boolean).slice(0,6)
-    : [];
-  const _now = Date.now();
   const tactic = {
-    id: _now + '-' + Math.random().toString(36).slice(2, 7),
+    id: Date.now(),
     name,
-    notes,
-    tags,
     courtId: state.courtId,
     objects: JSON.parse(JSON.stringify(state.objects)),
     tokens: JSON.parse(JSON.stringify(state.tokenPositions)),
     phases: JSON.parse(JSON.stringify(state.phases)),
     currentPhase: state.currentPhase,
-    ts: _now
+    ts: Date.now()
   };
   state.savedTactics.push(tactic);
   saveToStorage();
   clearAuthorCredit();
   document.getElementById('tactic-name-input').value = '';
-  if (notesEl) notesEl.value = '';
-  if (tagsEl) tagsEl.value = '';
   renderLibrary();
   updateSaveCounter(); // Point 1
-  // Fix 3: track save server-side for logged-in users (powers weekly digest)
-  trackSaveServerSide(name, tactic.courtId);
   if (state.isClub) {
     // For club users: show "saving…" while syncing, then confirm or report failure
     showToast(`"${name}" saved — syncing to club…`);
@@ -4359,7 +4015,6 @@ const FEATURE_PREVIEWS = {
   share:     { icon: '🔗', title: 'Live Shareable Board Links', desc: 'Generate a link to your play. Anyone with it can open the exact tactic in their browser — no account needed.' },
   animation: { icon: '▶️',  title: 'Animated Playback',         desc: 'Watch your tactical sequence play out automatically — perfect for showing your team the full flow of a play.' },
   export:    { icon: '🖼',  title: 'Clean Export — No Watermark', desc: 'Export your play as a high-resolution PNG or PDF with no watermark — ready for presentations, WhatsApp, or your club app.' },
-  session:   { icon: '📅', title: 'Session Builder',             desc: 'Chain 3–8 saved plays into a full training session. Set time per drill, drag to reorder, then export as a PDF for your coaching staff.' },
 };
 let _fpPaywallReason = '';
 let _fpTimer = null;
@@ -4589,24 +4244,11 @@ function exportPNG() {
     // ── Branding / watermark ────────────────────────────────────────────────
     const FOOT_H = 48, FOOT_PAD = 16;
     const finalizePng = () => {
-      const dataUrl = off.toDataURL('image/png');
-      // Always trigger download
       const a = document.createElement('a');
       a.download = `courtdraw-${state.courtId}.png`;
-      a.href = dataUrl;
+      a.href = off.toDataURL('image/png');
       a.click();
-      // QW-2: Show share sheet only on genuine mobile devices.
-      // Desktop gets a clean toast; desktop navigator.share (Chrome on Windows) is
-      // deliberately excluded — it opens an awkward OS dialog without file sharing.
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        off.toBlob(blob => {
-          if (blob) openShareSheet(dataUrl, blob);
-          else showToast('Play exported!');
-        }, 'image/png');
-      } else {
-        showToast('✅ Play saved to Downloads!');
-      }
+      showToast('Play exported!');
     };
 
     if (state.isClub && (state.clubLogoUrl || state.clubName)) {
@@ -4644,91 +4286,21 @@ function exportPNG() {
       oc.fillText('courtdraw.app', W - 14, H - 21);
       oc.restore();
       finalizePng();
-      // Point 2 + Peak moment: nudge after export (once per session — immediate + 30s delayed)
+      // Point 2: nudge to upgrade after export (once per session)
       if (!sessionStorage.getItem('cd_export_nudge_shown')) {
         sessionStorage.setItem('cd_export_nudge_shown', '1');
         setTimeout(() => showUpgradeToast(
-          'Remove the watermark — try Pro free for 7 days',
+          'Remove the watermark — try Pro free for 3 days',
           'Try Pro →',
           () => openPaywall('Export clean plays with no watermark.')
         ), 1200);
       }
-      triggerPeakMomentPaywall('export');
     } else {
       finalizePng(); // Pro — no watermark
     }
     }); // end Promise.all(ballPromises).then
   };
   img.src = url;
-}
-
-// ── Fix 3: Server-side save tracking (powers weekly digest) ─────────────────
-// Fire-and-forget — never blocks the UI. Silently ignored if user is not logged in.
-async function trackSaveServerSide(playName, courtId) {
-  try {
-    const user = window.__currentUser;
-    if (!user) return; // not logged in — nothing to track
-    const idToken = await user.getIdToken();
-    fetch('/.netlify/functions/track-save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-      body: JSON.stringify({ playName: playName || '', courtId: courtId || '' }),
-      keepalive: true
-    }).catch(() => {}); // swallow network errors silently
-  } catch (e) { /* ignore — this is non-critical */ }
-}
-
-// ── QW-2: Share sheet helpers ──────────────────────────────────────────────
-let _lastPngBlob = null;
-let _lastPngDataUrl = null;
-
-function openShareSheet(dataUrl, blob) {
-  _lastPngDataUrl = dataUrl;
-  _lastPngBlob = blob;
-  // Hide native "Share" button if browser can't share files (iOS Safari can, most Android can too)
-  const nativeBtn = document.getElementById('btn-share-native');
-  if (nativeBtn) {
-    const canShareFiles = navigator.canShare && blob && navigator.canShare({ files: [new File([blob], 'play.png', { type: 'image/png' })] });
-    nativeBtn.style.display = canShareFiles ? 'flex' : 'none';
-  }
-  document.getElementById('share-sheet').classList.add('open');
-}
-
-function closeShareSheet() {
-  document.getElementById('share-sheet').classList.remove('open');
-  _lastPngBlob = null;
-  _lastPngDataUrl = null;
-}
-
-async function shareToWhatsApp() {
-  // On mobile: use Web Share API which opens the native share sheet (one-tap WhatsApp)
-  if (navigator.share && _lastPngBlob) {
-    try {
-      const file = new File([_lastPngBlob], `courtdraw-${state.courtId}.png`, { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'My Tactical Play — CourtDraw' });
-        closeShareSheet();
-        return;
-      }
-    } catch(e) { /* fallthrough */ }
-  }
-  // Fallback: open WhatsApp web (no file attachment — users share manually)
-  const msg = encodeURIComponent('Check out my tactical play — drawn with CourtDraw.app 🏟');
-  window.open(`https://wa.me/?text=${msg}`, '_blank');
-  closeShareSheet();
-}
-
-async function shareNative() {
-  if (!navigator.share || !_lastPngBlob) return;
-  try {
-    const file = new File([_lastPngBlob], `courtdraw-${state.courtId}.png`, { type: 'image/png' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'My Tactical Play — CourtDraw' });
-    } else {
-      await navigator.share({ title: 'My Tactical Play', text: 'Drawn with CourtDraw.app' });
-    }
-    closeShareSheet();
-  } catch(e) { /* user cancelled */ }
 }
 
 // ══════════════════════════════════════════════
@@ -4885,300 +4457,6 @@ function dl(){
 }
 
 // ══════════════════════════════════════════════
-// R-2: SESSION BUILDER
-// ══════════════════════════════════════════════
-let sessionPlays = []; // [{ tacticIdx, minutesLabel }]
-
-function openSessionBuilder() {
-  if (!state.isPro && !state.isClub) {
-    showFeaturePreview('session', 'Session Builder lets you chain 3–8 plays into a training plan — a Pro feature.');
-    return;
-  }
-  // Clean up any stale tactic indices
-  sessionPlays = sessionPlays.filter(sp => sp.tacticIdx >= 0 && sp.tacticIdx < state.savedTactics.length);
-  switchSessionTab('build');
-  renderSessionBuilder();
-  openModal('modal-session');
-}
-
-function renderSessionBuilder() {
-  const list = document.getElementById('session-play-list');
-  const addBar = document.getElementById('session-add-bar');
-  list.innerHTML = '';
-  addBar.innerHTML = '';
-
-  if (!sessionPlays.length) {
-    list.innerHTML = `<div class="session-empty">🗂 Add plays from your library below to build a session.</div>`;
-  } else {
-    sessionPlays.forEach((sp, pos) => {
-      const t = state.savedTactics[sp.tacticIdx];
-      if (!t) return;
-      const court = COURTS.find(c=>c.id===t.courtId);
-      const emoji = court ? getCourtEmoji(court) : '🏟';
-      const row = document.createElement('div');
-      row.className = 'session-play-row';
-      row.dataset.pos = pos;
-      row.draggable = true;
-      row.innerHTML = `
-        <span class="session-play-drag" title="Drag to reorder">⠿</span>
-        <div class="session-play-info">
-          <div class="session-play-name">${emoji} ${(t.name||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
-          <div class="session-play-meta">${court ? court.name : (t.courtId||'')}</div>
-        </div>
-        <input class="session-play-time" type="number" min="1" max="60" value="${sp.minutes||10}" title="Minutes for this drill">
-        <span style="font-size:11px;color:var(--text2);flex-shrink:0;">min</span>
-        <button class="session-play-remove" onclick="removeSessionPlay(${pos})" title="Remove">✕</button>`;
-      // Drag & drop reorder
-      row.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', pos); row.style.opacity = '0.5'; });
-      row.addEventListener('dragend', () => { row.style.opacity = '1'; });
-      row.addEventListener('dragover', e => { e.preventDefault(); row.classList.add('drag-over'); });
-      row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
-      row.addEventListener('drop', e => {
-        e.preventDefault(); row.classList.remove('drag-over');
-        const from = parseInt(e.dataTransfer.getData('text/plain'));
-        const to = parseInt(row.dataset.pos);
-        if (from !== to) {
-          const moved = sessionPlays.splice(from, 1)[0];
-          sessionPlays.splice(to, 0, moved);
-          renderSessionBuilder();
-        }
-      });
-      // Sync time input
-      const timeInput = row.querySelector('.session-play-time');
-      timeInput.addEventListener('change', () => { sessionPlays[pos].minutes = parseInt(timeInput.value)||10; });
-      list.appendChild(row);
-    });
-  }
-
-  // Add-play pills from saved tactics
-  const MAX = 8;
-  if (sessionPlays.length < MAX && state.savedTactics.length) {
-    const label = document.createElement('div');
-    label.style.cssText = 'width:100%;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;margin-top:4px;';
-    label.textContent = 'Add from My Plays:';
-    addBar.appendChild(label);
-    state.savedTactics.slice().reverse().forEach((t, ri) => {
-      const realIdx = state.savedTactics.length - 1 - ri;
-      const pill = document.createElement('button');
-      pill.className = 'session-add-pill';
-      const court = COURTS.find(c=>c.id===t.courtId);
-      const emoji = court ? getCourtEmoji(court) : '🏟';
-      pill.textContent = `${emoji} ${(t.name||'Untitled').slice(0,22)}`;
-      pill.title = 'Add to session';
-      pill.onclick = () => { addSessionPlay(realIdx); };
-      addBar.appendChild(pill);
-    });
-  } else if (!state.savedTactics.length) {
-    addBar.innerHTML = '<p style="font-size:12px;color:var(--text2);">Save some plays first, then build a session.</p>';
-  }
-
-  // Total time
-  const total = sessionPlays.reduce((sum,sp) => sum + (sp.minutes||10), 0);
-  if (sessionPlays.length) {
-    const info = document.createElement('div');
-    info.style.cssText = 'margin-top:10px;font-size:12px;color:var(--text2);text-align:right;';
-    info.textContent = `${sessionPlays.length} play${sessionPlays.length>1?'s':''} · ${total} min total`;
-    list.appendChild(info);
-  }
-}
-
-function addSessionPlay(idx) {
-  if (sessionPlays.length >= 8) { showToast('Max 8 plays per session.'); return; }
-  sessionPlays.push({ tacticIdx: idx, minutes: 10 });
-  renderSessionBuilder();
-}
-
-function removeSessionPlay(pos) {
-  sessionPlays.splice(pos, 1);
-  renderSessionBuilder();
-}
-
-function switchSessionTab(tab) {
-  const buildPane = document.getElementById('session-pane-build');
-  const savedPane = document.getElementById('session-pane-saved');
-  const buildTab  = document.getElementById('session-tab-build');
-  const savedTab  = document.getElementById('session-tab-saved');
-  const footer    = document.getElementById('session-footer');
-  const isBuilder = tab === 'build';
-  buildPane.style.display = isBuilder ? 'block' : 'none';
-  savedPane.style.display = isBuilder ? 'none'  : 'block';
-  buildTab.style.color        = isBuilder ? 'var(--accent)' : 'var(--text2)';
-  buildTab.style.borderBottom = isBuilder ? '2px solid var(--accent)' : '2px solid transparent';
-  savedTab.style.color        = isBuilder ? 'var(--text2)' : 'var(--accent)';
-  savedTab.style.borderBottom = isBuilder ? '2px solid transparent' : '2px solid var(--accent)';
-  footer.style.display        = isBuilder ? 'flex' : 'none';
-  if (!isBuilder) renderSavedSessions();
-}
-
-function renderSavedSessions() {
-  const container = document.getElementById('session-saved-list');
-  if (!container) return;
-  const sessions = state.savedSessions;
-  if (!sessions.length) {
-    container.innerHTML = `<div class="session-empty">📭 No saved sessions yet.<br><span style="font-size:12px;">Build a session in the Builder tab and click Save.</span></div>`;
-    return;
-  }
-  container.innerHTML = '';
-  sessions.slice().reverse().forEach((sess, ri) => {
-    const realIdx = sessions.length - 1 - ri;
-    const totalMin = (sess.plays || []).reduce((sum, p) => sum + (p.minutes || 10), 0);
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;';
-    const dateStr = new Date(sess.ts || 0).toLocaleDateString();
-    const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    row.innerHTML = `
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:700;font-size:14px;">${esc(sess.name)}</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:2px;">${sess.plays.length} play${sess.plays.length!==1?'s':''} · ${totalMin} min · ${dateStr}</div>
-      </div>
-      <button style="padding:6px 12px;border-radius:7px;font-size:12px;font-weight:600;background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);cursor:pointer;" data-load="${realIdx}">Load</button>
-      <button style="padding:6px 10px;border-radius:7px;font-size:12px;background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.3);cursor:pointer;" data-del="${realIdx}">Del</button>`;
-    row.querySelector('[data-load]').addEventListener('click', () => loadSession(realIdx));
-    row.querySelector('[data-del]').addEventListener('click', () => deleteSession(realIdx));
-    container.appendChild(row);
-  });
-}
-
-function saveSession() {
-  if (!sessionPlays.length) { showToast('Add at least one play before saving.'); return; }
-  const name = (document.getElementById('session-name-input').value.trim()) || 'My Session';
-  // Persist play references by tactic ID (not index, which can shift after deletions)
-  const plays = sessionPlays.map(sp => {
-    const t = state.savedTactics[sp.tacticIdx];
-    return { tacticId: t ? t.id : null, tacticIdx: sp.tacticIdx, minutes: sp.minutes || 10 };
-  }).filter(p => p.tacticId !== null);
-  if (!plays.length) { showToast('Could not find the plays — have you saved them first?'); return; }
-  const session = { id: Date.now(), name, plays, ts: Date.now() };
-  // Check for duplicate name — overwrite if user saves same name
-  const existingIdx = state.savedSessions.findIndex(s => s.name === name);
-  if (existingIdx >= 0) {
-    state.savedSessions[existingIdx] = session;
-  } else {
-    state.savedSessions.push(session);
-  }
-  saveToStorage();
-  showToast(`"${name}" saved to My Sessions!`);
-  switchSessionTab('saved');
-}
-
-function loadSession(idx) {
-  const sess = state.savedSessions[idx];
-  if (!sess) return;
-  // Restore session plays — match by tacticId first, fall back to tacticIdx
-  sessionPlays = (sess.plays || []).map(p => {
-    let tacticIdx = state.savedTactics.findIndex(t => t.id === p.tacticId);
-    if (tacticIdx < 0) tacticIdx = p.tacticIdx; // fallback
-    if (tacticIdx < 0 || tacticIdx >= state.savedTactics.length) return null;
-    return { tacticIdx, minutes: p.minutes || 10 };
-  }).filter(Boolean);
-  document.getElementById('session-name-input').value = sess.name;
-  switchSessionTab('build');
-  renderSessionBuilder();
-  showToast(`"${sess.name}" loaded into builder.`);
-}
-
-function deleteSession(idx) {
-  const sess = state.savedSessions[idx];
-  if (!sess) return;
-  if (!confirm(`Delete "${sess.name}"? This cannot be undone.`)) return;
-  // If this session is currently loaded in the builder, clear the builder
-  const nameInput = document.getElementById('session-name-input');
-  if (nameInput && nameInput.value.trim() === sess.name) {
-    sessionPlays = [];
-    nameInput.value = '';
-    renderSessionBuilder();
-  }
-  state.savedSessions.splice(idx, 1);
-  saveToStorage();
-  renderSavedSessions();
-  showToast('Session deleted.');
-}
-
-async function exportSessionPDF() {
-  if (!sessionPlays.length) { showToast('Add at least one play to the session first.'); return; }
-  showToast('Building session PDF…');
-  // Build a multi-canvas PDF using print-friendly layout
-  const W = 2400, H = 1440;
-  const pages = [];
-  for (const sp of sessionPlays) {
-    const t = state.savedTactics[sp.tacticIdx];
-    if (!t) continue;
-    const court = COURTS.find(c=>c.id===t.courtId);
-    if (!court) continue;
-    const off = document.createElement('canvas');
-    off.width = W; off.height = H;
-    const oc = off.getContext('2d');
-    await new Promise(resolve => {
-      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" width="${W}" height="${H}">${court.svg()}</svg>`;
-      const blob = new Blob([svgStr],{type:'image/svg+xml'});
-      const url = URL.createObjectURL(blob);
-      const img = new Image();
-      img.onload = () => { oc.drawImage(img,0,0,W,H); URL.revokeObjectURL(url); resolve(); };
-      img.onerror = () => { URL.revokeObjectURL(url); resolve(); };
-      img.src = url;
-    });
-    // Draw objects + tokens from first phase
-    const savedW = canvasW, savedH = canvasH; canvasW = W; canvasH = H;
-    const src = (t.phases && t.phases.length) ? t.phases[0] : t;
-    for (const obj of (src.objects||[])) drawObject(oc, obj);
-    // Draw player tokens
-    const srcTokens = (src.tokens && src.tokens.length) ? src.tokens : (t.tokens || []);
-    const sessionPdfScale = H / 600;
-    const spdPlayerRad  = Math.round(16 * sessionPdfScale);
-    const spdPlayerFont = Math.round(10 * sessionPdfScale);
-    const spdStroke     = Math.max(1, Math.round(2 * sessionPdfScale));
-    const spdBallDiam   = Math.round(16 * sessionPdfScale);
-    for (const tk of srcTokens) {
-      if (tk.team === 'ball') continue;
-      const tx = tk.pct[0] * W, ty = tk.pct[1] * H;
-      oc.beginPath(); oc.arc(tx, ty, spdPlayerRad, 0, Math.PI * 2);
-      oc.fillStyle = tk.team === 'red' ? (state.teamColorB || '#dc2626') : (state.teamColorA || '#60a5fa');
-      oc.fill();
-      oc.strokeStyle = 'rgba(255,255,255,0.7)'; oc.lineWidth = spdStroke; oc.stroke();
-      oc.fillStyle = 'white';
-      oc.font = `bold ${spdPlayerFont}px system-ui`; oc.textAlign = 'center'; oc.textBaseline = 'middle';
-      oc.fillText(tk.label, tx, ty);
-    }
-    // Draw ball tokens async
-    await Promise.all(srcTokens.filter(tk => tk.team === 'ball').map(tk => new Promise(resolve => {
-      const bsvg = getBallSvg(t.courtId);
-      const burl = URL.createObjectURL(new Blob([bsvg], { type: 'image/svg+xml' }));
-      const bi = new Image();
-      bi.onload = () => { oc.drawImage(bi, tk.pct[0]*W - spdBallDiam/2, tk.pct[1]*H - spdBallDiam/2, spdBallDiam, spdBallDiam); URL.revokeObjectURL(burl); resolve(); };
-      bi.onerror = () => { URL.revokeObjectURL(burl); resolve(); };
-      bi.src = burl;
-    })));
-    canvasW = savedW; canvasH = savedH;
-    // Footer bar
-    const FH = 70;
-    oc.fillStyle = 'rgba(0,0,0,0.65)';
-    oc.fillRect(0, H-FH, W, FH);
-    oc.fillStyle = '#fff'; oc.font = `bold 32px system-ui`; oc.textAlign = 'left'; oc.textBaseline = 'middle';
-    oc.fillText(t.name||'Untitled', 24, H-FH/2);
-    oc.fillStyle = 'rgba(255,255,255,0.55)'; oc.font = `26px system-ui`; oc.textAlign = 'right';
-    oc.fillText(`${sp.minutes||10} min`, W-24, H-FH/2);
-    pages.push(off.toDataURL('image/png'));
-  }
-  // Open pages in a new window for printing
-  const win = window.open('', '_blank');
-  if (!win) { showToast('Allow pop-ups to export the session PDF.'); return; }
-  const sessionName = document.getElementById('session-name-input').value.trim() || 'Session';
-  win.document.write(`<!DOCTYPE html><html><head><title>${sessionName} — CourtDraw</title><style>
-    *{margin:0;padding:0;box-sizing:border-box;}
-    body{background:#000;}
-    img{display:block;width:100%;page-break-after:always;}
-    @media print{img{page-break-after:always;width:100%;}}
-  </style></head><body>`);
-  pages.forEach((src,i) => {
-    win.document.write(`<img src="${src}" alt="Play ${i+1}">`);
-  });
-  win.document.write(`</body></html>`);
-  win.document.close();
-  win.addEventListener('load', () => { win.focus(); win.print(); });
-  showToast(`Session PDF ready — ${pages.length} plays.`);
-}
-
-// ══════════════════════════════════════════════
 // SHARE BOARD
 // ══════════════════════════════════════════════
 function shareBoard() {
@@ -5194,7 +4472,7 @@ function shareBoard() {
   try {
     const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
     const url = location.origin + location.pathname + '#s=' + encoded;
-    if (url.length > 4000) { showToast(`Board too complex for a share link (${url.length.toLocaleString()} chars). Save it to your library and export as PNG instead.`, 5000); return; }
+    if (url.length > 4000) { showToast('Board too complex to share via link — save it to your library instead.'); return; }
     navigator.clipboard.writeText(url)
       .then(() => {
         gtag('event', 'share_play', { event_category: 'engagement', court_id: state.courtId });
@@ -5223,9 +4501,7 @@ function loadFromHash() {
   const hash = location.hash;
   if (!hash.startsWith('#s=')) return false;
   try {
-    const encoded = hash.slice(3);
-    if (encoded.length > 6000) { console.warn('Share link too large — ignoring'); return false; }
-    const payload = JSON.parse(decodeURIComponent(atob(encoded)));
+    const payload = JSON.parse(decodeURIComponent(atob(hash.slice(3))));
     if (payload.courtId) state.courtId = payload.courtId;
     if (payload.objects) state.objects = payload.objects;
     if (payload.tokens) state.tokenPositions = payload.tokens;
@@ -6020,13 +5296,8 @@ function tacticsKey() {
   const uid = window.__currentUser && window.__currentUser.uid;
   return uid ? 'courtdraw_tactics_' + uid : 'courtdraw_tactics_guest';
 }
-function sessionsKey() {
-  const uid = window.__currentUser && window.__currentUser.uid;
-  return uid ? 'courtdraw_sessions_' + uid : 'courtdraw_sessions_guest';
-}
 function saveToStorage() {
   localStorage.setItem(tacticsKey(), JSON.stringify(state.savedTactics));
-  localStorage.setItem(sessionsKey(), JSON.stringify(state.savedSessions));
   localStorage.setItem('courtdraw_pro', state.isPro ? '1' : '0');
   localStorage.setItem('courtdraw_free_court', state.freeCourt || '');
   localStorage.setItem('courtdraw_color', state.color);
@@ -6036,8 +5307,6 @@ function loadFromStorage() {
   try {
     const t = localStorage.getItem(tacticsKey());
     if (t) state.savedTactics = JSON.parse(t);
-    const s = localStorage.getItem(sessionsKey());
-    if (s) state.savedSessions = JSON.parse(s);
     state.isPro = localStorage.getItem('courtdraw_pro') === '1';
     state.freeCourt = localStorage.getItem('courtdraw_free_court') || null;
     state.clubName = localStorage.getItem('courtdraw_club_name') || '';
@@ -6075,7 +5344,7 @@ function init() {
   const court = COURTS.find(c => c.id === startCourtId) || COURTS[0];
   state.courtId = court.id;
   document.getElementById('court-svg').innerHTML = court.svg();
-  setCourtChip(court);
+  document.getElementById('court-name-chip').textContent = court.name;
   updateUndoButtons();
   // Update Pro badge (pre-Firebase: set text/class/onclick from localStorage)
   if (state.isPro) {
@@ -6086,7 +5355,7 @@ function init() {
   }
   // Apply pro-lock visual cue on gated toolbar buttons (pre-Firebase state)
   if (!state.isPro) {
-    ['btn-print', 'btn-share', 'btn-video', 'btn-session'].forEach(id => {
+    ['btn-print', 'btn-share', 'btn-video'].forEach(id => {
       const btn = document.getElementById(id);
       if (btn) btn.classList.add('pro-lock');
     });
@@ -6118,8 +5387,6 @@ function init() {
         state.currentPhase = 0;
       }
       updatePhaseUI();
-      // Viral loop: show persistent "Draw your own plays" footer on shared board
-      showViralFooter();
     } else {
       buildTokens();
     }
@@ -6361,7 +5628,7 @@ function loadLibTactic(t) {
   const courtEntry = COURTS.find(c => c.id === t.courtId);
   if (courtEntry) {
     state.courtId = t.courtId;
-    setCourtChip(courtEntry);
+    document.getElementById('court-name-chip').textContent = courtEntry.name;
     const svg = document.getElementById('court-svg');
     svg.innerHTML = courtEntry.svg();
     setTimeout(syncCanvas, 80);
@@ -6647,10 +5914,6 @@ function addPlayer() {
   createTokenEl(idx);
   repositionTokens();
   showToast(`Player ${label} added.`);
-  // Peak moment: trigger paywall prompt 30s after 3rd player added
-  if (state.tokenPositions.filter(t=>t.team!=='ball').length === 3) {
-    triggerPeakMomentPaywall('players');
-  }
 }
 
 function removePlayer(idx) {
