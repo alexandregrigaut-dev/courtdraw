@@ -1701,16 +1701,35 @@ body.portrait-mode .player-token:active {
       <span class="modal-title">📅 Session Builder</span>
       <button class="modal-close" aria-label="Close" onclick="closeModal('modal-session')">✕</button>
     </div>
-    <div class="modal-body" id="session-body">
-      <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">Chain 3–8 plays into a training session. Drag to reorder, set time per drill. Export as PDF or share as a link.</p>
-      <div id="session-play-list"></div>
-      <div class="session-add-bar" id="session-add-bar"></div>
+    <div class="modal-body" id="session-body" style="overflow:hidden;display:flex;flex-direction:column;gap:0;">
+      <!-- Tabs: Builder | My Sessions -->
+      <div id="session-tabs" style="display:flex;gap:0;border-bottom:1px solid var(--border);flex-shrink:0;margin-bottom:12px;">
+        <button id="session-tab-build" onclick="switchSessionTab('build')"
+          style="flex:1;padding:10px;font-size:13px;font-weight:700;border:none;background:none;color:var(--accent);border-bottom:2px solid var(--accent);cursor:pointer;font-family:inherit;">
+          ✏️ Builder
+        </button>
+        <button id="session-tab-saved" onclick="switchSessionTab('saved')"
+          style="flex:1;padding:10px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;">
+          📂 My Sessions
+        </button>
+      </div>
+      <!-- Builder pane -->
+      <div id="session-pane-build" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">Chain 3–8 plays into a training session. Drag to reorder, set time per drill. Export as PDF or save for later.</p>
+        <div id="session-play-list"></div>
+        <div class="session-add-bar" id="session-add-bar"></div>
+      </div>
+      <!-- Saved sessions pane (hidden by default) -->
+      <div id="session-pane-saved" style="display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+        <div id="session-saved-list"></div>
+      </div>
     </div>
-    <div class="modal-footer" style="display:flex;gap:8px;align-items:center;">
+    <div class="modal-footer" id="session-footer" style="display:flex;gap:8px;align-items:center;">
       <input type="text" id="session-name-input" placeholder="Name this session…" maxlength="50"
         style="flex:1;padding:9px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;outline:none;">
       <button class="btn-accent" onclick="exportSessionPDF()" title="Export all plays as PDF">Export PDF</button>
-      <button class="btn-accent" onclick="saveSession()" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);">Save</button>
+      <button class="btn-accent" onclick="saveSession()" title="Save session to My Sessions"
+        style="background:var(--surface2);color:var(--text);border:1px solid var(--border);">Save</button>
     </div>
   </div>
 </div>
@@ -2587,6 +2606,7 @@ const state = {
   portraitRotated: false,
   pinching: false, _pinchCooldown: null,
   videoObjectUrl: null,  // current video object URL (revoked on close)
+  savedSessions: [],     // R-2: persisted training sessions
 };
 
 const COLORS = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#ffffff','#111827','#a855f7','#f97316'];
@@ -2677,7 +2697,9 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
   try {
     const t = localStorage.getItem(tacticsKey());
     state.savedTactics = t ? JSON.parse(t) : [];
-  } catch { state.savedTactics = []; }
+    const s = localStorage.getItem(sessionsKey());
+    state.savedSessions = s ? JSON.parse(s) : [];
+  } catch { state.savedTactics = []; state.savedSessions = []; }
   // Deep-link: if the user arrived from club-admin "Open" button, load that tactic
   if (isClub) {
     try {
@@ -4219,6 +4241,8 @@ function saveTactic() {
   if (tagsEl) tagsEl.value = '';
   renderLibrary();
   updateSaveCounter(); // Point 1
+  // Fix 3: track save server-side for logged-in users (powers weekly digest)
+  trackSaveServerSide(name, tactic.courtId);
   if (state.isClub) {
     // For club users: show "saving…" while syncing, then confirm or report failure
     showToast(`"${name}" saved — syncing to club…`);
@@ -4569,14 +4593,17 @@ function exportPNG() {
       a.download = `courtdraw-${state.courtId}.png`;
       a.href = dataUrl;
       a.click();
-      // QW-2: Show share sheet on mobile/when Web Share API is available
+      // QW-2: Show share sheet only on genuine mobile devices.
+      // Desktop gets a clean toast; desktop navigator.share (Chrome on Windows) is
+      // deliberately excluded — it opens an awkward OS dialog without file sharing.
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile || navigator.share) {
+      if (isMobile) {
         off.toBlob(blob => {
           if (blob) openShareSheet(dataUrl, blob);
+          else showToast('Play exported!');
         }, 'image/png');
       } else {
-        showToast('Play exported!');
+        showToast('✅ Play saved to Downloads!');
       }
     };
 
@@ -4633,6 +4660,22 @@ function exportPNG() {
   img.src = url;
 }
 
+// ── Fix 3: Server-side save tracking (powers weekly digest) ─────────────────
+// Fire-and-forget — never blocks the UI. Silently ignored if user is not logged in.
+async function trackSaveServerSide(playName, courtId) {
+  try {
+    const user = window.__currentUser;
+    if (!user) return; // not logged in — nothing to track
+    const idToken = await user.getIdToken();
+    fetch('/.netlify/functions/track-save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+      body: JSON.stringify({ playName: playName || '', courtId: courtId || '' }),
+      keepalive: true
+    }).catch(() => {}); // swallow network errors silently
+  } catch (e) { /* ignore — this is non-critical */ }
+}
+
 // ── QW-2: Share sheet helpers ──────────────────────────────────────────────
 let _lastPngBlob = null;
 let _lastPngDataUrl = null;
@@ -4640,9 +4683,12 @@ let _lastPngDataUrl = null;
 function openShareSheet(dataUrl, blob) {
   _lastPngDataUrl = dataUrl;
   _lastPngBlob = blob;
-  // Hide native share button if not supported (desktop)
+  // Hide native "Share" button if browser can't share files (iOS Safari can, most Android can too)
   const nativeBtn = document.getElementById('btn-share-native');
-  if (nativeBtn) nativeBtn.style.display = navigator.share ? 'flex' : 'none';
+  if (nativeBtn) {
+    const canShareFiles = navigator.canShare && blob && navigator.canShare({ files: [new File([blob], 'play.png', { type: 'image/png' })] });
+    nativeBtn.style.display = canShareFiles ? 'flex' : 'none';
+  }
   document.getElementById('share-sheet').classList.add('open');
 }
 
@@ -4846,9 +4892,9 @@ function openSessionBuilder() {
     showFeaturePreview('session', 'Session Builder lets you chain 3–8 plays into a training plan — a Pro feature.');
     return;
   }
-  sessionPlays = state.savedTactics.length
-    ? sessionPlays.filter(sp => sp.tacticIdx < state.savedTactics.length)
-    : [];
+  // Clean up any stale tactic indices
+  sessionPlays = sessionPlays.filter(sp => sp.tacticIdx >= 0 && sp.tacticIdx < state.savedTactics.length);
+  switchSessionTab('build');
   renderSessionBuilder();
   openModal('modal-session');
 }
@@ -4945,10 +4991,98 @@ function removeSessionPlay(pos) {
   renderSessionBuilder();
 }
 
+function switchSessionTab(tab) {
+  const buildPane = document.getElementById('session-pane-build');
+  const savedPane = document.getElementById('session-pane-saved');
+  const buildTab  = document.getElementById('session-tab-build');
+  const savedTab  = document.getElementById('session-tab-saved');
+  const footer    = document.getElementById('session-footer');
+  const isBuilder = tab === 'build';
+  buildPane.style.display = isBuilder ? 'block' : 'none';
+  savedPane.style.display = isBuilder ? 'none'  : 'block';
+  buildTab.style.color        = isBuilder ? 'var(--accent)' : 'var(--text2)';
+  buildTab.style.borderBottom = isBuilder ? '2px solid var(--accent)' : '2px solid transparent';
+  savedTab.style.color        = isBuilder ? 'var(--text2)' : 'var(--accent)';
+  savedTab.style.borderBottom = isBuilder ? '2px solid transparent' : '2px solid var(--accent)';
+  footer.style.display        = isBuilder ? 'flex' : 'none';
+  if (!isBuilder) renderSavedSessions();
+}
+
+function renderSavedSessions() {
+  const container = document.getElementById('session-saved-list');
+  if (!container) return;
+  const sessions = state.savedSessions;
+  if (!sessions.length) {
+    container.innerHTML = `<div class="session-empty">📭 No saved sessions yet.<br><span style="font-size:12px;">Build a session in the Builder tab and click Save.</span></div>`;
+    return;
+  }
+  container.innerHTML = '';
+  sessions.slice().reverse().forEach((sess, ri) => {
+    const realIdx = sessions.length - 1 - ri;
+    const totalMin = (sess.plays || []).reduce((sum, p) => sum + (p.minutes || 10), 0);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;';
+    const dateStr = new Date(sess.ts || 0).toLocaleDateString();
+    const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    row.innerHTML = `
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:14px;">${esc(sess.name)}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px;">${sess.plays.length} play${sess.plays.length!==1?'s':''} · ${totalMin} min · ${dateStr}</div>
+      </div>
+      <button style="padding:6px 12px;border-radius:7px;font-size:12px;font-weight:600;background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);cursor:pointer;" data-load="${realIdx}">Load</button>
+      <button style="padding:6px 10px;border-radius:7px;font-size:12px;background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.3);cursor:pointer;" data-del="${realIdx}">Del</button>`;
+    row.querySelector('[data-load]').addEventListener('click', () => loadSession(realIdx));
+    row.querySelector('[data-del]').addEventListener('click', () => deleteSession(realIdx));
+    container.appendChild(row);
+  });
+}
+
 function saveSession() {
-  const name = document.getElementById('session-name-input').value.trim() || 'My Session';
-  showToast(`Session "${name}" saved (${sessionPlays.length} plays)!`);
-  closeModal('modal-session');
+  if (!sessionPlays.length) { showToast('Add at least one play before saving.'); return; }
+  const name = (document.getElementById('session-name-input').value.trim()) || 'My Session';
+  // Persist play references by tactic ID (not index, which can shift after deletions)
+  const plays = sessionPlays.map(sp => {
+    const t = state.savedTactics[sp.tacticIdx];
+    return { tacticId: t ? t.id : null, tacticIdx: sp.tacticIdx, minutes: sp.minutes || 10 };
+  }).filter(p => p.tacticId !== null);
+  if (!plays.length) { showToast('Could not find the plays — have you saved them first?'); return; }
+  const session = { id: Date.now(), name, plays, ts: Date.now() };
+  // Check for duplicate name — overwrite if user saves same name
+  const existingIdx = state.savedSessions.findIndex(s => s.name === name);
+  if (existingIdx >= 0) {
+    state.savedSessions[existingIdx] = session;
+  } else {
+    state.savedSessions.push(session);
+  }
+  saveToStorage();
+  showToast(`"${name}" saved to My Sessions!`);
+  switchSessionTab('saved');
+}
+
+function loadSession(idx) {
+  const sess = state.savedSessions[idx];
+  if (!sess) return;
+  // Restore session plays — match by tacticId first, fall back to tacticIdx
+  sessionPlays = (sess.plays || []).map(p => {
+    let tacticIdx = state.savedTactics.findIndex(t => t.id === p.tacticId);
+    if (tacticIdx < 0) tacticIdx = p.tacticIdx; // fallback
+    if (tacticIdx < 0 || tacticIdx >= state.savedTactics.length) return null;
+    return { tacticIdx, minutes: p.minutes || 10 };
+  }).filter(Boolean);
+  document.getElementById('session-name-input').value = sess.name;
+  switchSessionTab('build');
+  renderSessionBuilder();
+  showToast(`"${sess.name}" loaded into builder.`);
+}
+
+function deleteSession(idx) {
+  const sess = state.savedSessions[idx];
+  if (!sess) return;
+  if (!confirm(`Delete "${sess.name}"? This cannot be undone.`)) return;
+  state.savedSessions.splice(idx, 1);
+  saveToStorage();
+  renderSavedSessions();
+  showToast('Session deleted.');
 }
 
 async function exportSessionPDF() {
@@ -5848,8 +5982,13 @@ function tacticsKey() {
   const uid = window.__currentUser && window.__currentUser.uid;
   return uid ? 'courtdraw_tactics_' + uid : 'courtdraw_tactics_guest';
 }
+function sessionsKey() {
+  const uid = window.__currentUser && window.__currentUser.uid;
+  return uid ? 'courtdraw_sessions_' + uid : 'courtdraw_sessions_guest';
+}
 function saveToStorage() {
   localStorage.setItem(tacticsKey(), JSON.stringify(state.savedTactics));
+  localStorage.setItem(sessionsKey(), JSON.stringify(state.savedSessions));
   localStorage.setItem('courtdraw_pro', state.isPro ? '1' : '0');
   localStorage.setItem('courtdraw_free_court', state.freeCourt || '');
   localStorage.setItem('courtdraw_color', state.color);
@@ -5859,6 +5998,8 @@ function loadFromStorage() {
   try {
     const t = localStorage.getItem(tacticsKey());
     if (t) state.savedTactics = JSON.parse(t);
+    const s = localStorage.getItem(sessionsKey());
+    if (s) state.savedSessions = JSON.parse(s);
     state.isPro = localStorage.getItem('courtdraw_pro') === '1';
     state.freeCourt = localStorage.getItem('courtdraw_free_court') || null;
     state.clubName = localStorage.getItem('courtdraw_club_name') || '';

@@ -92,32 +92,19 @@ exports.handler = async () => {
 
         try {
           if (isPro) {
-            // Count tactics saved in the last 7 days
-            const sevenDaysAgo = new Date(now - WEEK_MS);
-            let playsLastWeek = 0;
-            let spotlightName = '';
-            let spotlightSport = '';
+            // Read save-tracking fields written by track-save.js whenever the user saves a play.
+            // playsThisWeek is reset each calendar week by the track-save function (savesWeekKey guard).
+            const savesWeekKey  = data.savesWeekKey  || '';
+            const playsThisWeekField = savesWeekKey === weekKey ? (data.playsThisWeek || 0) : 0;
+            const spotlightName  = data.lastPlayName  || '';
+            const spotlightSport = data.lastPlayCourt
+              ? data.lastPlayCourt.replace(/_/g, ' ')
+              : '';
 
-            try {
-              const snapshot = await db
-                .collection('users').doc(user.uid)
-                .collection('tactics')
-                .where('ts', '>=', sevenDaysAgo.getTime())
-                .orderBy('ts', 'desc')
-                .limit(50)
-                .get();
-              playsLastWeek = snapshot.size;
-              if (!snapshot.empty) {
-                const latest = snapshot.docs[0].data();
-                spotlightName  = latest.name  || '';
-                spotlightSport = latest.courtId ? latest.courtId.replace(/_/g, ' ') : '';
-              }
-            } catch (e) {
-              // tactics sub-collection may not exist — that's fine
-            }
-
+            // Only send if they have data (have used the app) OR it's a re-engagement nudge
+            // (send regardless — an empty digest is still a useful re-engagement touch)
             await sendDigest(user.email, 'weeklyDigestPro', {
-              playsLastWeek,
+              playsLastWeek: playsThisWeekField,
               spotlightName,
               spotlightSport
             });

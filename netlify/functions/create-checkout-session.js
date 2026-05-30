@@ -79,6 +79,8 @@ exports.handler = async (event) => {
       cancel_url:  `${process.env.PUBLIC_URL}/#pricing`,
       metadata: { userId: decoded.uid, priceId },
       // All plans: free trial. Card required upfront; no charge until trial ends.
+      // NOTE: subscription_data.trial_period_days passed here takes PRECEDENCE over any
+      // trial period configured on the Stripe price itself — no Dashboard change needed.
       ...(trialDays > 0 ? { subscription_data: { trial_period_days: trialDays } } : {})
     });
   } catch (err) {
