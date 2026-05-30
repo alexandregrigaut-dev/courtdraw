@@ -3838,7 +3838,7 @@ function switchCourt(id, locked, skipReset) {
         // Same court re-selected: just re-position existing tokens
         repositionTokens();
       }
-      if (!localStorage.getItem('cd_nudge_shown') && state.objects.length === 0) {
+      if (!localStorage.getItem('cd_nudge_v2') && state.objects.length === 0) {
         setTimeout(showDrawNudge, 300);
       }
     }, 80);
@@ -4144,7 +4144,7 @@ function dismissWelcome(openPicker = false) {
 }
 
 function showDrawNudge() {
-  if (localStorage.getItem('cd_nudge_shown')) return;
+  if (localStorage.getItem('cd_nudge_v2')) return;
   if (state.objects.length > 0) return;
   const btn = document.querySelector('.tb-btn[data-tool="arrow"]');
   const nudge = document.getElementById('draw-nudge');
@@ -4161,7 +4161,7 @@ function dismissDrawNudge() {
   const nudge = document.getElementById('draw-nudge');
   if (!nudge || nudge.style.display !== 'flex') return;
   nudge.style.display = 'none';
-  localStorage.setItem('cd_nudge_shown', '1');
+  localStorage.setItem('cd_nudge_v2', '1');
   const btn = document.querySelector('.tb-btn[data-tool="arrow"]');
   if (btn) btn.classList.remove('nudge-pulse');
 }
@@ -5485,7 +5485,7 @@ function init() {
     }
     // Show draw nudge on first load for users who haven't drawn yet.
     // Long delay so it fires after any welcome/picker flow completes.
-    if (!sharedBoard && !localStorage.getItem('cd_nudge_shown')) {
+    if (!sharedBoard && !localStorage.getItem('cd_nudge_v2')) {
       setTimeout(showDrawNudge, 2500);
     }
   });
