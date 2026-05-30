@@ -6369,17 +6369,20 @@ function renderProLibGrid() {
     return;
   }
   const hasPro = state.isPro || state.isClub;
+  const isMobile = window.innerWidth < 600;
   grid.innerHTML = tactics.map(t => {
     const locked = (t.tier === 'pro' && !hasPro) || (t.tier === 'club' && !state.isClub);
     const badgeLabel = t.tier === 'club' ? 'CLUB' : 'PRO';
-    return `<div class="lib-card${locked ? ' locked' : ''}" onclick="handleLibTacticClick('${t.id}')">
-      <div class="lib-card-thumb">
+    const thumbHtml = isMobile ? '' : `<div class="lib-card-thumb">
         ${renderTacticThumb(t)}
         ${locked ? `<div class="lib-card-pro-badge">${badgeLabel}</div>` : ''}
-      </div>
+      </div>`;
+    const lockBadge = (isMobile && locked) ? `<span style="font-size:10px;background:rgba(251,191,36,0.2);color:#fbbf24;border-radius:4px;padding:1px 6px;font-weight:700;margin-left:6px;">${badgeLabel}</span>` : '';
+    return `<div class="lib-card${locked ? ' locked' : ''}" onclick="handleLibTacticClick('${t.id}')">
+      ${thumbHtml}
       <div class="lib-card-body">
-        <div class="lib-card-name">${t.name}</div>
-        <div class="lib-card-meta">${t.category}</div>
+        <div class="lib-card-name" style="color:#f1f5f9;">${t.name}${lockBadge}</div>
+        <div class="lib-card-meta" style="color:#94a3b8;">${t.category}</div>
       </div>
     </div>`;
   }).join('');
