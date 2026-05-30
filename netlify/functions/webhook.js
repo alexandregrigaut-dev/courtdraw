@@ -80,8 +80,9 @@ exports.handler = async (event) => {
       try {
         const sub = await stripe.subscriptions.retrieve(session.subscription);
         if (sub.trial_end) {
-          update.isTrialing  = true;
-          update.trialEndsAt = new Date(sub.trial_end * 1000).toISOString();
+          update.isTrialing      = true;
+          update.trialEndsAt     = new Date(sub.trial_end * 1000).toISOString();
+          update.trialStartedAt  = new Date().toISOString();
         }
       } catch (e) {
         // Non-fatal: trial info is nice-to-have, not required for access
@@ -127,7 +128,11 @@ exports.handler = async (event) => {
         const userData  = snap.docs[0].data();
         const userPlan  = userData.plan || 'pro';
         const userEmail = userData.email;
-        await snap.docs[0].ref.update({ isTrialing: false });
+        await snap.docs[0].ref.update({
+          isTrialing:        false,
+          trialConverted:    true,
+          trialConvertedAt:  new Date().toISOString(),
+        });
         if (userEmail) {
           // Send plan-appropriate "trial converted" email
           const template = userPlan === 'club' ? 'clubTrialConverted' : 'proTrialConverted';

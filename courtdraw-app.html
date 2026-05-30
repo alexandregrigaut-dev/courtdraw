@@ -5009,6 +5009,7 @@ async function openBillingPortal() {
 // ══════════════════════════════════════════════
 function exportPNG() {
   gtag('event', 'export_play', { event_category: 'engagement', format: 'png', court_id: state.courtId });
+  if (typeof window.__trackActivation === 'function') window.__trackActivation('exportedPNG');
   const W = 1200, H = 720;
   const off = document.createElement('canvas');
   off.width = W; off.height = H;
@@ -5325,6 +5326,7 @@ function shareBoard() {
     navigator.clipboard.writeText(url)
       .then(() => {
         gtag('event', 'share_play', { event_category: 'engagement', court_id: state.courtId });
+        if (typeof window.__trackActivation === 'function') window.__trackActivation('sharedPlay');
         // Point 8: upsell Club to Pro users after sharing (once per session)
         if (state.isPro && !state.isClub && !sessionStorage.getItem('cd_share_upsell_shown')) {
           sessionStorage.setItem('cd_share_upsell_shown', '1');
@@ -5342,6 +5344,7 @@ function shareBoard() {
         location.hash = '#s=' + encoded;
         showToast('Link set — copy from address bar.');
         gtag('event', 'share_play', { event_category: 'engagement', court_id: state.courtId });
+        if (typeof window.__trackActivation === 'function') window.__trackActivation('sharedPlay');
       });
   } catch { showToast('Could not generate share link.'); }
 }
@@ -5795,6 +5798,8 @@ function addPhase() {
   };
   state.phases.push(newPhase);
   loadPhase(state.phases.length - 1);
+  gtag('event', 'phase_added', { event_category: 'engagement', phase_count: state.phases.length, court_id: state.courtId });
+  if (state.phases.length >= 2 && typeof window.__trackActivation === 'function') window.__trackActivation('builtPhase2');
   showToast(`Phase ${state.phases.length} added.`);
 }
 
@@ -6898,6 +6903,26 @@ document.addEventListener('DOMContentLoaded', init);
   import { auth, db } from '/src/firebase.js';
   import { onAuthStateChanged, signOut } from 'firebase/auth';
   import { doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore';
+
+  // Expose activation event tracker. Writes to Firestore only on the first occurrence of each
+  // event — subsequent calls for the same key are no-ops (setDoc merge won't overwrite).
+  // Also sets activatedAt (first activation across all events) for funnel analysis.
+  window.__trackActivation = async (eventKey) => {
+    const user = window.__currentUser;
+    if (!user) return;
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      const data = snap.exists() ? snap.data() : {};
+      const field = `activation_${eventKey}`;
+      if (data[field]) return; // already recorded — don't overwrite
+      const now = Date.now();
+      const update = { [field]: now };
+      if (!data.activatedAt) update.activatedAt = now;
+      await setDoc(doc(db, 'users', user.uid), update, { merge: true });
+    } catch (e) {
+      console.warn('Activation track failed:', e.message);
+    }
+  };
 
   // Expose play-save activity tracker so saveTactic() (global scope) can write to Firestore
   window.__trackPlaySaved = async (name, sport) => {
