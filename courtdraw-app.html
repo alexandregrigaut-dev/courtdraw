@@ -355,8 +355,6 @@ button {
 .fp-icon { font-size: 52px; margin-bottom: 12px; }
 .fp-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 10px; }
 .fp-desc { color: var(--text2); font-size: 14px; line-height: 1.65; margin-bottom: 20px; }
-.fp-progress { height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-bottom: 16px; overflow: hidden; }
-.fp-progress-bar { height: 100%; background: #3b82f6; border-radius: 2px; width: 0%; transition: width 2.5s linear; }
 .fp-cta { width: 100%; }
 
 /* Point 9: phase teaser modal */
@@ -1609,13 +1607,12 @@ body.portrait-mode .player-token:active {
   <div class="modal-sheet">
     <div class="modal-header">
       <span class="modal-title" id="fp-modal-title">Feature Preview</span>
-      <button class="modal-close" aria-label="Close" onclick="skipFeaturePreview()">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="closeModal('modal-feature-preview')">✕</button>
     </div>
     <div class="fp-body">
       <div class="fp-icon" id="fp-icon">⚡</div>
       <div class="fp-title" id="fp-title">Pro Feature</div>
       <div class="fp-desc" id="fp-desc"></div>
-      <div class="fp-progress"><div class="fp-progress-bar" id="fp-progress-bar"></div></div>
       <button class="btn-accent fp-cta" onclick="skipFeaturePreview()">See pricing →</button>
     </div>
   </div>
@@ -4054,7 +4051,6 @@ const FEATURE_PREVIEWS = {
   export:    { icon: '🖼',  title: 'Clean Export — No Watermark', desc: 'Export your play as a high-resolution PNG or PDF with no watermark — ready for presentations, WhatsApp, or your club app.' },
 };
 let _fpPaywallReason = '';
-let _fpTimer = null;
 
 function showFeaturePreview(featureKey, paywallReason) {
   const preview = FEATURE_PREVIEWS[featureKey];
@@ -4064,22 +4060,10 @@ function showFeaturePreview(featureKey, paywallReason) {
   document.getElementById('fp-icon').textContent = preview.icon;
   document.getElementById('fp-title').textContent = preview.title;
   document.getElementById('fp-desc').textContent = preview.desc;
-  // Reset + animate progress bar
-  const bar = document.getElementById('fp-progress-bar');
-  bar.style.transition = 'none'; bar.style.width = '0%';
   openModal('modal-feature-preview');
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      bar.style.transition = 'width 2.5s linear';
-      bar.style.width = '100%';
-    });
-  });
-  clearTimeout(_fpTimer);
-  _fpTimer = setTimeout(skipFeaturePreview, 2600);
 }
 
 function skipFeaturePreview() {
-  clearTimeout(_fpTimer);
   closeModal('modal-feature-preview');
   openPaywall(_fpPaywallReason);
 }
