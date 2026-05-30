@@ -4166,6 +4166,14 @@ function dismissDrawNudge() {
   if (btn) btn.classList.remove('nudge-pulse');
 }
 
+function hideDrawNudge() {
+  const nudge = document.getElementById('draw-nudge');
+  if (!nudge) return;
+  nudge.style.display = 'none';
+  const btn = document.querySelector('.tb-btn[data-tool="arrow"]');
+  if (btn) btn.classList.remove('nudge-pulse');
+}
+
 function closeSavePrompt(goSignup = false) {
   closeModal('modal-save-prompt');
   if (goSignup) {
@@ -6167,12 +6175,14 @@ document.addEventListener('DOMContentLoaded', init);
       document.body.classList.add('ls-chrome-visible');
       clearTimeout(hideTimer);
       if (!isPinned()) hideTimer = setTimeout(hideChrome, HIDE_DELAY);
+      setTimeout(showDrawNudge, 260);
     }
 
     function hideChrome() {
       if (isPinned()) return; // never auto-hide when pinned
       document.body.classList.remove('ls-chrome-visible');
       clearTimeout(hideTimer);
+      hideDrawNudge();
     }
 
     // Expose so toggleToolbarPin() can restart the auto-hide timer when unpinning in landscape
@@ -6234,11 +6244,13 @@ document.addEventListener('DOMContentLoaded', init);
       if (!isPinned()) {
         ptHideTimer = setTimeout(hidePtChrome, HIDE_DELAY);
       }
+      setTimeout(showDrawNudge, 260);
     }
     function hidePtChrome() {
       if (isPinned()) return; // never auto-hide when pinned
       document.body.classList.remove('pt-chrome-visible');
       clearTimeout(ptHideTimer);
+      hideDrawNudge();
     }
 
     // Expose so toggleToolbarPin() can restart the auto-hide timer when unpinning
