@@ -1623,7 +1623,7 @@ body.portrait-mode .player-token:active {
   <div class="modal-sheet">
     <div class="modal-header">
       <span class="modal-title">Phase Animation</span>
-      <button class="modal-close" aria-label="Close" onclick="skipPhaseTeaser()">✕</button>
+      <button class="modal-close" aria-label="Close" onclick="closePhaseTeaser()">✕</button>
     </div>
     <div class="pt-body">
       <div class="pt-title">See your play come to life</div>
@@ -4085,11 +4085,7 @@ function _ptAdvance() {
   _ptTimer = setTimeout(() => {
     _ptPhase = (_ptPhase + 1) % 3;
     updatePhaseTeaserUI();
-    if (_ptPhase < 2) _ptAdvance();
-    else {
-      // After showing all 3 phases, wait 1s then auto-open paywall
-      _ptTimer = setTimeout(skipPhaseTeaser, 1200);
-    }
+    _ptAdvance();
   }, 1100);
 }
 
@@ -4104,6 +4100,11 @@ function skipPhaseTeaser() {
   clearTimeout(_ptTimer);
   closeModal('modal-phase-teaser');
   openPaywall('Phase-by-phase animation is a Pro feature. Plan each move step by step.');
+}
+
+function closePhaseTeaser() {
+  clearTimeout(_ptTimer);
+  closeModal('modal-phase-teaser');
 }
 
 // ══════════════════════════════════════════════
