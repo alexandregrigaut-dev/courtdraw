@@ -333,8 +333,24 @@ button {
 #save-counter.full { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); cursor: pointer; }
 
 /* Point 2: upgrade toast with CTA */
-#toast.upgrade-toast { white-space: normal; max-width: 320px; text-align: center; padding: 10px 16px; }
-.toast-cta { display: inline-block; margin-top: 7px; background: #3b82f6; color: #fff; border-radius: 8px; padding: 5px 14px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; }
+#toast.upgrade-toast {
+  white-space: normal; max-width: 340px; text-align: left;
+  padding: 12px 14px 12px 16px; line-height: 1.4;
+}
+.upgrade-toast-body { display: flex; align-items: flex-start; gap: 10px; }
+.upgrade-toast-msg  { flex: 1; font-size: 13px; }
+.toast-dismiss {
+  flex-shrink: 0; background: none; border: none; color: var(--text2);
+  font-size: 16px; line-height: 1; cursor: pointer; padding: 0 2px;
+  margin-top: -1px;
+}
+.toast-dismiss:hover { color: var(--text); }
+.toast-cta {
+  display: inline-block; margin-top: 8px;
+  background: #3b82f6; color: #fff; border-radius: 8px;
+  padding: 6px 14px; font-size: 12px; font-weight: 700;
+  cursor: pointer; border: none;
+}
 
 /* Point 6: return visitor banner */
 #return-visitor-banner {
@@ -6425,18 +6441,26 @@ function successMomentUpsell(key, msg) {
   clearTimeout(_successUpsellTimer);
   _successUpsellTimer = setTimeout(() => {
     if (state.isPro || state.isClub) return; // upgraded during the wait
-    showUpgradeToast(msg, 'Try Pro free →', () => openPaywall(msg));
+    showUpgradeToast(msg, 'Try Pro free →', () => openPaywall(msg), 0);
   }, 20000);
 }
 
-// Point 2: upgrade toast with inline CTA button
+// Point 2: upgrade toast with inline CTA + dismiss button
+// Pass ms=0 to make it persistent (no auto-dismiss) — user must tap ✕ or the CTA.
 function showUpgradeToast(msg, ctaLabel, ctaFn, ms = 6000) {
   const t = document.getElementById('toast');
+  const dismiss = () => t.classList.remove('show');
   t.className = 'show upgrade-toast';
-  t.innerHTML = `<span>${msg}</span><br><button class="toast-cta" id="toast-cta-btn">${ctaLabel}</button>`;
-  document.getElementById('toast-cta-btn').onclick = () => { t.classList.remove('show'); ctaFn(); };
+  t.innerHTML = `
+    <div class="upgrade-toast-body">
+      <span class="upgrade-toast-msg">${msg}</span>
+      <button class="toast-dismiss" id="toast-dismiss-btn" aria-label="Dismiss">✕</button>
+    </div>
+    <button class="toast-cta" id="toast-cta-btn">${ctaLabel}</button>`;
+  document.getElementById('toast-dismiss-btn').onclick = dismiss;
+  document.getElementById('toast-cta-btn').onclick = () => { dismiss(); ctaFn(); };
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+  if (ms > 0) toastTimer = setTimeout(dismiss, ms);
 }
 
 // ══════════════════════════════════════════════
