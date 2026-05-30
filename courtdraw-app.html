@@ -1248,12 +1248,12 @@ body.portrait-mode .player-token:active {
 }
 @media (max-width: 599px) {
   #pro-lib-panel { border-radius: 16px; width: 94vw; max-height: 86vh; }
-  #pro-lib-grid { grid-template-columns: 1fr; gap: 6px; padding: 10px 14px; }
-  .lib-card { flex-direction: row; align-items: center; border-radius: 10px; }
+  #pro-lib-grid { grid-template-columns: 1fr; gap: 5px; padding: 10px 14px; }
+  .lib-card { flex-direction: row; align-items: stretch; border-radius: 10px; overflow: visible; }
   .lib-card-thumb { display: none; }
-  .lib-card-body { padding: 12px 14px; flex: 1; }
-  .lib-card-name { font-size: 14px; }
-  .lib-card-meta { font-size: 12px; margin-top: 2px; }
+  .lib-card-body { padding: 11px 14px; flex: 1; text-align: left; }
+  .lib-card-name { font-size: 13px; font-weight: 700; white-space: normal; word-break: break-word; line-height: 1.35; }
+  .lib-card-meta { font-size: 11px; margin-top: 3px; }
   #pro-lib-sport-tabs { padding: 8px 14px; gap: 6px; }
   .lib-sport-tab { font-size: 12px; padding: 5px 11px; }
   #pro-lib-filter-bar { padding: 6px 14px; }
