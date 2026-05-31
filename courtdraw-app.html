@@ -6770,39 +6770,52 @@ function showToast(msg, ms = 2400) {
         }
       },
       {
-        // Step 2: click Select button, then click any object on the court.
-        // Fully event-driven — no polling, no false positives from stale selectedIdx.
+        // Step 2: interact with any shape or player token on the court.
+        // Advances when: Select button clicked then canvas tapped,
+        // OR any player token is directly tapped/dragged (tokens stop propagation
+        // so canvas pointerdown never fires when interacting with them).
         id: 'select',
         getEl: () => getEl('.tb-btn[data-tool="select"]'),
         spotlight: true,
         title: 'Select & move shapes',
-        body: 'Click <strong>Select</strong> in the toolbar, then click any shape or player on the court to select it.',
+        body: isMobileView()
+          ? 'Tap <strong>Select</strong> in the toolbar, then tap any shape or player on the court.'
+          : 'Click <strong>Select</strong> in the toolbar, then click any shape or player on the court to select it.',
         attach: function(onAdvance) {
           let done = false;
-          let offCanvas = function() {};
           const btn    = getEl('.tb-btn[data-tool="select"]');
           const canvas = getEl('#drawing-canvas');
+          const gen    = _tutGen;
 
-          const gen = _tutGen;
-          function onSelectClick() {
+          function advance() {
             if (done || _tutGen !== gen) return;
-            // Select tool activated — remove dim immediately so canvas is fully visible
-            if (_ring) _ring.style.display = 'none';
-            // Also update spotlight/tooltip anchor to the canvas area
-            positionTooltip(canvas || btn);
-            // Now wait for ANY pointerdown on the canvas
-            offCanvas = once(canvas, 'pointerdown', function() {
-              if (done || _tutGen !== gen) return;
-              done = true;
-              setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 500);
-            });
+            done = true;
+            setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 500);
           }
 
+          function onSelectClick() {
+            if (done || _tutGen !== gen) return;
+            if (_ring) _ring.style.display = 'none';
+            positionTooltip(canvas || btn);
+            // Wait for canvas tap (drawn shapes)
+            once(canvas, 'pointerdown', advance);
+          }
           btn && btn.addEventListener('click', onSelectClick);
+
+          // Also detect player token interaction directly —
+          // tokens call stopPropagation so canvas pointerdown never fires for them.
+          function onDocPointerdown(e) {
+            if (done || _tutGen !== gen) return;
+            if (e.target && e.target.closest && e.target.closest('.player-token')) {
+              advance();
+            }
+          }
+          document.addEventListener('pointerdown', onDocPointerdown, { capture: true });
+
           return function() {
             done = true;
             btn && btn.removeEventListener('click', onSelectClick);
-            offCanvas();
+            document.removeEventListener('pointerdown', onDocPointerdown, { capture: true });
           };
         }
       },
@@ -6965,18 +6978,21 @@ function showToast(msg, ms = 2400) {
     } catch(e) { tutSkip(); }
   }
 
-  function _tutResetMobileState() {
-    // Clear canvas of any tutorial shapes
+  function _tutResetState() {
+    // Clear canvas of any tutorial shapes (shared by mobile and desktop)
     try {
-      // Close color palette / select-action-bar if open
       if (typeof deselectObject === 'function') deselectObject(false);
+      // Close any open modals (e.g. My Saved Plays that opened from step 4)
+      document.querySelectorAll('.modal-backdrop.open').forEach(function(m) {
+        try { closeModal(m.id); } catch(e2) {}
+      });
       state.objects = [];
       state.phases = [{ objects: [], tokens: JSON.parse(JSON.stringify(state.tokenPositions)) }];
       state.currentPhase = 0;
       if (typeof updatePhaseUI === 'function') updatePhaseUI();
       if (typeof redrawAll === 'function') redrawAll();
     } catch(e) {}
-    // Unpin toolbar and retract it
+    // Unpin toolbar and retract it (mobile only — no-op on desktop)
     try {
       if (window._tutPinnedToolbar) {
         window._tutPinnedToolbar = false;
@@ -6991,6 +7007,8 @@ function showToast(msg, ms = 2400) {
       }
     } catch(e) {}
   }
+  // Keep old name as alias so existing call sites don't break
+  function _tutResetMobileState() { _tutResetState(); }
 
   function tutComplete() {
     try {
@@ -7103,28 +7121,33 @@ function showToast(msg, ms = 2400) {
         _tutCompleteTimer = setTimeout(dismissOverlay, 6000);
 
       } else {
-        // Desktop: compact completion card (unchanged)
-        if (_tooltip) {
-          _tooltip.style.display = 'block';
-          _tooltip.innerHTML = `
-            <div class="tut-header" style="color:#22c55e;">✓ You're all set!</div>
-            <div class="tut-title">Ready to coach 🏟</div>
-            <div class="tut-body">You know the basics — now go draw your best plays. Good luck out there!</div>
-            <div class="tut-foot" style="justify-content:flex-end;">
-              <button class="tut-skip" id="tut-done-btn"
-                style="color:var(--accent);font-weight:700;font-size:13px;">Let's go →</button>
-            </div>
-          `;
-          const tw = _tooltip.offsetWidth  || 280;
-          const th = _tooltip.offsetHeight || 140;
-          _tooltip.style.top  = ((window.innerHeight - th) / 2) + 'px';
-          _tooltip.style.left = ((window.innerWidth  - tw) / 2) + 'px';
-          const card = _tooltip;
-          function dismissCard() { card.style.display = 'none'; }
-          document.getElementById('tut-done-btn').onclick = dismissCard;
-          clearTimeout(_tutCompleteTimer);
-          _tutCompleteTimer = setTimeout(dismissCard, 6000);
+        // Desktop: same full-screen overlay as mobile
+        const overlay = document.createElement('div');
+        overlay.id = 'tut-complete-overlay';
+        const colors = ['#3b82f6','#22c55e','#f59e0b','#ec4899','#a78bfa'];
+        let dotsHtml = '';
+        for (let i = 0; i < 28; i++) {
+          const size = (6 + Math.random() * 10).toFixed(1);
+          const left = (Math.random() * 100).toFixed(1);
+          const dur  = (1.5 + Math.random() * 2).toFixed(2);
+          const del  = (Math.random() * 0.8).toFixed(2);
+          dotsHtml += `<div class="tut-co-dot" style="width:${size}px;height:${size}px;left:${left}%;background:${colors[i%colors.length]};animation-duration:${dur}s;animation-delay:${del}s;"></div>`;
         }
+        overlay.innerHTML = `
+          <div class="tut-co-confetti">${dotsHtml}</div>
+          <div class="tut-co-check">✓</div>
+          <div class="tut-co-title">You're ready to coach!</div>
+          <div class="tut-co-body">You know the basics — now go draw your best plays and build your playbook.</div>
+          <button class="tut-co-btn" id="tut-done-btn">Let's go!</button>
+        `;
+        document.body.appendChild(overlay);
+        function dismissOverlay() {
+          overlay.style.animation = 'tut-overlay-in 0.25s ease reverse both';
+          setTimeout(function() { overlay.remove(); _tutResetState(); }, 250);
+        }
+        document.getElementById('tut-done-btn').onclick = dismissOverlay;
+        clearTimeout(_tutCompleteTimer);
+        _tutCompleteTimer = setTimeout(dismissOverlay, 6000);
       }
     } catch(e) {}
   }
