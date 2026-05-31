@@ -1544,7 +1544,7 @@ body.portrait-mode .player-token:active {
   #community-lib-header { padding: 12px 16px; }
   #community-lib-header h2 { font-size: 15px; }
   #community-lib-tab-bar { padding: 8px 14px; }
-  #community-lib-pagination { display: flex !important; padding: 8px 14px; }
+  /* pagination is controlled by JS (display:flex/none) — no override needed on mobile */
 }
 
 /* ── Publish-to-community section (in save dialog footer) ───────────────── */
@@ -3124,6 +3124,10 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
   updateSaveCounter();
   // Community publish section: show for Pro/Club, hide for Free
   updatePublishSectionVisibility();
+  // Reset community library club-plays cache on every auth/plan change.
+  // Prevents stale club data if the user switches accounts or loses Club status.
+  _commClubPlays = null;
+  if (!isClub && typeof commLibState !== 'undefined') commLibState.tab = 'community';
   // Point 6: check return visitor (only fires on 3rd visit for free users)
   checkReturnVisitor();
   // Dismiss welcome overlay if user is logged in (it was shown optimistically before auth resolved)
@@ -7778,6 +7782,8 @@ function closeCommunityLibrary() {
 function communitySelectTab(tab) {
   commLibState.tab = tab;
   commLibState.page = 0;
+  commLibState.sport = 'All';   // reset sport/filter on tab switch — each tab has different content
+  commLibState.filter = 'All';
   _renderCommTabs();
   _renderCommSportTabs();
   _renderCommFilterBar();
@@ -8080,7 +8086,9 @@ function onPublishToggleChange() {
 
 function updatePublishSectionVisibility() {
   const el = document.getElementById('community-publish-row');
-  if (el) el.style.display = (state.isPro || state.isClub) ? '' : 'none';
+  // Use 'block' not '' — CSS default for this element is display:none,
+  // so clearing the inline style would re-hide it instead of showing it.
+  if (el) el.style.display = (state.isPro || state.isClub) ? 'block' : 'none';
 }
 
 function renderTacticThumb(t) {
