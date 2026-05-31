@@ -6734,23 +6734,35 @@ function showToast(msg, ms = 2400) {
         }
       },
       {
-        // Step 2: switch to select tool and tap any object
+        // Step 2: click Select button, then click any object on the court.
+        // Fully event-driven — no polling, no false positives from stale selectedIdx.
         id: 'select',
         getEl: () => getEl('.tb-btn[data-tool="select"]'),
         spotlight: true,
         title: 'Select & move shapes',
         body: 'Click <strong>Select</strong> in the toolbar, then click any shape or player on the court to select it.',
         attach: function(onAdvance) {
-          let toolSeen = false;
           let done = false;
-          const iv = setInterval(function() {
+          let offCanvas = function() {};
+          const btn    = getEl('.tb-btn[data-tool="select"]');
+          const canvas = getEl('#drawing-canvas');
+
+          function onSelectClick() {
             if (done) return;
-            if (state.tool === 'select') toolSeen = true;
-            if (toolSeen && state.selectedIdx >= 0) {
-              done = true; clearInterval(iv); setTimeout(onAdvance, 500);
-            }
-          }, 200);
-          return function() { done = true; clearInterval(iv); };
+            // Select button clicked — now wait for ANY pointerdown on the canvas
+            offCanvas = once(canvas, 'pointerdown', function() {
+              if (done) return;
+              done = true;
+              setTimeout(onAdvance, 500);
+            });
+          }
+
+          btn && btn.addEventListener('click', onSelectClick);
+          return function() {
+            done = true;
+            btn && btn.removeEventListener('click', onSelectClick);
+            offCanvas();
+          };
         }
       },
       {
