@@ -4865,6 +4865,7 @@ function saveSessionDraft() {
     state.savedSessions.push(session);
   }
   saveSessionsToStorage();
+  if (typeof window.__trackSessionSaved === 'function') window.__trackSessionSaved(state.savedSessions.length);
   showToast(`"${name}" saved!`);
   showSessionListView();
 }
@@ -4873,6 +4874,7 @@ function deleteSession(i) {
   if (!confirm('Delete this session? This cannot be undone.')) return;
   state.savedSessions.splice(i, 1);
   saveSessionsToStorage();
+  if (typeof window.__trackSessionSaved === 'function') window.__trackSessionSaved(state.savedSessions.length);
   renderSessionList();
   showToast('Session deleted.');
 }
@@ -8134,6 +8136,18 @@ document.addEventListener('DOMContentLoaded', init);
       await setDoc(doc(db, 'users', user.uid), update, { merge: true });
     } catch (e) {
       console.warn('Activation track failed:', e.message);
+    }
+  };
+
+  // Expose session-count tracker so saveSessionDraft() / deleteSession() can write to Firestore.
+  // sessionsCount lets the re-engagement cron identify users who never used session planning.
+  window.__trackSessionSaved = async (count) => {
+    const user = window.__currentUser;
+    if (!user) return;
+    try {
+      await setDoc(doc(db, 'users', user.uid), { sessionsCount: count }, { merge: true });
+    } catch (e) {
+      console.warn('Session track failed:', e.message);
     }
   };
 

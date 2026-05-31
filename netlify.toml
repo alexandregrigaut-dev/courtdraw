@@ -12,6 +12,12 @@
 [functions."weekly-digest"]
   schedule = "0 8 * * 1"
 
+# R-4 — Re-engagement emails: runs daily at 10:00 UTC (offset from drip-emails)
+# Email 1: zero session plans after 7 days (plan-aware copy)
+# Email 2: zero plays after 7 days (all registered users)
+[functions."reengagement-emails"]
+  schedule = "0 10 * * *"
+
 # Firebase client-side API keys are intentionally public — they are not secrets.
 # Firebase security is enforced by Firebase Security Rules, not key secrecy.
 # This disables Netlify's false-positive secret scanning failure for this repo.

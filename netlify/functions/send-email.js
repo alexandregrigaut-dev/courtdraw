@@ -520,6 +520,78 @@ const templates = {
     };
   },
 
+  // ── Re-engagement: Email 1 — zero sessions, Pro/Club user ───────────────────
+  reengageEmptySessionsPaid: (email) => {
+    const data = {
+      label: 'Training Sessions',
+      labelColor: '#3b82f6',
+      title: 'Chain 3 plays into a session plan',
+      body: `You've been saving plays — now put them to work in a session.<br><br>
+             In the app, tap <strong>Sessions</strong>, pick 3 plays from your library, set drill durations, and you'll have a full training plan ready to present on the sideline.<br><br>
+             Your players will know exactly what's coming — no re-explaining between drills.`,
+      ctaText: 'Start a session →',
+      ctaUrl: `${APP_URL}/courtdraw-app.html#sessions`,
+      features: [
+        { icon: '📅', label: 'Session plans' },
+        { icon: '▶️', label: 'Present mode' },
+        { icon: '📤', label: 'PDF export' },
+      ],
+      footerNote: "You're receiving this because you have a CourtDraw account. Reply to unsubscribe."
+    };
+    return {
+      from: FROM, reply_to: REPLY_TO, to: email,
+      subject: 'Chain your plays into a session plan',
+      html: layout(data), text: toPlainText(data),
+    };
+  },
+
+  // ── Re-engagement: Email 1 — zero sessions, Free user (upsell) ──────────────
+  reengageEmptySessionsFree: (email) => {
+    const data = {
+      label: 'Training Sessions',
+      labelColor: '#3b82f6',
+      title: 'Chain 3 plays into a session plan',
+      body: `Session planning is one of the most-used Pro features — coaches chain 3–8 plays into a structured training plan, set drill durations, and present the whole session on the sideline.<br><br>
+             On the free plan you can draw and save individual plays. Upgrade to Pro to chain them into session plans, animate the sequence, and export as a PDF.`,
+      ctaText: 'Upgrade to unlock sessions →',
+      ctaUrl: `${APP_URL}/#pricing`,
+      features: [
+        { icon: '📅', label: 'Session plans' },
+        { icon: '▶️', label: 'Present mode' },
+        { icon: '💾', label: 'Unlimited saves' },
+      ],
+      footerNote: "You're receiving this because you have a CourtDraw account. Reply to unsubscribe."
+    };
+    return {
+      from: FROM, reply_to: REPLY_TO, to: email,
+      subject: 'Chain your plays into a session plan — Pro feature',
+      html: layout(data), text: toPlainText(data),
+    };
+  },
+
+  // ── Re-engagement: Email 2 — zero plays, all users ──────────────────────────
+  reengageZeroPlays: (email, isPaid) => {
+    const ctaText = "Pick up where you left off →";
+    const ctaUrl  = `${APP_URL}/courtdraw-app.html`;
+    const data = {
+      label: 'You haven\'t drawn in a while',
+      labelColor: '#f59e0b',
+      title: 'You haven\'t drawn in a while.',
+      body: `Your board is ready whenever you are — pick a court, sketch your next play, and save it before your next session.<br><br>
+             ${isPaid
+               ? 'All your saved plays and settings are still there.'
+               : 'On the free plan you can draw plays and save up to 3. When you\'re ready for more, Pro gives you unlimited saves, phase animation, and session planning.'}`,
+      ctaText,
+      ctaUrl,
+      footerNote: "You're receiving this because you have a CourtDraw account. Reply to unsubscribe."
+    };
+    return {
+      from: FROM, reply_to: REPLY_TO, to: email,
+      subject: 'Your CourtDraw board is waiting',
+      html: layout(data), text: toPlainText(data),
+    };
+  },
+
   // Sent when a Club trial converts to a paid subscription (day 8 charge succeeds)
   clubTrialConverted: (email) => {
     const data = {
