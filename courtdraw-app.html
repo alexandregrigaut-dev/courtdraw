@@ -4600,8 +4600,9 @@ function saveTactic() {
     name = `${sportName} — ${now.getDate()} ${now.toLocaleDateString('en-GB', { month: 'long' })}`;
     document.getElementById('tactic-name-input').value = name;
   }
-  // Tutorial save is on us — don't count it against the free limit
-  if (!state.isPro && !state.isClub && !window._tutorialSaveActive && state.savedTactics.length >= FREE_SAVES) {
+  // Tutorial saves are free — count only non-tutorial saves against the limit
+  const _billableSaves = state.savedTactics.filter(function(t) { return !t._tutorial; }).length;
+  if (!state.isPro && !state.isClub && !window._tutorialSaveActive && _billableSaves >= FREE_SAVES) {
     closeModal('modal-library');
     openPaywall(`You've used all ${FREE_SAVES} free saves. Upgrade to Pro for unlimited saves.`);
     return;
@@ -4624,10 +4625,14 @@ function saveTactic() {
     tokens: JSON.parse(JSON.stringify(state.tokenPositions)),
     phases: JSON.parse(JSON.stringify(state.phases)),
     currentPhase: state.currentPhase,
-    ts: Date.now()
+    ts: Date.now(),
+    // Tutorial saves are free and excluded from the usage counter
+    ...(window._tutorialSaveActive ? { _tutorial: true } : {})
   };
   state.savedTactics.push(tactic);
-  if (state.savedTactics.length === 1) successMomentUpsell('firstSave', "Your first play is saved. Build an unlimited library with Pro.");
+  // Don't fire the first-save upsell for the tutorial play
+  const nonTutorialCount = state.savedTactics.filter(function(t) { return !t._tutorial; }).length;
+  if (nonTutorialCount === 1) successMomentUpsell('firstSave', "Your first play is saved. Build an unlimited library with Pro.");
   saveToStorage();
   // Track activity in Firestore for weekly digest (Pro/Club only, best-effort)
   if ((state.isPro || state.isClub) && typeof window.__trackPlaySaved === 'function') {
@@ -5092,7 +5097,8 @@ function updateSaveCounter() {
   if (!el) return;
   const hasPro = state.isPro || state.isClub;
   if (hasPro) { el.style.display = 'none'; return; }
-  const used = state.savedTactics.length;
+  // Tutorial saves are free — exclude them from the displayed count
+  const used = state.savedTactics.filter(function(t) { return !t._tutorial; }).length;
   const max  = FREE_SAVES;
   el.style.display = 'inline-block';
   el.classList.remove('warn', 'full');
@@ -6723,11 +6729,13 @@ function showToast(msg, ms = 2400) {
         body: 'The Arrow tool is ready. Click or drag anywhere on the <strong>court</strong> to draw your first move.',
         attach: function(onAdvance) {
           const prev = state.objects.length;
+          const gen  = _tutGen; // snapshot generation at attach time
           let done = false;
           const iv = setInterval(function() {
-            if (done) return;
+            if (done || _tutGen !== gen) { done = true; clearInterval(iv); return; }
             if (state.objects.length > prev) {
-              done = true; clearInterval(iv); setTimeout(onAdvance, 400);
+              done = true; clearInterval(iv);
+              setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 400);
             }
           }, 200);
           return function() { done = true; clearInterval(iv); };
@@ -6747,13 +6755,14 @@ function showToast(msg, ms = 2400) {
           const btn    = getEl('.tb-btn[data-tool="select"]');
           const canvas = getEl('#drawing-canvas');
 
+          const gen = _tutGen;
           function onSelectClick() {
-            if (done) return;
+            if (done || _tutGen !== gen) return;
             // Select button clicked — now wait for ANY pointerdown on the canvas
             offCanvas = once(canvas, 'pointerdown', function() {
-              if (done) return;
+              if (done || _tutGen !== gen) return;
               done = true;
-              setTimeout(onAdvance, 500);
+              setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 500);
             });
           }
 
@@ -6774,15 +6783,18 @@ function showToast(msg, ms = 2400) {
         body: 'Tap <strong>Save</strong> to name and store your play. This one\'s on us — it won\'t count against your free saves.',
         attach: function(onAdvance) {
           const prev = state.savedTactics.length;
+          const gen  = _tutGen;
           let done = false;
           window._tutorialSaveActive = true; // bypass free-tier limit for this save
           const iv = setInterval(function() {
-            if (done) return;
+            if (done || _tutGen !== gen) {
+              done = true; window._tutorialSaveActive = false; clearInterval(iv); return;
+            }
             if (state.savedTactics.length > prev) {
               done = true;
               window._tutorialSaveActive = false;
               clearInterval(iv);
-              setTimeout(onAdvance, 500);
+              setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 500);
             }
           }, 300);
           return function() {
@@ -6801,7 +6813,11 @@ function showToast(msg, ms = 2400) {
         body: 'Tap <strong>My Plays</strong> to find all your saved plays anytime.',
         attach: function(onAdvance) {
           const btn = getEl('.tb-btn[title="My saved tactics"]');
-          return once(btn, 'click', function() { setTimeout(onAdvance, 400); });
+          const gen = _tutGen;
+          return once(btn, 'click', function() {
+            if (_tutGen !== gen) return;
+            setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 400);
+          });
         }
       }
     ];
@@ -6810,10 +6826,12 @@ function showToast(msg, ms = 2400) {
   let _tutSteps  = [];
   let _tutIdx    = 0;
   let _tutActive = false;
+  let _tutGen    = 0; // incremented on each step; guards against stale async advances
 
   function tutSkip() {
     try {
       _tutActive = false;
+      _tutGen++;
       if (_cleanup) { _cleanup(); _cleanup = null; }
       teardownGuard();
       hideAll();
@@ -6822,6 +6840,7 @@ function showToast(msg, ms = 2400) {
   }
 
   function tutAdvance() {
+    // Guard: ignore if tutorial was skipped/completed, or if this is a stale callback
     if (!_tutActive) return;
     try {
       if (_cleanup) { _cleanup(); _cleanup = null; }
@@ -6836,6 +6855,7 @@ function showToast(msg, ms = 2400) {
     if (!_tutActive) return;
     try {
       if (_cleanup) { _cleanup(); _cleanup = null; }
+      _tutGen++; // invalidate any in-flight advance from the current step
       _tutIdx = Math.max(0, Math.min(idx, _tutSteps.length - 1));
       tutShowStep(_tutIdx);
     } catch(e) { tutSkip(); }
@@ -6891,11 +6911,13 @@ function showToast(msg, ms = 2400) {
   function tutComplete() {
     try {
       _tutActive = false;
+      _tutGen++;
       teardownGuard();
       if (_cleanup) { _cleanup(); _cleanup = null; }
       localStorage.setItem(KEY_DONE, '1');
       buildDOM();
-      hideAll();
+      // Hide spotlight ring — completion card needs no spotlight
+      if (_ring) _ring.style.display = 'none';
       if (_tooltip) {
         _tooltip.style.display = 'block';
         _tooltip.innerHTML = `
@@ -6911,13 +6933,17 @@ function showToast(msg, ms = 2400) {
         const th = _tooltip.offsetHeight || 140;
         _tooltip.style.top  = ((window.innerHeight - th) / 2) + 'px';
         _tooltip.style.left = ((window.innerWidth  - tw) / 2) + 'px';
+        const card = _tooltip; // capture ref so timer isn't affected by future _tooltip changes
         document.getElementById('tut-done-btn').onclick = function() {
-          _tooltip.style.display = 'none';
+          card.style.display = 'none';
         };
-        setTimeout(function() { if (_tooltip) _tooltip.style.display = 'none'; }, 6000);
+        // Auto-dismiss after exactly 6 s — stored in a module-scoped var so nothing else can clear it
+        clearTimeout(_tutCompleteTimer);
+        _tutCompleteTimer = setTimeout(function() { card.style.display = 'none'; }, 6000);
       }
     } catch(e) {}
   }
+  let _tutCompleteTimer = null;
 
   // startNewUserTutorial: kick off the tutorial. tutShowStep() handles
   // waiting for any open modals to close via installModalGuard().
