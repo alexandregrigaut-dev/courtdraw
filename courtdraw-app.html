@@ -6960,7 +6960,7 @@ function showToast(msg, ms = 2400) {
         id: 'my-plays',
         getEl: () => getEl('.tb-btn[title="My saved tactics"]'),
         spotlight: true,
-        // Re-pin toolbar so it can't auto-retract while user looks for My Plays
+        // Re-pin toolbar so it can't auto-retract; scroll to center My Plays button
         onEnter: function() {
           if (isMobileView()) {
             document.body.classList.add('toolbar-pinned');
@@ -6969,10 +6969,17 @@ function showToast(msg, ms = 2400) {
             const icon  = document.getElementById('toolbar-pin-icon');
             if (label) label.textContent = 'Pinned';
             if (icon)  icon.textContent  = '✓';
-            window._tutPinnedToolbar = true; // reset will unpin on complete/skip
+            window._tutPinnedToolbar = true;
+            // Scroll toolbar to center the My Plays button
+            const myPlaysBtn = getEl('.tb-btn[title="My saved tactics"]');
+            const toolbar    = getEl('#toolbar');
+            if (myPlaysBtn && toolbar) {
+              const target = myPlaysBtn.offsetLeft - (toolbar.clientWidth / 2) + (myPlaysBtn.offsetWidth / 2);
+              toolbar.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+            }
           }
         },
-        onEnterDelay: 350,
+        onEnterDelay: 500,
         title: 'View your playbook',
         body: isMobileView()
           ? 'Tap <strong>My Plays</strong> to find all your saved plays anytime.'
