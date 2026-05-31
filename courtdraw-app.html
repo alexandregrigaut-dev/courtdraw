@@ -6471,10 +6471,20 @@ function showToast(msg, ms = 2400) {
         pointer-events: auto;
         display: none;
       }
+      #tut-tooltip .tut-top-row {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 6px;
+      }
+      #tut-tooltip .tut-close-btn {
+        background: none; border: none; cursor: pointer;
+        color: var(--text2, #94a3b8); font-size: 13px; padding: 0 0 0 8px;
+        line-height: 1; transition: color .15s; flex-shrink: 0;
+      }
+      #tut-tooltip .tut-close-btn:hover { color: var(--text, #f1f5f9); }
       #tut-tooltip .tut-header {
         font-size: 11px; font-weight: 700; letter-spacing: .07em;
         text-transform: uppercase; color: var(--accent, #3b82f6);
-        margin-bottom: 6px;
+        margin-bottom: 0;
       }
       #tut-tooltip .tut-title {
         font-family: 'Cabinet Grotesk', system-ui, sans-serif;
@@ -6627,11 +6637,13 @@ function showToast(msg, ms = 2400) {
     const hasPrev = cfg.step > 0;
     const hasNext = cfg.step < cfg.total - 1;
     _tooltip.innerHTML = `
-      <div class="tut-header">${cfg.header || 'Tutorial'}</div>
+      <div class="tut-top-row">
+        <div class="tut-header">${cfg.header || 'Tutorial'}</div>
+        <button class="tut-close-btn" id="tut-close-btn" title="Dismiss tutorial" aria-label="Dismiss tutorial">✕</button>
+      </div>
       <div class="tut-title">${cfg.title}</div>
       <div class="tut-body">${cfg.body}</div>
       <div class="tut-foot">
-        <button class="tut-skip" id="tut-skip-btn">Skip</button>
         <div class="tut-nav">
           <button class="tut-nav-btn" id="tut-prev-btn" title="Previous step"${hasPrev ? '' : ' disabled'}>←</button>
           <div class="tut-progress">${dots}</div>
@@ -6639,7 +6651,7 @@ function showToast(msg, ms = 2400) {
         </div>
       </div>
     `;
-    document.getElementById('tut-skip-btn').onclick = cfg.skipFn;
+    document.getElementById('tut-close-btn').onclick = cfg.skipFn;
     if (hasPrev) document.getElementById('tut-prev-btn').onclick = cfg.prevFn;
     if (hasNext) document.getElementById('tut-next-btn').onclick = cfg.nextFn;
   }
@@ -6756,6 +6768,45 @@ function showToast(msg, ms = 2400) {
           });
           return function() { done = true; clearTimeout(t); off(); };
         }
+      },
+      {
+        // Mobile step 3: retract toolbar so canvas is fully accessible
+        id: 'retract',
+        getEl: () => getEl('#toolbar-pin-btn'),
+        spotlight: true,
+        title: 'Hide the toolbar',
+        body: 'Tap <strong>✓ Pinned</strong> to tuck the toolbar away and get more drawing space. Tap <strong>···</strong> anytime to bring it back.',
+        attach: function(onAdvance) {
+          let done = false;
+          const gen = _tutGen;
+          // Auto-retract after 2s so the user sees the explanation
+          const t = setTimeout(function() {
+            if (done || _tutGen !== gen) return;
+            done = true;
+            // Retract toolbar (unpin)
+            document.body.classList.remove('pt-chrome-visible');
+            document.body.classList.remove('ls-chrome-visible');
+            // Keep toolbar-pinned class so it stays pinned state — just hide chrome
+            // Actually remove pinned so toolbar truly retracts on mobile
+            document.body.classList.remove('toolbar-pinned');
+            const label = document.getElementById('toolbar-pin-label');
+            const icon  = document.getElementById('toolbar-pin-icon');
+            if (label) label.textContent = 'Keep open';
+            if (icon)  icon.textContent  = '📌';
+            // Mark that we un-pinned, so reset doesn't try to unpin again
+            window._tutPinnedToolbar = false;
+            setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 300);
+          }, 2000);
+          // Also advance if user taps the pin button themselves
+          const btn = getEl('#toolbar-pin-btn');
+          const off = once(btn, 'click', function() {
+            if (done || _tutGen !== gen) return;
+            done = true; clearTimeout(t);
+            window._tutPinnedToolbar = false;
+            setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 350);
+          });
+          return function() { done = true; clearTimeout(t); off(); };
+        }
       }
     ] : [];
 
@@ -6763,10 +6814,14 @@ function showToast(msg, ms = 2400) {
       {
         // Step 1: draw something on the court
         id: 'draw',
-        getEl: () => getEl('.tb-btn[data-tool="arrow"]'),
+        // On mobile the toolbar is retracted — use the canvas as anchor so
+        // tutShowStep doesn't spin-wait for a hidden toolbar button.
+        getEl: () => isMobileView() ? getEl('#drawing-canvas') : getEl('.tb-btn[data-tool="arrow"]'),
         spotlight: false, // no ring — canvas must stay fully interactive
         title: 'Draw on the court',
-        body: 'The Arrow tool is ready. Click or drag anywhere on the <strong>court</strong> to draw your first move.',
+        body: isMobileView()
+          ? 'Tap or drag anywhere on the <strong>court</strong> to draw your first move.'
+          : 'The Arrow tool is ready. Click or drag anywhere on the <strong>court</strong> to draw your first move.',
         attach: function(onAdvance) {
           const prev = state.objects.length;
           const gen  = _tutGen; // snapshot generation at attach time
@@ -6789,6 +6844,12 @@ function showToast(msg, ms = 2400) {
         id: 'select',
         getEl: () => getEl('.tb-btn[data-tool="select"]'),
         spotlight: true,
+        // On mobile the toolbar was retracted for drawing — show it again for this step
+        onEnter: function() {
+          if (isMobileView() && !document.body.classList.contains('pt-chrome-visible')) {
+            document.body.classList.add('pt-chrome-visible');
+          }
+        },
         title: 'Select & move shapes',
         body: isMobileView()
           ? 'Tap <strong>Select</strong> in the toolbar, then tap any shape or player on the court.'
@@ -6836,6 +6897,11 @@ function showToast(msg, ms = 2400) {
         id: 'save',
         getEl: () => getEl('.tb-btn[title="Save tactic"]'),
         spotlight: true,
+        onEnter: function() {
+          if (isMobileView() && !document.body.classList.contains('pt-chrome-visible')) {
+            document.body.classList.add('pt-chrome-visible');
+          }
+        },
         title: 'Save your play',
         body: isMobileView()
           ? 'Scroll the toolbar to the right and tap <strong>Save</strong>. This one\'s on us — it won\'t count against your free saves.'
@@ -6988,6 +7054,8 @@ function showToast(msg, ms = 2400) {
       }
 
       const step = _tutSteps[idx];
+      // Call onEnter hook if defined (used to show toolbar before checking element)
+      if (step.onEnter) { try { step.onEnter(); } catch(e2) {} }
       const el   = step.getEl();
       buildDOM();
 
