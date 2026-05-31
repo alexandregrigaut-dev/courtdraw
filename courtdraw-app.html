@@ -6779,33 +6779,25 @@ function showToast(msg, ms = 2400) {
         attach: function(onAdvance) {
           let done = false;
           const gen = _tutGen;
-          // Auto-retract after 2s so the user sees the explanation
-          const t = setTimeout(function() {
-            if (done || _tutGen !== gen) return;
-            done = true;
-            // Retract toolbar (unpin)
+          // Wait for user to tap the pin button — no auto-advance, this teaches a gesture
+          function doRetract() {
             document.body.classList.remove('pt-chrome-visible');
             document.body.classList.remove('ls-chrome-visible');
-            // Keep toolbar-pinned class so it stays pinned state — just hide chrome
-            // Actually remove pinned so toolbar truly retracts on mobile
             document.body.classList.remove('toolbar-pinned');
             const label = document.getElementById('toolbar-pin-label');
             const icon  = document.getElementById('toolbar-pin-icon');
             if (label) label.textContent = 'Keep open';
             if (icon)  icon.textContent  = '📌';
-            // Mark that we un-pinned, so reset doesn't try to unpin again
             window._tutPinnedToolbar = false;
-            setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 300);
-          }, 2000);
-          // Also advance if user taps the pin button themselves
+          }
           const btn = getEl('#toolbar-pin-btn');
           const off = once(btn, 'click', function() {
             if (done || _tutGen !== gen) return;
-            done = true; clearTimeout(t);
-            window._tutPinnedToolbar = false;
+            done = true;
+            doRetract();
             setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 350);
           });
-          return function() { done = true; clearTimeout(t); off(); };
+          return function() { done = true; off(); };
         }
       }
     ] : [];
@@ -6965,6 +6957,12 @@ function showToast(msg, ms = 2400) {
         id: 'my-plays',
         getEl: () => getEl('.tb-btn[title="My saved tactics"]'),
         spotlight: true,
+        // Keep toolbar visible so user can see and tap the My Plays button
+        onEnter: function() {
+          if (isMobileView() && !document.body.classList.contains('pt-chrome-visible')) {
+            document.body.classList.add('pt-chrome-visible');
+          }
+        },
         title: 'View your playbook',
         body: isMobileView()
           ? 'Tap <strong>My Plays</strong> to find all your saved plays anytime.'
@@ -7089,6 +7087,17 @@ function showToast(msg, ms = 2400) {
   }
 
   function _tutResetState() {
+    // Restore PWA banner if it was visible before tutorial suppressed it
+    try {
+      const banner = document.getElementById('pwa-banner');
+      // Only re-show if not permanently dismissed and not already installed
+      if (banner && !localStorage.getItem('pwa_banner_dismissed') && !localStorage.getItem('pwa_installed')) {
+        setTimeout(function() {
+          banner.classList.add('ready');
+          requestAnimationFrame(function() { banner.classList.add('visible'); });
+        }, 1500);
+      }
+    } catch(e) {}
     // Clear canvas of any tutorial shapes (shared by mobile and desktop)
     try {
       if (typeof deselectObject === 'function') deselectObject(false);
@@ -7232,11 +7241,13 @@ function showToast(msg, ms = 2400) {
     try {
       if (localStorage.getItem(KEY_DONE)) return;
       // Gate: skip tutorial for authenticated users and Pro/Club plan users.
-      // Logged-in users are returning users regardless of plan.
       if (window.__currentUser) return;
       if (state.isPro || state.isClub) return;
       // Mark tutorial as seen immediately (so early dismissal also prevents replay)
       localStorage.setItem(KEY_DONE, '1');
+      // Hide PWA install banner while tutorial is active so it doesn't overlap
+      const banner = document.getElementById('pwa-banner');
+      if (banner) { banner.classList.remove('visible'); banner.classList.remove('ready'); }
       _tutSteps  = buildNewUserSteps();
       _tutIdx    = 0;
       _tutActive = true;
