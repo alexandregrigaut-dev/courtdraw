@@ -6426,6 +6426,677 @@ function showToast(msg, ms = 2400) {
   toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 }
 
+// ══════════════════════════════════════════════
+// INTERACTIVE ONBOARDING TUTORIAL
+// ══════════════════════════════════════════════
+// Two flows:
+//   1. New-user tutorial  — fires on first launch (key: cd_tutorial_done)
+//   2. Pro/Club upgrade   — fires once after plan upgrade (key: cd_pro_tutorial_done)
+//
+// Architecture: completely isolated IIFE. If anything throws, the app
+// continues normally. No tutorial state touches play data or accounts.
+// ──────────────────────────────────────────────────────────────────────────────
+(function() {
+  'use strict';
+
+  // ── Constants ──────────────────────────────────────────────────────────────
+  const KEY_DONE        = 'cd_tutorial_done';
+  const KEY_PRO_DONE    = 'cd_pro_tutorial_done';
+  const KEY_PREV_PLAN   = 'cd_prev_plan'; // tracks plan before upgrade
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function isMobileView() {
+    return window.innerWidth < 900 || state.portraitRotated;
+  }
+
+  // Resolve a step's anchor element safely
+  function getEl(sel) {
+    try { return document.querySelector(sel); } catch { return null; }
+  }
+
+  // ── Overlay & tooltip DOM ──────────────────────────────────────────────────
+  // Single reusable overlay; content swapped per step.
+  let _overlay  = null;
+  let _tooltip  = null;
+  let _cleanup  = null; // function to remove current step's listeners
+
+  function buildDOM() {
+    if (_overlay) return;
+    // Spotlight overlay
+    _overlay = document.createElement('div');
+    _overlay.id = 'tut-overlay';
+    _overlay.style.cssText = [
+      'position:fixed;inset:0;z-index:9998;pointer-events:none;',
+      'transition:opacity .25s ease;'
+    ].join('');
+
+    // Tooltip bubble
+    _tooltip = document.createElement('div');
+    _tooltip.id = 'tut-tooltip';
+
+    document.body.appendChild(_overlay);
+    document.body.appendChild(_tooltip);
+
+    // Inject styles once
+    const style = document.createElement('style');
+    style.textContent = `
+      #tut-overlay {
+        background: rgba(0,0,0,0.68);
+      }
+      #tut-overlay .tut-hole {
+        /* cut-out drawn via JS using clip-path or box-shadow workaround */
+      }
+      #tut-tooltip {
+        position: fixed;
+        z-index: 9999;
+        max-width: 280px;
+        background: var(--bg2, #0d1f3c);
+        border: 1px solid var(--border, #1a2d4a);
+        border-radius: 14px;
+        padding: 16px 18px 14px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+        color: var(--text, #f1f5f9);
+        pointer-events: auto;
+        transition: opacity .2s ease, transform .2s ease;
+      }
+      #tut-tooltip .tut-header {
+        font-size: 11px; font-weight: 700; letter-spacing: .07em;
+        text-transform: uppercase; color: var(--accent, #3b82f6);
+        margin-bottom: 6px;
+      }
+      #tut-tooltip .tut-title {
+        font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+        font-size: 17px; font-weight: 800; letter-spacing: -0.02em;
+        margin-bottom: 6px; line-height: 1.25;
+      }
+      #tut-tooltip .tut-body {
+        font-size: 13px; color: var(--text2, #94a3b8);
+        line-height: 1.55; margin-bottom: 14px;
+      }
+      #tut-tooltip .tut-foot {
+        display: flex; align-items: center; justify-content: space-between;
+      }
+      #tut-tooltip .tut-skip {
+        font-size: 12px; color: var(--text2, #94a3b8);
+        background: none; border: none; cursor: pointer;
+        padding: 4px 0; font-family: inherit;
+        transition: color .15s;
+      }
+      #tut-tooltip .tut-skip:hover { color: var(--text, #f1f5f9); }
+      #tut-tooltip .tut-progress {
+        display: flex; gap: 5px; align-items: center;
+      }
+      #tut-tooltip .tut-dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--border, #1a2d4a);
+        transition: background .2s;
+      }
+      #tut-tooltip .tut-dot.active { background: var(--accent, #3b82f6); }
+      /* Spotlight ring around the highlighted element */
+      .tut-ring {
+        position: fixed;
+        z-index: 9997;
+        border: 2.5px solid var(--accent, #3b82f6);
+        border-radius: 10px;
+        pointer-events: none;
+        box-shadow: 0 0 0 9999px rgba(0,0,0,0.62);
+        transition: all .25s ease;
+        animation: tut-ring-pulse 2s ease-in-out infinite;
+      }
+      @keyframes tut-ring-pulse {
+        0%,100% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.62), 0 0 0 0 rgba(59,130,246,.5); }
+        50%      { box-shadow: 0 0 0 9999px rgba(0,0,0,0.62), 0 0 0 6px rgba(59,130,246,.0); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Spotlight ring element (reused across steps)
+  let _ring = null;
+  function spotlightEl(el, pad) {
+    pad = pad || 6;
+    if (!_ring) {
+      _ring = document.createElement('div');
+      _ring.className = 'tut-ring';
+      document.body.appendChild(_ring);
+    }
+    if (!el) { _ring.style.display = 'none'; return; }
+    const r = el.getBoundingClientRect();
+    _ring.style.display  = 'block';
+    _ring.style.top      = (r.top    - pad) + 'px';
+    _ring.style.left     = (r.left   - pad) + 'px';
+    _ring.style.width    = (r.width  + pad * 2) + 'px';
+    _ring.style.height   = (r.height + pad * 2) + 'px';
+  }
+
+  // Position tooltip near an element, keeping it on-screen
+  function positionTooltip(el) {
+    if (!_tooltip || !el) return;
+    _tooltip.style.display = 'block';
+    const r   = el.getBoundingClientRect();
+    const tw  = _tooltip.offsetWidth  || 280;
+    const th  = _tooltip.offsetHeight || 160;
+    const vw  = window.innerWidth;
+    const vh  = window.innerHeight;
+    const GAP = 14;
+
+    let top, left;
+
+    // Prefer placing below, then above, then beside
+    if (r.bottom + GAP + th < vh) {
+      top  = r.bottom + GAP;
+      left = r.left + r.width / 2 - tw / 2;
+    } else if (r.top - GAP - th > 0) {
+      top  = r.top - GAP - th;
+      left = r.left + r.width / 2 - tw / 2;
+    } else if (r.left - GAP - tw > 0) {
+      top  = r.top + r.height / 2 - th / 2;
+      left = r.left - GAP - tw;
+    } else {
+      top  = r.top + r.height / 2 - th / 2;
+      left = r.right + GAP;
+    }
+
+    // Clamp to viewport with 12px margin
+    const M = 12;
+    left = Math.max(M, Math.min(left, vw - tw - M));
+    top  = Math.max(M, Math.min(top,  vh - th - M));
+
+    _tooltip.style.top  = top  + 'px';
+    _tooltip.style.left = left + 'px';
+  }
+
+  // Render tooltip content
+  function renderTooltip(cfg) {
+    // cfg: { header, title, body, step, total, skipFn }
+    if (!_tooltip) return;
+    const dots = Array.from({ length: cfg.total }, (_, i) =>
+      `<div class="tut-dot${i === cfg.step ? ' active' : ''}"></div>`
+    ).join('');
+    _tooltip.innerHTML = `
+      <div class="tut-header">${cfg.header || 'Tutorial'}</div>
+      <div class="tut-title">${cfg.title}</div>
+      <div class="tut-body">${cfg.body}</div>
+      <div class="tut-foot">
+        <button class="tut-skip" id="tut-skip-btn">Skip tutorial</button>
+        <div class="tut-progress">${dots}</div>
+      </div>
+    `;
+    document.getElementById('tut-skip-btn').onclick = cfg.skipFn;
+  }
+
+  // Show/hide overlay (just the dark film — the ring does the spotlight)
+  function showOverlay() {
+    buildDOM();
+    if (_overlay) _overlay.style.opacity = '1';
+  }
+  function hideAll() {
+    if (_overlay)  { _overlay.style.opacity = '0'; }
+    if (_tooltip)  { _tooltip.style.display = 'none'; }
+    if (_ring)     { _ring.style.display = 'none'; }
+  }
+
+  // ── One-time listener helper ───────────────────────────────────────────────
+  // Attaches a listener and returns a teardown fn.
+  function once(el, type, handler, useCapture) {
+    if (!el) return function(){};
+    function wrapped(e) {
+      el.removeEventListener(type, wrapped, useCapture);
+      handler(e);
+    }
+    el.addEventListener(type, wrapped, useCapture || false);
+    return function() { el.removeEventListener(type, wrapped, useCapture); };
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // NEW-USER TUTORIAL
+  // ══════════════════════════════════════════════════════════════════════════
+
+  function buildNewUserSteps() {
+    const mobile = isMobileView();
+    const steps = [];
+
+    // Steps 1 & 2 are mobile-only (three-dot button + pin toolbar)
+    if (mobile) {
+      steps.push({
+        id: 'three-dot',
+        getEl: () => getEl('#pt-bottom-hint') || getEl('#pt-top-hint'),
+        title: 'Open your toolbar',
+        body: 'Tap the <strong>···</strong> button to reveal your drawing tools.',
+        // Advances when pt-chrome-visible is added to body
+        attach: function(onAdvance) {
+          const obs = new MutationObserver(function() {
+            if (document.body.classList.contains('pt-chrome-visible')) {
+              obs.disconnect();
+              onAdvance();
+            }
+          });
+          obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+          return function() { obs.disconnect(); };
+        }
+      });
+
+      steps.push({
+        id: 'pin',
+        getEl: () => getEl('#toolbar-pin-btn'),
+        title: 'Keep your toolbar open',
+        body: 'Tap <strong>Keep open</strong> so the toolbar stays visible while you draw.',
+        attach: function(onAdvance) {
+          const btn = getEl('#toolbar-pin-btn');
+          return once(btn, 'click', function() {
+            setTimeout(onAdvance, 350); // let the pin animation settle
+          });
+        }
+      });
+    }
+
+    steps.push({
+      id: 'draw',
+      getEl: () => getEl('.tb-btn[data-tool="arrow"]'),
+      title: 'Draw on the court',
+      body: 'Select a drawing tool and make your first stroke on the court.',
+      attach: function(onAdvance) {
+        // Advance when the user makes at least one drawing stroke (objects array grows)
+        const prev = state.objects.length;
+        let done = false;
+        function check() {
+          if (done) return;
+          if (state.objects.length > prev) {
+            done = true;
+            clearInterval(iv);
+            setTimeout(onAdvance, 400);
+          }
+        }
+        const iv = setInterval(check, 300);
+        return function() { done = true; clearInterval(iv); };
+      }
+    });
+
+    steps.push({
+      id: 'select',
+      getEl: () => getEl('.tb-btn[data-tool="select"]'),
+      title: 'Select & move shapes',
+      body: 'Tap <strong>Select</strong>, then drag a shape or token to reposition it.',
+      attach: function(onAdvance) {
+        // Advance when select tool is activated AND an object is dragged (preDragObjects populated)
+        let done = false;
+        function check() {
+          if (done) return;
+          if (state.tool === 'select' && state.preDragObjects !== null) {
+            done = true;
+            clearInterval(iv);
+            setTimeout(onAdvance, 400);
+          }
+        }
+        const iv = setInterval(check, 300);
+        return function() { done = true; clearInterval(iv); };
+      }
+    });
+
+    steps.push({
+      id: 'save',
+      getEl: () => getEl('.tb-btn[title="Save tactic"]'),
+      title: 'Save your play',
+      body: 'Tap <strong>Save</strong> to name and store your play in your personal playbook.',
+      attach: function(onAdvance) {
+        // Advance when a tactic is successfully saved (savedTactics array grows)
+        const prev = state.savedTactics.length;
+        let done = false;
+        function check() {
+          if (done) return;
+          if (state.savedTactics.length > prev) {
+            done = true;
+            clearInterval(iv);
+            setTimeout(onAdvance, 500);
+          }
+        }
+        const iv = setInterval(check, 300);
+        return function() { done = true; clearInterval(iv); };
+      }
+    });
+
+    steps.push({
+      id: 'my-plays',
+      getEl: () => getEl('.tb-btn[title="My saved tactics"]'),
+      title: 'View your playbook',
+      body: 'Tap <strong>My Plays</strong> to see all your saved plays anytime.',
+      attach: function(onAdvance) {
+        const btn = getEl('.tb-btn[title="My saved tactics"]');
+        return once(btn, 'click', function() {
+          setTimeout(onAdvance, 400);
+        });
+      }
+    });
+
+    return steps;
+  }
+
+  let _tutSteps = [];
+  let _tutIdx   = 0;
+  let _tutActive = false;
+
+  function tutSkip() {
+    try {
+      _tutActive = false;
+      if (_cleanup) { _cleanup(); _cleanup = null; }
+      hideAll();
+      localStorage.setItem(KEY_DONE, '1');
+    } catch(e) {}
+  }
+
+  function tutAdvance() {
+    if (!_tutActive) return;
+    try {
+      if (_cleanup) { _cleanup(); _cleanup = null; }
+      _tutIdx++;
+      if (_tutIdx >= _tutSteps.length) {
+        // All steps done — show completion message
+        tutComplete();
+      } else {
+        tutShowStep(_tutIdx);
+      }
+    } catch(e) { tutSkip(); }
+  }
+
+  function tutShowStep(idx) {
+    try {
+      const step = _tutSteps[idx];
+      const el   = step.getEl();
+      buildDOM();
+      showOverlay();
+
+      // If element isn't visible yet (e.g. toolbar hidden), retry briefly
+      if (!el || el.getBoundingClientRect().width === 0) {
+        setTimeout(function() {
+          if (!_tutActive) return;
+          tutShowStep(idx);
+        }, 400);
+        return;
+      }
+
+      spotlightEl(el);
+      renderTooltip({
+        header: 'Getting started',
+        title:  step.title,
+        body:   step.body,
+        step:   idx,
+        total:  _tutSteps.length,
+        skipFn: tutSkip
+      });
+      positionTooltip(el);
+
+      _cleanup = step.attach(tutAdvance);
+    } catch(e) { tutSkip(); }
+  }
+
+  function tutComplete() {
+    try {
+      _tutActive = false;
+      localStorage.setItem(KEY_DONE, '1');
+      // Show a friendly completion card using the existing modal system
+      buildDOM();
+      hideAll(); // remove spotlight
+      if (_ring) _ring.style.display = 'none';
+      // Reuse tooltip for the completion message (no overlay needed)
+      if (_tooltip) {
+        _tooltip.style.display = 'block';
+        _tooltip.innerHTML = `
+          <div class="tut-header" style="color:#22c55e;">✓ You're all set!</div>
+          <div class="tut-title">Ready to coach 🏟</div>
+          <div class="tut-body">You know the basics — now it's time to draw your best plays. Good luck out there!</div>
+          <div class="tut-foot" style="justify-content:flex-end;">
+            <button class="tut-skip" id="tut-done-btn"
+              style="color:var(--accent);font-weight:700;font-size:13px;">
+              Let's go →
+            </button>
+          </div>
+        `;
+        // Position in centre of screen
+        const tw = _tooltip.offsetWidth  || 280;
+        const th = _tooltip.offsetHeight || 140;
+        _tooltip.style.top  = ((window.innerHeight - th) / 2) + 'px';
+        _tooltip.style.left = ((window.innerWidth  - tw) / 2) + 'px';
+        document.getElementById('tut-done-btn').onclick = function() {
+          _tooltip.style.display = 'none';
+        };
+        setTimeout(function() {
+          if (_tooltip) _tooltip.style.display = 'none';
+        }, 6000); // auto-dismiss after 6 s
+      }
+    } catch(e) {}
+  }
+
+  function startNewUserTutorial() {
+    try {
+      if (localStorage.getItem(KEY_DONE)) return;
+      _tutSteps  = buildNewUserSteps();
+      _tutIdx    = 0;
+      _tutActive = true;
+      tutShowStep(0);
+    } catch(e) {}
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PRO / CLUB UPGRADE TUTORIAL
+  // ══════════════════════════════════════════════════════════════════════════
+
+  function buildUpgradeSteps(plan) {
+    // plan: 'pro' | 'club'
+    const isClub = plan === 'club';
+    const steps  = [];
+
+    steps.push({
+      id: 'welcome',
+      getEl: () => getEl('#pro-badge'),
+      title: isClub ? 'Welcome to Club! 🏟' : 'Welcome to Pro! ⚡',
+      body: isClub
+        ? 'Your Club plan is active. Here\'s a quick tour of your new features.'
+        : 'Your Pro plan is active. Here\'s a quick tour of what\'s unlocked.',
+      attach: function(onAdvance) {
+        // Auto-advance after 3 s or on any click on the badge
+        const badge = getEl('#pro-badge');
+        let timer = setTimeout(onAdvance, 3000);
+        const off = once(badge, 'click', function() {
+          clearTimeout(timer); onAdvance();
+        });
+        return function() { clearTimeout(timer); off(); };
+      }
+    });
+
+    // Pro: unlimited saves + playbook
+    steps.push({
+      id: 'save',
+      getEl: () => getEl('.tb-btn[title="Save tactic"]'),
+      title: 'Unlimited saves',
+      body: 'Save as many plays as you want. No limits — your entire playbook, right here.',
+      attach: function(onAdvance) {
+        let t = setTimeout(onAdvance, 4000);
+        return function() { clearTimeout(t); };
+      }
+    });
+
+    // Pro: tags, notes, rating
+    steps.push({
+      id: 'playbook',
+      getEl: () => getEl('.tb-btn[title="My saved tactics"]'),
+      title: 'Your personal playbook',
+      body: 'Rate, tag, and search your plays. Tap <strong>My Plays</strong> to explore your playbook.',
+      attach: function(onAdvance) {
+        let t = setTimeout(onAdvance, 4000);
+        return function() { clearTimeout(t); };
+      }
+    });
+
+    // Pro: Training Sessions
+    steps.push({
+      id: 'sessions',
+      getEl: () => getEl('.tb-btn[title="Training Sessions — chain plays into a plan"]'),
+      title: 'Training Sessions',
+      body: 'Chain plays into a full session plan, step through them on the pitch, and export as a PDF.',
+      attach: function(onAdvance) {
+        let t = setTimeout(onAdvance, 4000);
+        return function() { clearTimeout(t); };
+      }
+    });
+
+    // Club only: shared library
+    if (isClub) {
+      steps.push({
+        id: 'club-library',
+        // TODO: verify the club library button selector when club admin UI is finalised
+        getEl: () => getEl('#btn-pro-library') || getEl('.tb-btn[title="200+ pre-built tactics library"]'),
+        title: 'Club library & shared plays',
+        body: 'Your whole coaching staff shares one library. Anyone on the club can access and build on every play.',
+        attach: function(onAdvance) {
+          let t = setTimeout(onAdvance, 4500);
+          return function() { clearTimeout(t); };
+        }
+      });
+    }
+
+    return steps;
+  }
+
+  let _proTutActive = false;
+
+  function proTutSkip() {
+    try {
+      _proTutActive = false;
+      if (_cleanup) { _cleanup(); _cleanup = null; }
+      hideAll();
+      localStorage.setItem(KEY_PRO_DONE, '1');
+    } catch(e) {}
+  }
+
+  function proTutAdvance(steps, idx) {
+    if (!_proTutActive) return;
+    try {
+      if (_cleanup) { _cleanup(); _cleanup = null; }
+      const next = idx + 1;
+      if (next >= steps.length) {
+        proTutComplete();
+      } else {
+        proTutShowStep(steps, next);
+      }
+    } catch(e) { proTutSkip(); }
+  }
+
+  function proTutShowStep(steps, idx) {
+    try {
+      const step = steps[idx];
+      const el   = step.getEl();
+      buildDOM();
+      showOverlay();
+
+      if (!el || el.getBoundingClientRect().width === 0) {
+        // Element not visible — skip this step silently
+        proTutAdvance(steps, idx);
+        return;
+      }
+
+      spotlightEl(el);
+      renderTooltip({
+        header: 'New features',
+        title:  step.title,
+        body:   step.body,
+        step:   idx,
+        total:  steps.length,
+        skipFn: proTutSkip
+      });
+      positionTooltip(el);
+
+      _cleanup = step.attach(function() { proTutAdvance(steps, idx); });
+    } catch(e) { proTutSkip(); }
+  }
+
+  function proTutComplete() {
+    try {
+      _proTutActive = false;
+      localStorage.setItem(KEY_PRO_DONE, '1');
+      hideAll();
+      if (_tooltip) {
+        _tooltip.style.display = 'block';
+        _tooltip.innerHTML = `
+          <div class="tut-header" style="color:#22c55e;">✓ Tour complete</div>
+          <div class="tut-title">You're ready to go! 🚀</div>
+          <div class="tut-body">All your new features are unlocked. Enjoy the full CourtDraw experience.</div>
+          <div class="tut-foot" style="justify-content:flex-end;">
+            <button class="tut-skip" id="pro-tut-done-btn"
+              style="color:var(--accent);font-weight:700;font-size:13px;">
+              Got it →
+            </button>
+          </div>
+        `;
+        const tw = _tooltip.offsetWidth  || 280;
+        const th = _tooltip.offsetHeight || 140;
+        _tooltip.style.top  = ((window.innerHeight - th) / 2) + 'px';
+        _tooltip.style.left = ((window.innerWidth  - tw) / 2) + 'px';
+        document.getElementById('pro-tut-done-btn').onclick = function() {
+          if (_tooltip) _tooltip.style.display = 'none';
+        };
+        setTimeout(function() {
+          if (_tooltip) _tooltip.style.display = 'none';
+        }, 6000);
+      }
+    } catch(e) {}
+  }
+
+  function startUpgradeTutorial(plan) {
+    try {
+      if (localStorage.getItem(KEY_PRO_DONE)) return;
+      const steps = buildUpgradeSteps(plan);
+      _proTutActive = true;
+      proTutShowStep(steps, 0);
+    } catch(e) {}
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TRIGGER LOGIC
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // New-user tutorial: fires 1.5 s after app load if tutorial not done.
+  // Delay lets Firebase auth + court init complete first.
+  window.addEventListener('load', function() {
+    try {
+      if (localStorage.getItem(KEY_DONE)) return;
+      setTimeout(startNewUserTutorial, 1500);
+    } catch(e) {}
+  });
+
+  // Upgrade tutorial: hook into __updatePro.
+  // We compare the stored previous plan to detect a *new* upgrade this session.
+  const _origUpdatePro = window.__updatePro;
+  window.__updatePro = function(isPro, isClub) {
+    // Call the original handler first
+    if (_origUpdatePro) _origUpdatePro.apply(this, arguments);
+
+    try {
+      const prevPlan = localStorage.getItem(KEY_PREV_PLAN) || 'free';
+      const newPlan  = isClub ? 'club' : isPro ? 'pro' : 'free';
+
+      // Persist current plan so next call can compare
+      localStorage.setItem(KEY_PREV_PLAN, newPlan);
+
+      // Detect upgrade (free→pro, free→club, pro→club)
+      const upgraded =
+        (newPlan === 'pro'  && prevPlan === 'free') ||
+        (newPlan === 'club' && (prevPlan === 'free' || prevPlan === 'pro'));
+
+      if (upgraded && !localStorage.getItem(KEY_PRO_DONE)) {
+        // Give the UI 1 s to settle after plan update
+        setTimeout(function() { startUpgradeTutorial(newPlan); }, 1000);
+      }
+    } catch(e) {}
+  };
+
+  // Expose for testing / manual trigger from console
+  window._tutStart       = startNewUserTutorial;
+  window._tutStartUpgrade = startUpgradeTutorial;
+  window._tutSkip        = tutSkip;
+
+})();
+
 // ── Success-moment upsells ────────────────────────────────────────────────────
 // Fires 20 s AFTER an impressive free-user action (once per session per key).
 // The delay lets the user enjoy the moment before the nudge appears.
