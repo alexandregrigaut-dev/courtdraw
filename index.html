@@ -283,7 +283,8 @@
     .sport-card {
       background: var(--bg2); border: 1px solid var(--border);
       border-radius: var(--radius); padding: 18px 12px;
-      text-align: center; transition: all .18s; cursor: default;
+      text-align: center; transition: all .18s; cursor: pointer;
+      display: block;
     }
     .sport-card:hover { border-color: var(--accent); background: var(--bg3); transform: translateY(-2px); }
     .sport-card-icon { font-size: 1.6rem; margin-bottom: 8px; }
@@ -664,7 +665,7 @@
       CourtDraw
     </a>
     <div class="nav-links">
-      <a href="#sports">Sports</a>
+      <a href="/sports/">All Sports</a>
       <a href="#features">Features</a>
       <a href="#how">How It Works</a>
       <a href="#pricing">Pricing</a>
@@ -925,49 +926,49 @@
     </div>
     <div class="sports-grid">
       <!-- Racket Sports -->
-      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis (Singles)</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis (Doubles)</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Padel</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏓</div><div class="sport-card-name">Pickleball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton (Singles)</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton (Doubles)</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Squash</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏓</div><div class="sport-card-name">Table Tennis</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Racquetball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Beach Tennis</div></div>
+      <a href="/tennis-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis (Singles)</div></a>
+      <a href="/tennis-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis (Doubles)</div></a>
+      <a href="/padel-tactics-board/" class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Padel</div></a>
+      <a href="/pickleball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏓</div><div class="sport-card-name">Pickleball</div></a>
+      <a href="/badminton-tactics-board/" class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton (Singles)</div></a>
+      <a href="/badminton-tactics-board/" class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton (Doubles)</div></a>
+      <a href="/squash-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Squash</div></a>
+      <a href="/table-tennis-tactics-board/" class="sport-card"><div class="sport-card-icon">🏓</div><div class="sport-card-name">Table Tennis</div></a>
+      <a href="/racquetball-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Racquetball</div></a>
+      <a href="/beach-tennis-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Beach Tennis</div></a>
       <!-- Indoor Team Sports -->
-      <div class="sport-card"><div class="sport-card-icon">🤾</div><div class="sport-card-name">Handball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Futsal</div></div>
-      <div class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Futsal Mini / 5-a-side</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏀</div><div class="sport-card-name">Basketball (Full)</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏀</div><div class="sport-card-name">Basketball (Half)</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Volleyball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Floorball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Korfball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Netball</div></div>
+      <a href="/handball-tactics-board/" class="sport-card"><div class="sport-card-icon">🤾</div><div class="sport-card-name">Handball</div></a>
+      <a href="/futsal-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Futsal</div></a>
+      <a href="/futsal-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Futsal Mini / 5-a-side</div></a>
+      <a href="/basketball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏀</div><div class="sport-card-name">Basketball (Full)</div></a>
+      <a href="/basketball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏀</div><div class="sport-card-name">Basketball (Half)</div></a>
+      <a href="/volleyball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Volleyball</div></a>
+      <a href="/floorball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Floorball</div></a>
+      <a href="/korfball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Korfball</div></a>
+      <a href="/netball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Netball</div></a>
       <!-- Field Sports -->
-      <div class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Football / Soccer (Full)</div></div>
-      <div class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Football / Soccer (Half)</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏉</div><div class="sport-card-name">Rugby Union</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏉</div><div class="sport-card-name">Rugby League</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Field Hockey</div></div>
-      <div class="sport-card"><div class="sport-card-icon">⛳</div><div class="sport-card-name">Gaelic Football</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Hurling / Camogie</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">American Football</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">Australian Rules Football</div></div>
+      <a href="/football-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Football / Soccer (Full)</div></a>
+      <a href="/football-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Football / Soccer (Half)</div></a>
+      <a href="/rugby-union-tactics-board/" class="sport-card"><div class="sport-card-icon">🏉</div><div class="sport-card-name">Rugby Union</div></a>
+      <a href="/rugby-league-tactics-board/" class="sport-card"><div class="sport-card-icon">🏉</div><div class="sport-card-name">Rugby League</div></a>
+      <a href="/field-hockey-tactics-board/" class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Field Hockey</div></a>
+      <a href="/gaelic-football-tactics-board/" class="sport-card"><div class="sport-card-icon">⛳</div><div class="sport-card-name">Gaelic Football</div></a>
+      <a href="/hurling-tactics-board/" class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Hurling / Camogie</div></a>
+      <a href="/american-football-tactics-board/" class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">American Football</div></a>
+      <a href="/australian-rules-tactics-board/" class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">Australian Rules Football</div></a>
       <!-- Ice & Roller -->
-      <div class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Ice Hockey</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Roller Hockey</div></div>
+      <a href="/ice-hockey-tactics-board/" class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Ice Hockey</div></a>
+      <a href="/roller-hockey-tactics-board/" class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Roller Hockey</div></a>
       <!-- Beach Sports -->
-      <div class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Beach Volleyball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🤾</div><div class="sport-card-name">Beach Handball</div></div>
-      <div class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Beach Soccer</div></div>
+      <a href="/beach-volleyball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Beach Volleyball</div></a>
+      <a href="/beach-handball-tactics-board/" class="sport-card"><div class="sport-card-icon">🤾</div><div class="sport-card-name">Beach Handball</div></a>
+      <a href="/beach-soccer-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Beach Soccer</div></a>
       <!-- Other -->
-      <div class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Padbol</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Indoor Hockey</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🥍</div><div class="sport-card-name">Lacrosse</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏊</div><div class="sport-card-name">Water Polo</div></div>
-      <div class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Fistball</div></div>
+      <a href="/padbol-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Padbol</div></a>
+      <a href="/indoor-hockey-tactics-board/" class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Indoor Hockey</div></a>
+      <a href="/lacrosse-tactics-board/" class="sport-card"><div class="sport-card-icon">🥍</div><div class="sport-card-name">Lacrosse</div></a>
+      <a href="/water-polo-tactics-board/" class="sport-card"><div class="sport-card-icon">🏊</div><div class="sport-card-name">Water Polo</div></a>
+      <a href="/fistball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Fistball</div></a>
     </div>
     <p style="text-align:center;margin-top:28px;color:var(--muted);font-size:0.85rem;">
       Can't find your sport? <a href="mailto:courtdraw.info@gmail.com" style="color:var(--accent);text-decoration:underline;">Request a court</a> — we add new sports regularly.
@@ -1602,10 +1603,18 @@
         <p>The tactics board for every coach. Draw plays for 38+ sports in your browser — free, fast, and offline-ready.</p>
       </div>
       <div class="footer-col">
+        <h4>Sports</h4>
+        <ul>
+          <li><a href="/sports/">All Sports Hub</a></li>
+          <li><a href="/football-tactics-board/">Football</a></li>
+          <li><a href="/basketball-tactics-board/">Basketball</a></li>
+          <li><a href="/tennis-tactics-board/">Tennis</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
         <h4>Product</h4>
         <ul>
           <li><a href="courtdraw-app.html">Open App</a></li>
-          <li><a href="#sports">Sports</a></li>
           <li><a href="#features">Features</a></li>
           <li><a href="#pricing">Pricing</a></li>
         </ul>

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-9NZSFKFV1N"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-9NZSFKFV1N');</script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Padel Tactics Board — Draw & Share Plays | CourtDraw</title>
+  <meta name="description" content="Free online padel tactics board for coaches. Draw bandeja patterns, wall play, lob-and-recover, and net domination plays for 2v2. Works on iPad offline." />
+  <link rel="canonical" href="https://courtdraw.app/padel-tactics-board/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://courtdraw.app/padel-tactics-board/" />
+  <meta property="og:title" content="Padel Tactics Board — Draw &amp; Share Plays | CourtDraw" />
+  <meta property="og:description" content="Free online padel tactics board for coaches. Draw bandeja patterns, wall play, lob-and-recover, and net domination plays for 2v2. Works on iPad offline." />
+  <meta property="og:image" content="https://courtdraw.app/assets/og-image.svg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="CourtDraw" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Padel Tactics Board — Draw &amp; Share Plays | CourtDraw" />
+  <meta name="twitter:description" content="Free online padel tactics board for coaches. Draw bandeja patterns, wall play, lob-and-recover, and net domination plays for 2v2. Works on iPad offline." />
+  <meta name="twitter:image" content="https://courtdraw.app/assets/og-image.svg" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#1d4ed8" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CourtDraw">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "name": "CourtDraw \u2014 Padel Tactics Board",
+      "applicationCategory": "SportsApplication",
+      "operatingSystem": "Web",
+      "url": "https://courtdraw.app/courtdraw-app.html",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "description": "Free online padel tactics board for coaches. Draw bandeja patterns, wall play, lob-and-recover, and net domination plays for 2v2. Works on iPad offline."
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://courtdraw.app/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Sports",
+          "item": "https://courtdraw.app/sports/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Padel",
+          "item": "https://courtdraw.app/padel-tactics-board/"
+        }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is there a free padel tactics board?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes \u2014 CourtDraw is completely free to start. Open the Padel tactics board in your browser at courtdraw.app, no account or install required. The free plan gives you access to one court and three saved tactics. Pro unlocks all 38+ sports, unlimited saves, and shareable links."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I draw padel plays online?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Open CourtDraw, select the Padel court, and use the drawing tools to drag player tokens, draw arrows for passes and runs, and add circles and zones. Save your tactic, then share it via a link or export as PNG or PDF. No drawing experience required."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does the padel tactics board work on iPad and offline?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. CourtDraw is a Progressive Web App (PWA) that works on any browser including iPad Safari and Chrome. Once loaded, it works fully offline \u2014 diagrams and saved tactics are stored on the device. Add it to your home screen for instant access on the touchline."
+          }
+        }
+      ]
+    }
+  ]
+}</script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a1628; --bg2: #0d1f3c; --bg3: #1a2d4a;
+      --border: #1a2d4a; --border2: #2a3f5c;
+      --text: #f1f5f9; --muted: #94a3b8;
+      --accent: #3b82f6; --accent-glow: rgba(59,130,246,0.18);
+      --radius: 14px; --radius-lg: 22px;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+    img, svg { display: block; }
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3); color: var(--accent); border-radius: 100px; padding: 4px 14px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .btn { display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all .18s; border: none; text-decoration: none; }
+    .btn-primary { background: var(--accent); color: #fff; padding: 14px 28px; font-size: 1rem; }
+    .btn-primary:hover { background: #60a5fa; transform: translateY(-1px); box-shadow: 0 8px 30px rgba(59,130,246,0.4); }
+    .btn-ghost { background: transparent; color: var(--text); border: 1.5px solid var(--border2); padding: 13px 26px; font-size: 1rem; }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-lg { padding: 18px 36px; font-size: 1.1rem; border-radius: 14px; }
+    .gradient-text { background: linear-gradient(135deg,#3b82f6 0%,#60a5fa 50%,#93c5fd 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    nav { position: sticky; top: 0; z-index: 100; background: rgba(10,22,40,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; font-size: 1.3rem; font-weight: 800; letter-spacing: -0.03em; }
+    .nav-logo-mark { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .nav-links { display: flex; align-items: center; gap: 8px; }
+    .nav-links a { color: var(--muted); font-size: 0.9rem; font-weight: 500; padding: 6px 12px; border-radius: 8px; transition: color .15s; }
+    .nav-links a:hover, .nav-links a.active { color: var(--text); }
+    .nav-cta { display: flex; align-items: center; gap: 10px; }
+    @media (max-width: 680px) { .nav-links { display: none; } }
+    footer { border-top: 1px solid var(--border); padding: 48px 0 32px; }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 32px; }
+    @media (max-width: 780px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; } }
+    .footer-brand p { color: var(--muted); font-size: 0.875rem; margin-top: 14px; line-height: 1.6; max-width: 260px; }
+    .footer-col h4 { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-col ul li a { color: var(--muted); font-size: 0.875rem; transition: color .15s; }
+    .footer-col ul li a:hover { color: var(--text); }
+    .footer-bottom { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 24px; flex-wrap: wrap; gap: 16px; }
+    .footer-bottom p { color: var(--muted); font-size: 0.8rem; }
+    .footer-legal { display: flex; gap: 20px; }
+    .footer-legal a { color: var(--muted); font-size: 0.8rem; }
+    .sp-hero { padding: 72px 0 56px; text-align: center; position: relative; overflow: hidden; }
+    .sp-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(59,130,246,0.15) 0%, transparent 70%); pointer-events: none; }
+    .sp-hero-badge { margin-bottom: 20px; }
+    .sp-hero h1 { font-size: clamp(2rem, 5vw, 3.4rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.04em; margin-bottom: 20px; }
+    .sp-hero-sub { font-size: 1.05rem; color: var(--muted); max-width: 620px; margin: 0 auto 16px; line-height: 1.65; }
+    .sp-hero-sub p { color: var(--muted); }
+    .sp-hero-actions { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+    .sp-hero-fine { font-size: 0.82rem; color: var(--muted); margin-top: 12px; }
+    .breadcrumb { padding: 12px 0; border-bottom: 1px solid var(--border); background: var(--bg2); }
+    .breadcrumb-nav { display: none; }
+    .bc-list { list-style: none; display: flex; gap: 8px; align-items: center; font-size: 0.82rem; color: var(--muted); }
+    .bc-list li + li::before { content: '/'; color: var(--border2); }
+    .bc-list li a { color: var(--accent); }
+    .consolidation-note { display: inline-flex; gap: 8px; align-items: center; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 8px 16px; font-size: 0.85rem; color: var(--muted); margin-top: 16px; flex-wrap: wrap; justify-content: center; }
+    .consolidation-note a { color: var(--accent); }
+    .sp-section { padding: 72px 0; }
+    .sp-section:nth-child(odd) { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .section-header { text-align: center; margin-bottom: 48px; }
+    .section-header h2 { font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 800; letter-spacing: -0.03em; margin-top: 14px; margin-bottom: 16px; }
+    .section-header p { color: var(--muted); max-width: 520px; margin: 0 auto; }
+    .sp-body { max-width: 820px; margin: 0 auto; }
+    .sp-body h2 { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; margin: 40px 0 16px; color: var(--text); }
+    .sp-body h2:first-child { margin-top: 0; }
+    .sp-body p { color: var(--muted); line-height: 1.75; margin-bottom: 16px; font-size: 0.975rem; }
+    .sp-body ul { color: var(--muted); padding-left: 20px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .sp-body ul li { line-height: 1.65; font-size: 0.95rem; }
+    .sp-body strong { color: var(--text); }
+    .how-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+    @media (max-width: 860px) { .how-grid { grid-template-columns: repeat(2, 1fr); gap: 32px; } }
+    @media (max-width: 500px) { .how-grid { grid-template-columns: 1fr; } }
+    .how-step { text-align: center; padding: 0 24px; position: relative; }
+    .how-step + .how-step::before { content: ''; position: absolute; left: 0; top: 24px; width: 1px; height: 48px; background: var(--border2); }
+    @media (max-width: 860px) { .how-step + .how-step::before { display: none; } }
+    .how-num { width: 48px; height: 48px; border-radius: 50%; background: var(--bg3); border: 2px solid var(--border2); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; margin: 0 auto 20px; color: var(--accent); }
+    .how-step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+    .how-step p { color: var(--muted); font-size: 0.875rem; line-height: 1.6; }
+    .plays-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .play-card { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius); padding: 24px; transition: border-color .18s; }
+    .play-card:hover { border-color: var(--accent); }
+    .play-card-name { font-size: 1rem; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+    .play-card-desc { color: var(--muted); font-size: 0.875rem; line-height: 1.6; margin-bottom: 16px; }
+    .play-load-btn { color: var(--accent); font-size: 0.85rem; font-weight: 700; }
+    .faq-list { max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+    .faq-item { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 28px; }
+    .faq-item h3 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+    .faq-item p { color: var(--muted); font-size: 0.9rem; line-height: 1.65; }
+    .related-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .related-link { background: var(--bg2); border: 1px solid var(--border2); border-radius: 100px; padding: 8px 18px; font-size: 0.85rem; font-weight: 600; color: var(--muted); transition: all .15s; }
+    .related-link:hover { border-color: var(--accent); color: var(--accent); }
+    .sp-cta { text-align: center; padding: 80px 0; }
+    .sp-cta h2 { font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 16px; }
+    .sp-cta p { color: var(--muted); max-width: 480px; margin: 0 auto 36px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container nav-inner">
+    <a href="/" class="nav-logo">
+      <div class="nav-logo-mark"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="28" height="28" rx="6" fill="#3b82f6"/>
+  <rect x="2" y="8.5" width="24" height="11" rx="1" fill="#1d4ed8"/>
+  <rect x="2" y="8.5" width="24" height="11" rx="1" stroke="white" stroke-width="0.9"/>
+  <line x1="14" y1="8.5" x2="14" y2="19.5" stroke="white" stroke-width="0.9"/>
+  <line x1="7.5" y1="9.8" x2="7.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+  <line x1="20.5" y1="9.8" x2="20.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+  <line x1="2" y1="9.8" x2="26" y2="9.8" stroke="white" stroke-width="0.75"/>
+  <line x1="2" y1="18.2" x2="26" y2="18.2" stroke="white" stroke-width="0.75"/>
+  <line x1="7.5" y1="14" x2="20.5" y2="14" stroke="white" stroke-width="0.75"/>
+  <line x1="2" y1="14" x2="2.7" y2="14" stroke="white" stroke-width="0.75"/>
+  <line x1="26" y1="14" x2="25.3" y2="14" stroke="white" stroke-width="0.75"/>
+</svg></div>
+      CourtDraw
+    </a>
+    <div class="nav-links">
+      <a href="/sports/">All Sports</a>
+      <a href="/#features">Features</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/#faq">FAQ</a>
+    </div>
+    <div class="nav-cta">
+      <a href="/login.html" class="btn btn-ghost" style="padding:9px 18px;font-size:.875rem;">Sign in</a>
+      <a href="/courtdraw-app.html?court=padel" class="btn btn-primary" style="padding:9px 18px;font-size:.875rem;">Try Free</a>
+    </div>
+  </div>
+</nav>
+
+<div class="breadcrumb">
+  <div class="container">
+    <nav aria-label="Breadcrumb" class="breadcrumb-nav">
+      <ol class="bc-list">
+        <li><a href="/">Home</a></li>
+        <li><a href="/sports/">Sports</a></li>
+        <li>Padel</li>
+      </ol>
+    </nav>
+    <ol class="bc-list">
+      <li><a href="/">Home</a></li>
+      <li><a href="/sports/">Sports</a></li>
+      <li>Padel</li>
+    </ol>
+  </div>
+</div>
+
+<section class="sp-hero">
+  <div class="container">
+    <div class="sp-hero-badge">
+      <span class="badge"><span class="badge-dot"></span>🏸 Padel</span>
+    </div>
+    <h1>Padel Tactics Board</h1>
+    <div class="sp-hero-sub">
+      <p>Padel's enclosed court transforms every rally into a chess match of angles, glass rebounds, and positioning. Most coaching mistakes happen because players don't understand the geometry — where the bandeja should land, which glass angle to exploit, when to lob and when to attack. CourtDraw's padel board lets you diagram all of it, show real 2v2 positioning, and share plays before players step on court.</p>
+    </div>
+    
+    
+    <div class="sp-hero-actions" style="margin-top:28px;">
+      <a href="/courtdraw-app.html?court=padel" class="btn btn-primary btn-lg">Start Drawing Padel Free →</a>
+      <a href="/sports/" class="btn btn-ghost btn-lg">Browse All Sports</a>
+    </div>
+    <p class="sp-hero-fine">Free forever · No install · Works on iPad offline</p>
+  </div>
+</section>
+
+<section class="sp-section sp-content">
+  <div class="container">
+    <div class="sp-body">
+      <h2>The Three Pillars of Padel Tactics</h2>
+<p>Padel coaching revolves around three tactical principles: <strong>net domination</strong>, <strong>diagonal geometry</strong>, and <strong>controlled use of the glass walls</strong>. Every tactical concept you teach traces back to one or more of these pillars, and a visual board makes it dramatically easier for players to understand how they connect.</p>
+<h2>Net Dominance</h2>
+<p>Winning padel pairs spend the majority of each point at or near the net. The goal is to move forward after every opportunity and force the opponents to lob or play defensively from the back glass. Diagramming net domination shows players exactly where to stand — both partners roughly 1.5–2 metres from the net, slightly offset so each covers their side diagonal — and how to shift laterally to cover a cross-court dink or a lob that lands short.</p>
+<p>When you diagram the <strong>4-2 net squeeze</strong> on CourtDraw, you can show how both players press forward as the opponent plays a defensive ball, closing the available angle to just the lob or the chiquita. Show this as a two-phase animation: first the opponents' ball, then the net pair's advance.</p>
+<h2>The Bandeja and the Víbora</h2>
+<p>Two of padel's signature shots — the <strong>bandeja</strong> and the <strong>víbora</strong> — are fundamentally tactical rather than just technical. The bandeja is a controlled overhead hit with sidespin that lands deep in the opponent's court and bounces into the side glass; it maintains net position while neutralising a lob. The víbora is a more aggressive version hit with more wrist snap and a sharper angle toward the side glass.</p>
+<p>Coaches often struggle to explain when to choose one over the other. On CourtDraw you can draw the intended ball path, the anticipated glass rebound angle, and the net position the hitting player recovers to after each shot — making the decision tree concrete.</p>
+<h2>Lob-and-Recover Positioning</h2>
+<p>When caught at the back glass, a team's escape route is almost always the <strong>deep central lob</strong>. The key is not just the shot itself but what both players do immediately after: they must sprint forward together as a unit and attempt to regain net position before the opponents can put away the smash. Diagramming this movement — both players' paths, the ideal landing zone for the lob, and their target net position — closes a gap that verbal coaching alone rarely fills.</p>
+<p>The <strong>lob-to-net recovery triangle</strong> is a concept every padel coach should be able to draw: the lob lands in the central or cross-court deep zone, Player A tracks back to cover the potential smash rebound from the glass, Player B moves to the T-zone ready to intercept a short reply.</p>
+<h2>Wall Play and the Diagonal Cross</h2>
+<p>The <strong>diagonal cross</strong> — a ball played from the left side toward the opponents' right side glass — is one of padel's most effective attacking patterns. When drawn correctly, it forces the opponent closest to the glass to play a defensive ball while the partner at net is left with no angle to intercept. Showing this on CourtDraw, including the expected glass rebound path and how the hitting team should follow it up, gives players a concrete model to execute in match conditions.</p>
+<p>Wall rebounding is also central to defense: a ball that comes off the back glass at pace can be redirected cross-court at a sharp angle if the player reads the rebound early. Annotate the rebound angle and the ideal contact point on the board, and players will start seeing the geometry in training.</p>
+<h2>Serve Tactics</h2>
+<p>In padel, the serve starts every point but is far less dominant than in tennis. The key tactical question is: where does the serving pair position themselves after the serve to maximise net pressure? Diagram the server's follow-forward path, the net player's role in covering the central alley, and the split-step timing relative to the return contact. A well-diagrammed serve pattern prevents partners from leaving central gaps that the returning pair can exploit with the chiquita.</p>
+    </div>
+  </div>
+</section>
+
+
+  <section class="sp-section sp-plays">
+    <div class="container">
+      <div class="section-header">
+        <span class="badge"><span class="badge-dot"></span>Tactics Library</span>
+        <h2 class="gradient-text">Ready-Made Padel Plays</h2>
+        <p>Load any play directly into your board and customise it.</p>
+      </div>
+      <div class="plays-grid">
+                <div class="play-card">
+          <div class="play-card-name">Lob & Recover</div>
+          <p class="play-card-desc">Defensive lob over the net players to reclaim position when caught at the back glass.</p>
+          <a href="/courtdraw-app.html?court=padel" class="play-load-btn">Load in Board →</a>
+        </div>
+        <div class="play-card">
+          <div class="play-card-name">Bandeja Smash</div>
+          <p class="play-card-desc">High overhead with spin and control to keep net dominance without over-committing.</p>
+          <a href="/courtdraw-app.html?court=padel" class="play-load-btn">Load in Board →</a>
+        </div>
+        <div class="play-card">
+          <div class="play-card-name">Net Domination</div>
+          <p class="play-card-desc">Both players press the net to volley aggressively and close out the point.</p>
+          <a href="/courtdraw-app.html?court=padel" class="play-load-btn">Load in Board →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+<section class="sp-section sp-how">
+  <div class="container">
+    <div class="section-header">
+      <span class="badge"><span class="badge-dot"></span>How It Works</span>
+      <h2>From blank court to shared play in 60 seconds</h2>
+    </div>
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <h3>Choose Padel</h3>
+        <p>Open CourtDraw and select the Padel court. The board loads instantly in your browser — no install, no account required.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <h3>Place &amp; Draw</h3>
+        <p>Drag player tokens into position. Draw arrows for passes and runs, zones for pressing areas, and add text annotations. Multiple phases for complex plays.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <h3>Save</h3>
+        <p>Name and save your tactic to your library. Saved plays are stored on device and available offline — perfect for touchline coaching sessions.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">4</div>
+        <h3>Share</h3>
+        <p>Export as PNG or PDF, or share a direct link. Players can open it on their phone before the game — no app download needed.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sp-section sp-faq">
+  <div class="container">
+    <div class="section-header">
+      <span class="badge"><span class="badge-dot"></span>FAQ</span>
+      <h2>Padel Tactics Board — Questions</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <h3>Is there a free padel tactics board?</h3>
+        <p>Yes — CourtDraw is completely free to start. Open the Padel board in your browser at courtdraw.app, no account required. The free plan includes one court and three saved tactics. The Pro plan (€6/month) unlocks all 38+ sports, unlimited saves, clean exports, and shareable links.</p>
+      </div>
+      <div class="faq-item">
+        <h3>How do I draw padel plays online?</h3>
+        <p>Open CourtDraw, select the Padel court, and use the drawing tools: drag player tokens, draw solid arrows for passes and runs, dashed arrows for off-ball movement, and add circles and zones. Save your tactic, then share it via a link or export as PNG or PDF. No drawing experience needed.</p>
+      </div>
+      <div class="faq-item">
+        <h3>Does it work on iPad and offline?</h3>
+        <p>Yes. CourtDraw is a Progressive Web App (PWA) that works on any browser including iPad Safari and Chrome. Once loaded it works fully offline — diagrams and saved tactics are stored on the device. Add it to your home screen for instant touchline access.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sp-section sp-related" style="padding:56px 0;">
+  <div class="container">
+    <div class="section-header" style="margin-bottom:28px;">
+      <h2 style="font-size:1.4rem;">Related Sports</h2>
+    </div>
+    <div class="related-grid">
+      <a href="/tennis-tactics-board/" class="related-link">Tennis Tactics Board</a>
+      <a href="/pickleball-tactics-board/" class="related-link">Pickleball Tactics Board</a>
+      <a href="/badminton-tactics-board/" class="related-link">Badminton Tactics Board</a>
+      <a href="/squash-tactics-board/" class="related-link">Squash Tactics Board</a>
+      <a href="/football-tactics-board/" class="related-link">Football Tactics Board</a>
+      <a href="/" class="related-link">← CourtDraw Home</a>
+      <a href="/sports/" class="related-link">All 38+ Sports →</a>
+    </div>
+  </div>
+</section>
+
+<section class="sp-cta" style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div class="container">
+    <h2>Start Drawing <span class="gradient-text">Padel Plays</span> Free</h2>
+    <p>No install. No credit card. Works on every device, even offline on the touchline.</p>
+    <a href="/courtdraw-app.html?court=padel" class="btn btn-primary btn-lg">Open Padel Tactics Board →</a>
+    <p style="margin-top:16px;font-size:0.82rem;color:var(--muted);">Free forever · Pro from €6/month · Club from €99/year</p>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="nav-logo">
+          <div class="nav-logo-mark"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="28" height="28" rx="6" fill="#3b82f6"/>
+  <rect x="2" y="8.5" width="24" height="11" rx="1" fill="#1d4ed8"/>
+  <rect x="2" y="8.5" width="24" height="11" rx="1" stroke="white" stroke-width="0.9"/>
+  <line x1="14" y1="8.5" x2="14" y2="19.5" stroke="white" stroke-width="0.9"/>
+  <line x1="7.5" y1="9.8" x2="7.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+  <line x1="20.5" y1="9.8" x2="20.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+  <line x1="2" y1="9.8" x2="26" y2="9.8" stroke="white" stroke-width="0.75"/>
+  <line x1="2" y1="18.2" x2="26" y2="18.2" stroke="white" stroke-width="0.75"/>
+  <line x1="7.5" y1="14" x2="20.5" y2="14" stroke="white" stroke-width="0.75"/>
+  <line x1="2" y1="14" x2="2.7" y2="14" stroke="white" stroke-width="0.75"/>
+  <line x1="26" y1="14" x2="25.3" y2="14" stroke="white" stroke-width="0.75"/>
+</svg></div>
+          CourtDraw
+        </a>
+        <p>The tactics board for every coach. Draw plays for 38+ sports in your browser — free, fast, and offline-ready.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Sports</h4>
+        <ul>
+          <li><a href="/sports/">All Sports Hub</a></li>
+          <li><a href="/football-tactics-board/">Football</a></li>
+          <li><a href="/basketball-tactics-board/">Basketball</a></li>
+          <li><a href="/tennis-tactics-board/">Tennis</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="/courtdraw-app.html">Open App</a></li>
+          <li><a href="/#features">Features</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="/privacy.html">Privacy Policy</a></li>
+          <li><a href="/terms.html">Terms of Service</a></li>
+          <li><a href="mailto:courtdraw.info@gmail.com">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 CourtDraw. All rights reserved.</p>
+      <div class="footer-legal">
+        <a href="/privacy.html">Privacy</a>
+        <a href="/terms.html">Terms</a>
+        <a href="mailto:courtdraw.info@gmail.com">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

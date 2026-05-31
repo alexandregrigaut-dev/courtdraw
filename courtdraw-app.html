@@ -7413,8 +7413,9 @@ function init() {
   if (pickerB) pickerB.value = state.teamColorB || '#dc2626';
   if (state.teamColorA) document.documentElement.style.setProperty('--team-a-color', state.teamColorA);
   if (state.teamColorB) document.documentElement.style.setProperty('--team-b-color', state.teamColorB);
-  // Load court (from share link or default)
-  const startCourtId = sharedBoard ? state.courtId : (state.freeCourt || 'tennis_singles');
+  // Load court (from share link, ?court= URL param, or default)
+  const _urlCourt = new URLSearchParams(location.search).get('court');
+  const startCourtId = sharedBoard ? state.courtId : (_urlCourt || state.freeCourt || 'tennis_singles');
   const court = COURTS.find(c => c.id === startCourtId) || COURTS[0];
   state.courtId = court.id;
   document.getElementById('court-svg').innerHTML = court.svg();
