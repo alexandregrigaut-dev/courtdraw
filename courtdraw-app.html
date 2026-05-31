@@ -6430,75 +6430,72 @@ function showToast(msg, ms = 2400) {
 // INTERACTIVE ONBOARDING TUTORIAL
 // ══════════════════════════════════════════════
 // Two flows:
-//   1. New-user tutorial  — fires on first launch (key: cd_tutorial_done)
+//   1. New-user tutorial  — fires after court is selected (key: cd_tutorial_done)
 //   2. Pro/Club upgrade   — fires once after plan upgrade (key: cd_pro_tutorial_done)
 //
 // Architecture: completely isolated IIFE. If anything throws, the app
 // continues normally. No tutorial state touches play data or accounts.
+//
+// Key fixes v2:
+//   - Tutorial only starts after ALL onboarding modals are dismissed
+//     (welcome overlay + court picker). Watches for no .open modal on body.
+//   - Draw step: no spotlight ring / no dark overlay — canvas stays fully
+//     interactive. Tooltip anchors to the toolbar area instead.
+//   - Modal guard: if any modal opens mid-tutorial, tooltip+ring hide until
+//     the modal closes, then reposition on the current step element.
 // ──────────────────────────────────────────────────────────────────────────────
 (function() {
   'use strict';
 
   // ── Constants ──────────────────────────────────────────────────────────────
-  const KEY_DONE        = 'cd_tutorial_done';
-  const KEY_PRO_DONE    = 'cd_pro_tutorial_done';
-  const KEY_PREV_PLAN   = 'cd_prev_plan'; // tracks plan before upgrade
+  const KEY_DONE      = 'cd_tutorial_done';
+  const KEY_PRO_DONE  = 'cd_pro_tutorial_done';
+  const KEY_PREV_PLAN = 'cd_prev_plan';
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function isMobileView() {
     return window.innerWidth < 900 || state.portraitRotated;
   }
-
-  // Resolve a step's anchor element safely
   function getEl(sel) {
     try { return document.querySelector(sel); } catch { return null; }
   }
+  function anyModalOpen() {
+    return !!document.querySelector('.modal-backdrop.open');
+  }
 
-  // ── Overlay & tooltip DOM ──────────────────────────────────────────────────
-  // Single reusable overlay; content swapped per step.
-  let _overlay  = null;
-  let _tooltip  = null;
-  let _cleanup  = null; // function to remove current step's listeners
+  // ── DOM ───────────────────────────────────────────────────────────────────
+  let _tooltip = null;
+  let _ring    = null;
+  let _cleanup = null;
+  let _domBuilt = false;
 
   function buildDOM() {
-    if (_overlay) return;
-    // Spotlight overlay
-    _overlay = document.createElement('div');
-    _overlay.id = 'tut-overlay';
-    _overlay.style.cssText = [
-      'position:fixed;inset:0;z-index:9998;pointer-events:none;',
-      'transition:opacity .25s ease;'
-    ].join('');
+    if (_domBuilt) return;
+    _domBuilt = true;
 
-    // Tooltip bubble
     _tooltip = document.createElement('div');
     _tooltip.id = 'tut-tooltip';
-
-    document.body.appendChild(_overlay);
     document.body.appendChild(_tooltip);
 
-    // Inject styles once
+    _ring = document.createElement('div');
+    _ring.id = 'tut-ring';
+    document.body.appendChild(_ring);
+
     const style = document.createElement('style');
     style.textContent = `
-      #tut-overlay {
-        background: rgba(0,0,0,0.68);
-      }
-      #tut-overlay .tut-hole {
-        /* cut-out drawn via JS using clip-path or box-shadow workaround */
-      }
       #tut-tooltip {
         position: fixed;
         z-index: 9999;
         max-width: 280px;
         background: var(--bg2, #0d1f3c);
-        border: 1px solid var(--border, #1a2d4a);
+        border: 1px solid rgba(59,130,246,0.35);
         border-radius: 14px;
         padding: 16px 18px 14px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.55);
         font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
         color: var(--text, #f1f5f9);
         pointer-events: auto;
-        transition: opacity .2s ease, transform .2s ease;
+        display: none;
       }
       #tut-tooltip .tut-header {
         font-size: 11px; font-weight: 700; letter-spacing: .07em;
@@ -6520,70 +6517,57 @@ function showToast(msg, ms = 2400) {
       #tut-tooltip .tut-skip {
         font-size: 12px; color: var(--text2, #94a3b8);
         background: none; border: none; cursor: pointer;
-        padding: 4px 0; font-family: inherit;
-        transition: color .15s;
+        padding: 4px 0; font-family: inherit; transition: color .15s;
       }
       #tut-tooltip .tut-skip:hover { color: var(--text, #f1f5f9); }
-      #tut-tooltip .tut-progress {
-        display: flex; gap: 5px; align-items: center;
-      }
+      #tut-tooltip .tut-progress { display: flex; gap: 5px; align-items: center; }
       #tut-tooltip .tut-dot {
         width: 6px; height: 6px; border-radius: 50%;
-        background: var(--border, #1a2d4a);
-        transition: background .2s;
+        background: var(--border, #1a2d4a); transition: background .2s;
       }
       #tut-tooltip .tut-dot.active { background: var(--accent, #3b82f6); }
-      /* Spotlight ring around the highlighted element */
-      .tut-ring {
+      /* Spotlight ring — pointer-events:none so it never blocks interaction */
+      #tut-ring {
         position: fixed;
-        z-index: 9997;
+        z-index: 9998;
         border: 2.5px solid var(--accent, #3b82f6);
         border-radius: 10px;
         pointer-events: none;
-        box-shadow: 0 0 0 9999px rgba(0,0,0,0.62);
-        transition: all .25s ease;
+        display: none;
+        box-shadow: 0 0 0 2000px rgba(0,0,0,0.45);
         animation: tut-ring-pulse 2s ease-in-out infinite;
       }
       @keyframes tut-ring-pulse {
-        0%,100% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.62), 0 0 0 0 rgba(59,130,246,.5); }
-        50%      { box-shadow: 0 0 0 9999px rgba(0,0,0,0.62), 0 0 0 6px rgba(59,130,246,.0); }
+        0%,100% { box-shadow: 0 0 0 2000px rgba(0,0,0,0.45), 0 0 0 0 rgba(59,130,246,.5); }
+        50%      { box-shadow: 0 0 0 2000px rgba(0,0,0,0.45), 0 0 0 6px rgba(59,130,246,.0); }
       }
     `;
     document.head.appendChild(style);
   }
 
-  // Spotlight ring element (reused across steps)
-  let _ring = null;
+  // Show spotlight ring around element. Pass null to hide it.
   function spotlightEl(el, pad) {
-    pad = pad || 6;
-    if (!_ring) {
-      _ring = document.createElement('div');
-      _ring.className = 'tut-ring';
-      document.body.appendChild(_ring);
-    }
+    if (!_ring) return;
     if (!el) { _ring.style.display = 'none'; return; }
+    pad = pad !== undefined ? pad : 6;
     const r = el.getBoundingClientRect();
-    _ring.style.display  = 'block';
-    _ring.style.top      = (r.top    - pad) + 'px';
-    _ring.style.left     = (r.left   - pad) + 'px';
-    _ring.style.width    = (r.width  + pad * 2) + 'px';
-    _ring.style.height   = (r.height + pad * 2) + 'px';
+    _ring.style.display = 'block';
+    _ring.style.top     = (r.top    - pad) + 'px';
+    _ring.style.left    = (r.left   - pad) + 'px';
+    _ring.style.width   = (r.width  + pad * 2) + 'px';
+    _ring.style.height  = (r.height + pad * 2) + 'px';
   }
 
-  // Position tooltip near an element, keeping it on-screen
+  // Position tooltip near element, staying fully on-screen
   function positionTooltip(el) {
     if (!_tooltip || !el) return;
-    _tooltip.style.display = 'block';
     const r   = el.getBoundingClientRect();
     const tw  = _tooltip.offsetWidth  || 280;
     const th  = _tooltip.offsetHeight || 160;
     const vw  = window.innerWidth;
     const vh  = window.innerHeight;
     const GAP = 14;
-
     let top, left;
-
-    // Prefer placing below, then above, then beside
     if (r.bottom + GAP + th < vh) {
       top  = r.bottom + GAP;
       left = r.left + r.width / 2 - tw / 2;
@@ -6597,19 +6581,14 @@ function showToast(msg, ms = 2400) {
       top  = r.top + r.height / 2 - th / 2;
       left = r.right + GAP;
     }
-
-    // Clamp to viewport with 12px margin
     const M = 12;
     left = Math.max(M, Math.min(left, vw - tw - M));
     top  = Math.max(M, Math.min(top,  vh - th - M));
-
     _tooltip.style.top  = top  + 'px';
     _tooltip.style.left = left + 'px';
   }
 
-  // Render tooltip content
   function renderTooltip(cfg) {
-    // cfg: { header, title, body, step, total, skipFn }
     if (!_tooltip) return;
     const dots = Array.from({ length: cfg.total }, (_, i) =>
       `<div class="tut-dot${i === cfg.step ? ' active' : ''}"></div>`
@@ -6626,27 +6605,49 @@ function showToast(msg, ms = 2400) {
     document.getElementById('tut-skip-btn').onclick = cfg.skipFn;
   }
 
-  // Show/hide overlay (just the dark film — the ring does the spotlight)
-  function showOverlay() {
-    buildDOM();
-    if (_overlay) _overlay.style.opacity = '1';
-  }
   function hideAll() {
-    if (_overlay)  { _overlay.style.opacity = '0'; }
-    if (_tooltip)  { _tooltip.style.display = 'none'; }
-    if (_ring)     { _ring.style.display = 'none'; }
+    if (_tooltip) _tooltip.style.display = 'none';
+    if (_ring)    _ring.style.display    = 'none';
   }
 
   // ── One-time listener helper ───────────────────────────────────────────────
-  // Attaches a listener and returns a teardown fn.
-  function once(el, type, handler, useCapture) {
+  function once(el, type, handler) {
     if (!el) return function(){};
-    function wrapped(e) {
-      el.removeEventListener(type, wrapped, useCapture);
-      handler(e);
-    }
-    el.addEventListener(type, wrapped, useCapture || false);
-    return function() { el.removeEventListener(type, wrapped, useCapture); };
+    function wrapped(e) { el.removeEventListener(type, wrapped); handler(e); }
+    el.addEventListener(type, wrapped);
+    return function() { el.removeEventListener(type, wrapped); };
+  }
+
+  // ── Modal guard ───────────────────────────────────────────────────────────
+  // While a modal is open, hide tooltip+ring. When it closes, reshow.
+  let _modalGuardActive = false;
+  let _reshowFn = null;
+
+  function installModalGuard(reshowFn) {
+    _reshowFn = reshowFn;
+    if (_modalGuardActive) return;
+    _modalGuardActive = true;
+    const obs = new MutationObserver(function() {
+      if (!_reshowFn) return;
+      if (anyModalOpen()) {
+        hideAll();
+      } else {
+        // Modal just closed — reshow current step after short delay
+        setTimeout(function() {
+          if (_reshowFn) _reshowFn();
+        }, 200);
+      }
+    });
+    obs.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+    // Store so we can disconnect on skip/complete
+    _guardObs = obs;
+  }
+  let _guardObs = null;
+
+  function teardownGuard() {
+    _reshowFn = null;
+    if (_guardObs) { _guardObs.disconnect(); _guardObs = null; }
+    _modalGuardActive = false;
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -6655,16 +6656,16 @@ function showToast(msg, ms = 2400) {
 
   function buildNewUserSteps() {
     const mobile = isMobileView();
-    const steps = [];
+    const steps  = [];
 
-    // Steps 1 & 2 are mobile-only (three-dot button + pin toolbar)
+    // Steps 1 & 2: mobile-only (three-dot button + pin toolbar)
     if (mobile) {
       steps.push({
         id: 'three-dot',
         getEl: () => getEl('#pt-bottom-hint') || getEl('#pt-top-hint'),
+        spotlight: true,
         title: 'Open your toolbar',
         body: 'Tap the <strong>···</strong> button to reveal your drawing tools.',
-        // Advances when pt-chrome-visible is added to body
         attach: function(onAdvance) {
           const obs = new MutationObserver(function() {
             if (document.body.classList.contains('pt-chrome-visible')) {
@@ -6680,35 +6681,33 @@ function showToast(msg, ms = 2400) {
       steps.push({
         id: 'pin',
         getEl: () => getEl('#toolbar-pin-btn'),
+        spotlight: true,
         title: 'Keep your toolbar open',
         body: 'Tap <strong>Keep open</strong> so the toolbar stays visible while you draw.',
         attach: function(onAdvance) {
           const btn = getEl('#toolbar-pin-btn');
-          return once(btn, 'click', function() {
-            setTimeout(onAdvance, 350); // let the pin animation settle
-          });
+          return once(btn, 'click', function() { setTimeout(onAdvance, 350); });
         }
       });
     }
 
+    // Step: Draw — NO spotlight ring, NO overlay dimming so canvas is fully usable.
+    // Anchor tooltip to the toolbar (arrow button) but don't dim the court.
     steps.push({
       id: 'draw',
       getEl: () => getEl('.tb-btn[data-tool="arrow"]'),
+      spotlight: false, // intentionally no ring — canvas must be fully clickable
       title: 'Draw on the court',
-      body: 'Select a drawing tool and make your first stroke on the court.',
+      body: 'The Arrow tool is selected. Click or drag on the <strong>court</strong> to draw your first move.',
       attach: function(onAdvance) {
-        // Advance when the user makes at least one drawing stroke (objects array grows)
         const prev = state.objects.length;
         let done = false;
-        function check() {
+        const iv = setInterval(function() {
           if (done) return;
           if (state.objects.length > prev) {
-            done = true;
-            clearInterval(iv);
-            setTimeout(onAdvance, 400);
+            done = true; clearInterval(iv); setTimeout(onAdvance, 400);
           }
-        }
-        const iv = setInterval(check, 300);
+        }, 200);
         return function() { done = true; clearInterval(iv); };
       }
     });
@@ -6716,20 +6715,17 @@ function showToast(msg, ms = 2400) {
     steps.push({
       id: 'select',
       getEl: () => getEl('.tb-btn[data-tool="select"]'),
+      spotlight: true,
       title: 'Select & move shapes',
-      body: 'Tap <strong>Select</strong>, then drag a shape or token to reposition it.',
+      body: 'Tap <strong>Select</strong>, then drag any shape or player token to reposition it.',
       attach: function(onAdvance) {
-        // Advance when select tool is activated AND an object is dragged (preDragObjects populated)
         let done = false;
-        function check() {
+        const iv = setInterval(function() {
           if (done) return;
           if (state.tool === 'select' && state.preDragObjects !== null) {
-            done = true;
-            clearInterval(iv);
-            setTimeout(onAdvance, 400);
+            done = true; clearInterval(iv); setTimeout(onAdvance, 400);
           }
-        }
-        const iv = setInterval(check, 300);
+        }, 250);
         return function() { done = true; clearInterval(iv); };
       }
     });
@@ -6737,21 +6733,18 @@ function showToast(msg, ms = 2400) {
     steps.push({
       id: 'save',
       getEl: () => getEl('.tb-btn[title="Save tactic"]'),
+      spotlight: true,
       title: 'Save your play',
       body: 'Tap <strong>Save</strong> to name and store your play in your personal playbook.',
       attach: function(onAdvance) {
-        // Advance when a tactic is successfully saved (savedTactics array grows)
         const prev = state.savedTactics.length;
         let done = false;
-        function check() {
+        const iv = setInterval(function() {
           if (done) return;
           if (state.savedTactics.length > prev) {
-            done = true;
-            clearInterval(iv);
-            setTimeout(onAdvance, 500);
+            done = true; clearInterval(iv); setTimeout(onAdvance, 500);
           }
-        }
-        const iv = setInterval(check, 300);
+        }, 300);
         return function() { done = true; clearInterval(iv); };
       }
     });
@@ -6759,27 +6752,27 @@ function showToast(msg, ms = 2400) {
     steps.push({
       id: 'my-plays',
       getEl: () => getEl('.tb-btn[title="My saved tactics"]'),
+      spotlight: true,
       title: 'View your playbook',
       body: 'Tap <strong>My Plays</strong> to see all your saved plays anytime.',
       attach: function(onAdvance) {
         const btn = getEl('.tb-btn[title="My saved tactics"]');
-        return once(btn, 'click', function() {
-          setTimeout(onAdvance, 400);
-        });
+        return once(btn, 'click', function() { setTimeout(onAdvance, 400); });
       }
     });
 
     return steps;
   }
 
-  let _tutSteps = [];
-  let _tutIdx   = 0;
+  let _tutSteps  = [];
+  let _tutIdx    = 0;
   let _tutActive = false;
 
   function tutSkip() {
     try {
       _tutActive = false;
       if (_cleanup) { _cleanup(); _cleanup = null; }
+      teardownGuard();
       hideAll();
       localStorage.setItem(KEY_DONE, '1');
     } catch(e) {}
@@ -6790,32 +6783,34 @@ function showToast(msg, ms = 2400) {
     try {
       if (_cleanup) { _cleanup(); _cleanup = null; }
       _tutIdx++;
-      if (_tutIdx >= _tutSteps.length) {
-        // All steps done — show completion message
-        tutComplete();
-      } else {
-        tutShowStep(_tutIdx);
-      }
+      if (_tutIdx >= _tutSteps.length) { tutComplete(); }
+      else { tutShowStep(_tutIdx); }
     } catch(e) { tutSkip(); }
   }
 
   function tutShowStep(idx) {
     try {
+      if (!_tutActive) return;
+      // Hide while any modal is open
+      if (anyModalOpen()) { hideAll(); return; }
+
       const step = _tutSteps[idx];
       const el   = step.getEl();
       buildDOM();
-      showOverlay();
 
-      // If element isn't visible yet (e.g. toolbar hidden), retry briefly
+      // Retry if element not yet visible (e.g. toolbar hidden on mobile)
       if (!el || el.getBoundingClientRect().width === 0) {
-        setTimeout(function() {
-          if (!_tutActive) return;
-          tutShowStep(idx);
-        }, 400);
+        setTimeout(function() { if (_tutActive) tutShowStep(idx); }, 400);
         return;
       }
 
-      spotlightEl(el);
+      // Spotlight only if step opts in
+      if (step.spotlight) {
+        spotlightEl(el);
+      } else {
+        if (_ring) _ring.style.display = 'none';
+      }
+
       renderTooltip({
         header: 'Getting started',
         title:  step.title,
@@ -6824,7 +6819,11 @@ function showToast(msg, ms = 2400) {
         total:  _tutSteps.length,
         skipFn: tutSkip
       });
+      _tooltip.style.display = 'block';
       positionTooltip(el);
+
+      // Install modal guard so tooltip hides when modals open
+      installModalGuard(function() { if (_tutActive) tutShowStep(idx); });
 
       _cleanup = step.attach(tutAdvance);
     } catch(e) { tutSkip(); }
@@ -6833,26 +6832,22 @@ function showToast(msg, ms = 2400) {
   function tutComplete() {
     try {
       _tutActive = false;
+      teardownGuard();
+      if (_cleanup) { _cleanup(); _cleanup = null; }
       localStorage.setItem(KEY_DONE, '1');
-      // Show a friendly completion card using the existing modal system
       buildDOM();
-      hideAll(); // remove spotlight
-      if (_ring) _ring.style.display = 'none';
-      // Reuse tooltip for the completion message (no overlay needed)
+      hideAll();
       if (_tooltip) {
         _tooltip.style.display = 'block';
         _tooltip.innerHTML = `
           <div class="tut-header" style="color:#22c55e;">✓ You're all set!</div>
           <div class="tut-title">Ready to coach 🏟</div>
-          <div class="tut-body">You know the basics — now it's time to draw your best plays. Good luck out there!</div>
+          <div class="tut-body">You know the basics — now go draw your best plays. Good luck out there!</div>
           <div class="tut-foot" style="justify-content:flex-end;">
             <button class="tut-skip" id="tut-done-btn"
-              style="color:var(--accent);font-weight:700;font-size:13px;">
-              Let's go →
-            </button>
+              style="color:var(--accent);font-weight:700;font-size:13px;">Let's go →</button>
           </div>
         `;
-        // Position in centre of screen
         const tw = _tooltip.offsetWidth  || 280;
         const th = _tooltip.offsetHeight || 140;
         _tooltip.style.top  = ((window.innerHeight - th) / 2) + 'px';
@@ -6860,14 +6855,35 @@ function showToast(msg, ms = 2400) {
         document.getElementById('tut-done-btn').onclick = function() {
           _tooltip.style.display = 'none';
         };
-        setTimeout(function() {
-          if (_tooltip) _tooltip.style.display = 'none';
-        }, 6000); // auto-dismiss after 6 s
+        setTimeout(function() { if (_tooltip) _tooltip.style.display = 'none'; }, 6000);
       }
     } catch(e) {}
   }
 
+  // ── Wait for all onboarding modals to clear before starting ───────────────
+  // New users see welcome overlay → court picker. We must not start until
+  // both are gone. We poll for no open modal + freeCourt set.
   function startNewUserTutorial() {
+    try {
+      if (localStorage.getItem(KEY_DONE)) return;
+      // If any modal is still open, wait for it to close first
+      if (anyModalOpen()) {
+        const obs = new MutationObserver(function() {
+          if (!anyModalOpen()) {
+            obs.disconnect();
+            setTimeout(function() {
+              if (!localStorage.getItem(KEY_DONE)) _beginNewUserTutorial();
+            }, 600); // brief pause after last modal closes
+          }
+        });
+        obs.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+        return;
+      }
+      _beginNewUserTutorial();
+    } catch(e) {}
+  }
+
+  function _beginNewUserTutorial() {
     try {
       if (localStorage.getItem(KEY_DONE)) return;
       _tutSteps  = buildNewUserSteps();
@@ -6882,72 +6898,69 @@ function showToast(msg, ms = 2400) {
   // ══════════════════════════════════════════════════════════════════════════
 
   function buildUpgradeSteps(plan) {
-    // plan: 'pro' | 'club'
     const isClub = plan === 'club';
     const steps  = [];
 
     steps.push({
       id: 'welcome',
       getEl: () => getEl('#pro-badge'),
+      spotlight: true,
       title: isClub ? 'Welcome to Club! 🏟' : 'Welcome to Pro! ⚡',
       body: isClub
-        ? 'Your Club plan is active. Here\'s a quick tour of your new features.'
-        : 'Your Pro plan is active. Here\'s a quick tour of what\'s unlocked.',
+        ? 'Your Club plan is active. Here\'s a quick look at your new features.'
+        : 'Your Pro plan is active. Here\'s a quick look at what\'s unlocked.',
       attach: function(onAdvance) {
-        // Auto-advance after 3 s or on any click on the badge
         const badge = getEl('#pro-badge');
-        let timer = setTimeout(onAdvance, 3000);
-        const off = once(badge, 'click', function() {
-          clearTimeout(timer); onAdvance();
-        });
-        return function() { clearTimeout(timer); off(); };
+        let t = setTimeout(onAdvance, 3500);
+        const off = once(badge, 'click', function() { clearTimeout(t); onAdvance(); });
+        return function() { clearTimeout(t); off(); };
       }
     });
 
-    // Pro: unlimited saves + playbook
     steps.push({
       id: 'save',
       getEl: () => getEl('.tb-btn[title="Save tactic"]'),
+      spotlight: true,
       title: 'Unlimited saves',
-      body: 'Save as many plays as you want. No limits — your entire playbook, right here.',
+      body: 'Save as many plays as you want — no limits. Your entire playbook, right here.',
       attach: function(onAdvance) {
         let t = setTimeout(onAdvance, 4000);
         return function() { clearTimeout(t); };
       }
     });
 
-    // Pro: tags, notes, rating
     steps.push({
       id: 'playbook',
       getEl: () => getEl('.tb-btn[title="My saved tactics"]'),
+      spotlight: true,
       title: 'Your personal playbook',
-      body: 'Rate, tag, and search your plays. Tap <strong>My Plays</strong> to explore your playbook.',
+      body: 'Rate, tag, and search your plays. Find the right tactic in seconds.',
       attach: function(onAdvance) {
         let t = setTimeout(onAdvance, 4000);
         return function() { clearTimeout(t); };
       }
     });
 
-    // Pro: Training Sessions
     steps.push({
       id: 'sessions',
       getEl: () => getEl('.tb-btn[title="Training Sessions — chain plays into a plan"]'),
+      spotlight: true,
       title: 'Training Sessions',
-      body: 'Chain plays into a full session plan, step through them on the pitch, and export as a PDF.',
+      body: 'Chain plays into a full session plan, present them on the pitch, and export as a PDF.',
       attach: function(onAdvance) {
         let t = setTimeout(onAdvance, 4000);
         return function() { clearTimeout(t); };
       }
     });
 
-    // Club only: shared library
     if (isClub) {
       steps.push({
         id: 'club-library',
-        // TODO: verify the club library button selector when club admin UI is finalised
+        // TODO: verify selector when club admin UI is finalised
         getEl: () => getEl('#btn-pro-library') || getEl('.tb-btn[title="200+ pre-built tactics library"]'),
-        title: 'Club library & shared plays',
-        body: 'Your whole coaching staff shares one library. Anyone on the club can access and build on every play.',
+        spotlight: true,
+        title: 'Club shared library',
+        body: 'Your whole coaching staff shares one library. Everyone can access and build on every play.',
         attach: function(onAdvance) {
           let t = setTimeout(onAdvance, 4500);
           return function() { clearTimeout(t); };
@@ -6964,6 +6977,7 @@ function showToast(msg, ms = 2400) {
     try {
       _proTutActive = false;
       if (_cleanup) { _cleanup(); _cleanup = null; }
+      teardownGuard();
       hideAll();
       localStorage.setItem(KEY_PRO_DONE, '1');
     } catch(e) {}
@@ -6974,28 +6988,22 @@ function showToast(msg, ms = 2400) {
     try {
       if (_cleanup) { _cleanup(); _cleanup = null; }
       const next = idx + 1;
-      if (next >= steps.length) {
-        proTutComplete();
-      } else {
-        proTutShowStep(steps, next);
-      }
+      if (next >= steps.length) { proTutComplete(); }
+      else { proTutShowStep(steps, next); }
     } catch(e) { proTutSkip(); }
   }
 
   function proTutShowStep(steps, idx) {
     try {
+      if (!_proTutActive) return;
+      if (anyModalOpen()) { hideAll(); return; }
       const step = steps[idx];
       const el   = step.getEl();
       buildDOM();
-      showOverlay();
-
       if (!el || el.getBoundingClientRect().width === 0) {
-        // Element not visible — skip this step silently
-        proTutAdvance(steps, idx);
-        return;
+        proTutAdvance(steps, idx); return; // skip invisible steps
       }
-
-      spotlightEl(el);
+      if (step.spotlight) { spotlightEl(el); } else { if (_ring) _ring.style.display = 'none'; }
       renderTooltip({
         header: 'New features',
         title:  step.title,
@@ -7004,8 +7012,9 @@ function showToast(msg, ms = 2400) {
         total:  steps.length,
         skipFn: proTutSkip
       });
+      _tooltip.style.display = 'block';
       positionTooltip(el);
-
+      installModalGuard(function() { if (_proTutActive) proTutShowStep(steps, idx); });
       _cleanup = step.attach(function() { proTutAdvance(steps, idx); });
     } catch(e) { proTutSkip(); }
   }
@@ -7013,8 +7022,10 @@ function showToast(msg, ms = 2400) {
   function proTutComplete() {
     try {
       _proTutActive = false;
+      teardownGuard();
+      if (_cleanup) { _cleanup(); _cleanup = null; }
       localStorage.setItem(KEY_PRO_DONE, '1');
-      hideAll();
+      buildDOM(); hideAll();
       if (_tooltip) {
         _tooltip.style.display = 'block';
         _tooltip.innerHTML = `
@@ -7023,9 +7034,7 @@ function showToast(msg, ms = 2400) {
           <div class="tut-body">All your new features are unlocked. Enjoy the full CourtDraw experience.</div>
           <div class="tut-foot" style="justify-content:flex-end;">
             <button class="tut-skip" id="pro-tut-done-btn"
-              style="color:var(--accent);font-weight:700;font-size:13px;">
-              Got it →
-            </button>
+              style="color:var(--accent);font-weight:700;font-size:13px;">Got it →</button>
           </div>
         `;
         const tw = _tooltip.offsetWidth  || 280;
@@ -7035,9 +7044,7 @@ function showToast(msg, ms = 2400) {
         document.getElementById('pro-tut-done-btn').onclick = function() {
           if (_tooltip) _tooltip.style.display = 'none';
         };
-        setTimeout(function() {
-          if (_tooltip) _tooltip.style.display = 'none';
-        }, 6000);
+        setTimeout(function() { if (_tooltip) _tooltip.style.display = 'none'; }, 6000);
       }
     } catch(e) {}
   }
@@ -7055,45 +7062,38 @@ function showToast(msg, ms = 2400) {
   // TRIGGER LOGIC
   // ══════════════════════════════════════════════════════════════════════════
 
-  // New-user tutorial: fires 1.5 s after app load if tutorial not done.
-  // Delay lets Firebase auth + court init complete first.
+  // New-user tutorial: wait for the page to fully load, then wait for
+  // all onboarding modals (welcome + court picker) to be dismissed.
   window.addEventListener('load', function() {
     try {
       if (localStorage.getItem(KEY_DONE)) return;
-      setTimeout(startNewUserTutorial, 1500);
+      // Give Firebase auth + court init 1 s head-start, then hand off
+      // to startNewUserTutorial which waits for modals to clear.
+      setTimeout(startNewUserTutorial, 1000);
     } catch(e) {}
   });
 
-  // Upgrade tutorial: hook into __updatePro.
-  // We compare the stored previous plan to detect a *new* upgrade this session.
+  // Upgrade tutorial: wrap __updatePro to detect plan upgrades.
   const _origUpdatePro = window.__updatePro;
   window.__updatePro = function(isPro, isClub) {
-    // Call the original handler first
     if (_origUpdatePro) _origUpdatePro.apply(this, arguments);
-
     try {
       const prevPlan = localStorage.getItem(KEY_PREV_PLAN) || 'free';
       const newPlan  = isClub ? 'club' : isPro ? 'pro' : 'free';
-
-      // Persist current plan so next call can compare
       localStorage.setItem(KEY_PREV_PLAN, newPlan);
-
-      // Detect upgrade (free→pro, free→club, pro→club)
       const upgraded =
         (newPlan === 'pro'  && prevPlan === 'free') ||
         (newPlan === 'club' && (prevPlan === 'free' || prevPlan === 'pro'));
-
       if (upgraded && !localStorage.getItem(KEY_PRO_DONE)) {
-        // Give the UI 1 s to settle after plan update
         setTimeout(function() { startUpgradeTutorial(newPlan); }, 1000);
       }
     } catch(e) {}
   };
 
-  // Expose for testing / manual trigger from console
-  window._tutStart       = startNewUserTutorial;
+  // Console helpers for testing
+  window._tutStart        = startNewUserTutorial;
   window._tutStartUpgrade = startUpgradeTutorial;
-  window._tutSkip        = tutSkip;
+  window._tutSkip         = tutSkip;
 
 })();
 
