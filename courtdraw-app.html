@@ -5204,9 +5204,11 @@ function dismissWelcome(openPicker = false) {
   closeModal('modal-welcome');
   gtag('event', 'welcome_overlay_dismissed', { event_category: 'engagement', opened_picker: openPicker });
   if (openPicker) {
-    // Small delay so the modal close animation completes before court picker opens
     setTimeout(() => openCourtPicker(), 200);
   }
+  // Signal PWA banner that it may now show (prevents overlap with welcome modal)
+  window._welcomeDismissed = true;
+  window.dispatchEvent(new CustomEvent('cd-welcome-dismissed'));
 }
 
 
@@ -6573,9 +6575,11 @@ function showToast(msg, ms = 2400) {
     const vh  = window.innerHeight;
     const M   = 12;
     if (isMobileView()) {
-      // Anchor to top-right, below the app header (~52px)
-      const top  = 56;
-      const left = vw - tw - M;
+      // Anchor to top-right, below the app header (~52px), compact width
+      _tooltip.style.maxWidth = '210px';
+      const tw2 = _tooltip.offsetWidth || 210;
+      const top  = 58;
+      const left = vw - tw2 - M;
       _tooltip.style.top  = top + 'px';
       _tooltip.style.left = Math.max(M, left) + 'px';
       return;
@@ -6687,24 +6691,61 @@ function showToast(msg, ms = 2400) {
     // Mobile prepends 2 extra steps: three-dot → pin toolbar
     // Desktop: Draw → Select → Save → My Plays (4 steps)
     // Mobile:  Three-dot → Pin → Draw → Select → Save → My Plays (6 steps)
-    // On mobile, auto-pin the toolbar so it stays visible during the tutorial.
-    // We skip the manual "pin" step — just show the three-dot step then proceed.
-    if (isMobileView()) {
-      // Pin the toolbar programmatically if not already pinned
-      if (!document.body.classList.contains('toolbar-pinned')) {
-        document.body.classList.add('toolbar-pinned');
-        document.body.classList.add('pt-chrome-visible');
-        document.body.classList.add('ls-chrome-visible');
-        const label = document.getElementById('toolbar-pin-label');
-        const icon  = document.getElementById('toolbar-pin-icon');
-        if (label) label.textContent = 'Pinned';
-        if (icon)  icon.textContent  = '✓';
-        window._tutPinnedToolbar = true; // remember to unpin on complete/skip
+    // Mobile prepends 2 steps: three-dot → pin toolbar (auto-pins after 1.5s)
+    const mobileSteps = isMobileView() ? [
+      {
+        id: 'three-dot',
+        getEl: () => getEl('#pt-bottom-hint') || getEl('#pt-top-hint'),
+        spotlight: true,
+        title: 'Open your toolbar',
+        body: 'Tap the <strong>···</strong> button to reveal your drawing tools.',
+        attach: function(onAdvance) {
+          const obs = new MutationObserver(function() {
+            if (document.body.classList.contains('pt-chrome-visible')) {
+              obs.disconnect(); onAdvance();
+            }
+          });
+          obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+          return function() { obs.disconnect(); };
+        }
+      },
+      {
+        id: 'pin',
+        getEl: () => getEl('#toolbar-pin-btn'),
+        spotlight: true,
+        title: 'Keep your toolbar open',
+        body: 'Tap <strong>Keep open</strong> so the toolbar stays visible while you draw.',
+        attach: function(onAdvance) {
+          const btn = getEl('#toolbar-pin-btn');
+          let done = false;
+          // Auto-pin after 1.5s so the step shows but user doesn't have to tap
+          const t = setTimeout(function() {
+            if (done) return;
+            done = true;
+            if (!document.body.classList.contains('toolbar-pinned')) {
+              document.body.classList.add('toolbar-pinned');
+              document.body.classList.add('pt-chrome-visible');
+              document.body.classList.add('ls-chrome-visible');
+              const label = document.getElementById('toolbar-pin-label');
+              const icon  = document.getElementById('toolbar-pin-icon');
+              if (label) label.textContent = 'Pinned';
+              if (icon)  icon.textContent  = '✓';
+              window._tutPinnedToolbar = true;
+            }
+            setTimeout(onAdvance, 350);
+          }, 1500);
+          // Also advance immediately if user taps it themselves
+          const off = once(btn, 'click', function() {
+            if (done) return;
+            done = true;
+            clearTimeout(t);
+            window._tutPinnedToolbar = true;
+            setTimeout(onAdvance, 350);
+          });
+          return function() { done = true; clearTimeout(t); off(); };
+        }
       }
-    }
-
-    // Mobile toolbar is auto-pinned above — no toolbar steps needed
-    const mobileSteps = [];
+    ] : [];
 
     return [...mobileSteps,
       {
@@ -6781,9 +6822,11 @@ function showToast(msg, ms = 2400) {
             const toolbar = getEl('#toolbar');
             if (saveBtn && toolbar) {
               saveBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-              // Add right-edge scroll hint gradient
-              toolbar.style.setProperty('--tut-scroll-hint', '1');
               toolbar.classList.add('tut-save-step');
+              // Re-spotlight after scroll animation completes so ring lands on the button
+              setTimeout(function() {
+                if (_tutActive) spotlightEl(saveBtn);
+              }, 400);
             }
           }
           const prev = state.savedTactics.length;
@@ -6925,14 +6968,13 @@ function showToast(msg, ms = 2400) {
   function _tutResetMobileState() {
     // Clear canvas of any tutorial shapes
     try {
-      if (typeof clearBoard === 'function') {
-        // clearBoard saves undo — use a lighter reset for tutorial cleanup
-        state.objects = [];
-        state.phases = [{ objects: [], tokens: JSON.parse(JSON.stringify(state.tokenPositions)) }];
-        state.currentPhase = 0;
-        if (typeof updatePhaseUI === 'function') updatePhaseUI();
-        if (typeof redrawAll === 'function') redrawAll();
-      }
+      // Close color palette / select-action-bar if open
+      if (typeof deselectObject === 'function') deselectObject(false);
+      state.objects = [];
+      state.phases = [{ objects: [], tokens: JSON.parse(JSON.stringify(state.tokenPositions)) }];
+      state.currentPhase = 0;
+      if (typeof updatePhaseUI === 'function') updatePhaseUI();
+      if (typeof redrawAll === 'function') redrawAll();
     } catch(e) {}
     // Unpin toolbar and retract it
     try {
@@ -8346,10 +8388,22 @@ document.addEventListener('DOMContentLoaded', init);
     if (localStorage.getItem(DISMISSED_KEY)) return;
 
     function showBanner() {
-      setTimeout(() => {
-        banner.classList.add('ready');
-        requestAnimationFrame(() => banner.classList.add('visible'));
-      }, 1000);
+      // Wait for welcome modal to be dismissed before showing, then add a small gap
+      const delay = 600;
+      if (window._welcomeDismissed || localStorage.getItem('cd_welcomed')) {
+        setTimeout(() => {
+          banner.classList.add('ready');
+          requestAnimationFrame(() => banner.classList.add('visible'));
+        }, delay);
+      } else {
+        window.addEventListener('cd-welcome-dismissed', function handler() {
+          window.removeEventListener('cd-welcome-dismissed', handler);
+          setTimeout(() => {
+            banner.classList.add('ready');
+            requestAnimationFrame(() => banner.classList.add('visible'));
+          }, delay);
+        });
+      }
     }
     function hideBanner(permanent) {
       banner.classList.remove('visible');
