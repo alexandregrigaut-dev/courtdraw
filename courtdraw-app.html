@@ -2048,6 +2048,14 @@ body.portrait-mode .player-token:active {
       </div>
 
       <div class="pw-grid">
+        <!-- Community Library — flagship feature, spans full width -->
+        <div class="pw-cell" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(59,130,246,0.15) 0%,rgba(59,130,246,0.06) 100%);border-color:rgba(96,165,250,0.35);">
+          <span class="pw-check" style="background:rgba(59,130,246,0.25);border-color:rgba(96,165,250,0.5);">✓</span>
+          <div>
+            <div class="pw-feat">🌐 Community Library</div>
+            <div class="pw-feat-sub">Browse 200+ plays from coaches worldwide — and publish your own</div>
+          </div>
+        </div>
         <div class="pw-cell">
           <span class="pw-check">✓</span>
           <div><div class="pw-feat">Unlimited saves</div><div class="pw-feat-sub">no ceiling, ever</div></div>
@@ -2070,10 +2078,6 @@ body.portrait-mode .player-token:active {
         </div>
         <div class="pw-cell">
           <span class="pw-check">✓</span>
-          <div><div class="pw-feat">200+ templates</div><div class="pw-feat-sub">Football, Basketball &amp; more</div></div>
-        </div>
-        <div class="pw-cell">
-          <span class="pw-check">✓</span>
           <div><div class="pw-feat">Share links</div><div class="pw-feat-sub">one link, anyone can view</div></div>
         </div>
         <div class="pw-cell">
@@ -2083,7 +2087,7 @@ body.portrait-mode .player-token:active {
       </div>
 
       <div class="pw-club-note">
-        Club adds: shared library · team colors · 10 coaches · presentation mode
+        Club adds: shared library · community publishing · team colors · 10 coaches · presentation mode
       </div>
 
       <button class="pw-cta-primary" onclick="startCheckout('proMonthly')">
@@ -5337,7 +5341,7 @@ function closeReturnBanner() {
 const FEATURE_PREVIEWS = {
   phases:    { icon: '📐', title: 'Phase-by-Phase Animation',   desc: 'Plan your play in up to 5 steps. Each phase shows exactly how players and the ball move. Tap through them during a timeout.' },
   video:     { icon: '📹', title: 'Video Overlay',              desc: 'Load match footage and draw plays directly on top — frame by frame. Perfect for post-match analysis and game prep.' },
-  library:   { icon: '📚', title: '200+ Play Templates',        desc: 'Browse a library of 200+ pre-built plays across all sports. Load any tactic in one tap and customise it for your team.' },
+  library:   { icon: '🌐', title: 'Community Library',           desc: 'Browse 200+ plays from coaches worldwide across 12 sports. Load any tactic in one tap — or publish your own to the community.' },
   share:     { icon: '🔗', title: 'Live Shareable Board Links', desc: 'Generate a link to your play. Anyone with it can open the exact tactic in their browser — no account needed.' },
   animation: { icon: '▶️',  title: 'Animated Playback',         desc: 'Watch your tactical sequence play out automatically — perfect for showing your team the full flow of a play.' },
   export:    { icon: '🖼',  title: 'Clean Export — No Watermark', desc: 'Export your play as a high-resolution PNG or PDF with no watermark — ready for presentations, WhatsApp, or your club app.' },

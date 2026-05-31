@@ -314,6 +314,8 @@
     }
     @media (max-width: 900px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 580px) { .features-grid { grid-template-columns: 1fr; } }
+    /* Community Library flagship card: collapse to column layout on tablet/mobile */
+    @media (max-width: 760px) { .feature-card[style*="grid-column:1/-1"] { flex-direction: column; } }
     .feature-card {
       background: var(--bg2); border: 1px solid var(--border);
       border-radius: var(--radius-lg); padding: 32px;
@@ -1080,10 +1082,24 @@
         <h3>Video Overlay <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
         <p>Upload match footage and draw plays directly on top, frame by frame. Annotate real match situations just like Hudl or Wyscout — now built right into your tactics board.</p>
       </div>
-      <div class="feature-card" style="border-color:rgba(147,197,253,0.3);background:linear-gradient(135deg,rgba(147,197,253,0.08) 0%,transparent 100%);">
-        <div class="feature-icon">🗂️</div>
-        <h3>200+ Ready-Made Plays <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
-        <p>Start from a library of 200+ pre-built tactics — formations, set pieces, and plays across 12 sports including football, basketball, ice hockey, rugby, and more. Load and modify in one click.</p>
+      <!-- Community Library — flagship feature, full-width with horizontal layout -->
+      <div class="feature-card" style="border-color:rgba(59,130,246,0.45);background:linear-gradient(135deg,rgba(59,130,246,0.12) 0%,rgba(59,130,246,0.04) 100%);grid-column:1/-1;display:flex;align-items:center;gap:32px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:16px;right:20px;font-size:11px;background:rgba(59,130,246,0.2);color:#60a5fa;border:1px solid rgba(96,165,250,0.4);border-radius:20px;padding:3px 12px;font-weight:700;letter-spacing:.05em;">NEW</div>
+        <div style="flex-shrink:0;font-size:52px;line-height:1;">🌐</div>
+        <div style="flex:1;min-width:0;">
+          <h3 style="margin-bottom:10px;">Community Library <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
+          <p style="margin:0;">Browse 200+ plays shared by coaches worldwide — load any tactic onto your board in one click. Pro users can publish their own plays to the community and contribute to a growing library across 12+ sports, updated continuously as coaches share their best work.</p>
+        </div>
+        <div style="flex-shrink:0;display:flex;gap:16px;flex-direction:column;">
+          <div style="font-size:12px;color:var(--muted);text-align:center;background:var(--bg1,rgba(255,255,255,0.04));border:1px solid var(--border);border-radius:10px;padding:14px 20px;min-width:110px;">
+            <div style="font-size:22px;margin-bottom:6px;">🔍</div>
+            <div style="font-weight:700;font-size:11px;color:var(--text);">Browse — Free</div>
+          </div>
+          <div style="font-size:12px;color:var(--muted);text-align:center;background:rgba(59,130,246,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:10px;padding:14px 20px;min-width:110px;">
+            <div style="font-size:22px;margin-bottom:6px;">📢</div>
+            <div style="font-weight:700;font-size:11px;color:#60a5fa;">Publish — Pro</div>
+          </div>
+        </div>
       </div>
       <div class="feature-card" style="border-color:rgba(168,85,247,0.3);background:linear-gradient(135deg,rgba(168,85,247,0.08) 0%,transparent 100%);">
         <div class="feature-icon">📺</div>
@@ -1144,8 +1160,8 @@
 <section id="tactics-library" data-marketing style="padding: 80px 24px; background: var(--bg2);">
   <div style="max-width:900px;margin:0 auto;text-align:center;">
     <div style="font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;">Tactics Library</div>
-    <h2 style="font-family:'Cabinet Grotesk',system-ui,sans-serif;font-size:clamp(26px,4vw,40px);font-weight:900;margin-bottom:16px;">Ready-made plays for every sport</h2>
-    <p style="color:var(--text2);max-width:560px;margin:0 auto 40px;line-height:1.7;">200+ pre-built tactics across 12 sports. Load any play onto the board in one click, then customize it for your team.</p>
+    <h2 style="font-family:'Cabinet Grotesk',system-ui,sans-serif;font-size:clamp(26px,4vw,40px);font-weight:900;margin-bottom:16px;">200+ plays. Growing every day.</h2>
+    <p style="color:var(--text2);max-width:560px;margin:0 auto 40px;line-height:1.7;">The Community Library starts with 200+ expert-built tactics across 12 sports — and expands as Pro coaches publish their own plays. Load any play onto your board in one click, then make it yours.</p>
 
     <!-- Sport pills -->
     <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:48px;">
@@ -1306,15 +1322,68 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:540px;margin:0 auto 32px;">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:left;">
         <div style="font-weight:800;font-size:14px;margin-bottom:10px;">Free</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.8;">✓ 2 tactics per sport<br>✓ All 12 sports<br>✓ Load to board instantly<br>✗ Full library locked</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.8;">✓ Browse all 200+ plays<br>✓ All 12 sports<br>✓ Load to board instantly<br>✗ Can't publish your own</div>
       </div>
       <div style="background:linear-gradient(135deg,rgba(29,78,216,0.2),rgba(59,130,246,0.1));border:1px solid var(--accent);border-radius:12px;padding:20px;text-align:left;">
         <div style="font-weight:800;font-size:14px;margin-bottom:10px;">Pro / Club ✦</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.8;">✓ All 200+ tactics<br>✓ 12 sports covered<br>✓ Filter by category<br>✓ New tactics monthly</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.8;">✓ Browse all 200+ plays<br>✓ Publish your own plays<br>✓ Filter by category &amp; type<br>✓ Growing daily</div>
       </div>
     </div>
 
     <a href="login.html?checkout=pro" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;">Unlock Full Library →</a>
+  </div>
+</section>
+
+<!-- ════ COMMUNITY LIBRARY ════ -->
+<section id="community-library" data-marketing style="padding:88px 24px;background:linear-gradient(135deg,rgba(29,78,216,0.08) 0%,rgba(59,130,246,0.04) 100%);border-top:1px solid rgba(59,130,246,0.2);border-bottom:1px solid rgba(59,130,246,0.2);">
+  <div style="max-width:900px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:52px;">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(59,130,246,0.15);border:1px solid rgba(96,165,250,0.35);border-radius:20px;padding:5px 16px;font-size:13px;font-weight:700;color:#60a5fa;letter-spacing:.04em;margin-bottom:20px;">🌐 NEW — Community Library</div>
+      <h2 style="font-family:'Cabinet Grotesk',system-ui,sans-serif;font-size:clamp(28px,4.5vw,44px);font-weight:900;letter-spacing:-.025em;margin-bottom:16px;line-height:1.15;">Thousands of plays.<br>Shared by coaches, for coaches.</h2>
+      <p style="color:var(--muted);max-width:540px;margin:0 auto;font-size:1.05rem;line-height:1.7;">The Community Library is CourtDraw's shared coaching resource — 200+ expert plays ready to load, and a growing collection published by coaches just like you. Browse, steal ideas, publish your own.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:44px;">
+      <!-- Browse -->
+      <div style="background:var(--surface,rgba(255,255,255,0.06));border:1px solid var(--border,rgba(255,255,255,0.1));border-radius:16px;padding:28px 24px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:14px;">🔍</div>
+        <h3 style="font-size:1rem;font-weight:800;margin-bottom:10px;">Browse &amp; Discover</h3>
+        <p style="font-size:0.875rem;color:var(--muted);line-height:1.6;">Filter by sport, category, or tactic type. Every play previews with a live court thumbnail — load any onto your board in one click. <strong style="color:var(--text)">Free for everyone.</strong></p>
+      </div>
+      <!-- Load -->
+      <div style="background:var(--surface,rgba(255,255,255,0.06));border:1px solid rgba(59,130,246,0.35);border-radius:16px;padding:28px 24px;text-align:center;background:linear-gradient(135deg,rgba(29,78,216,0.12),rgba(59,130,246,0.06));">
+        <div style="font-size:36px;margin-bottom:14px;">⚡</div>
+        <h3 style="font-size:1rem;font-weight:800;margin-bottom:10px;">Load &amp; Customise</h3>
+        <p style="font-size:0.875rem;color:var(--muted);line-height:1.6;">Open any community play on your board, adjust player positions, change arrows, add phases — make it yours in seconds. Save to your private library.</p>
+      </div>
+      <!-- Publish -->
+      <div style="background:var(--surface,rgba(255,255,255,0.06));border:1px solid var(--border,rgba(255,255,255,0.1));border-radius:16px;padding:28px 24px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:14px;">📢</div>
+        <h3 style="font-size:1rem;font-weight:800;margin-bottom:10px;">Publish Your Best <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
+        <p style="font-size:0.875rem;color:var(--muted);line-height:1.6;">Pro coaches can publish their plays to the community. Tag by sport and tactic type — your play appears for coaches worldwide the moment you save.</p>
+      </div>
+    </div>
+
+    <!-- Tier summary bar -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:660px;margin:0 auto 40px;font-size:0.85rem;">
+      <div style="background:var(--surface,rgba(255,255,255,0.04));border:1px solid var(--border,rgba(255,255,255,0.08));border-radius:10px;padding:14px 16px;text-align:center;">
+        <div style="font-weight:800;margin-bottom:6px;">Free</div>
+        <div style="color:var(--muted);line-height:1.5;">✓ Browse all plays<br>✓ Load to board<br>✗ Can't publish</div>
+      </div>
+      <div style="background:linear-gradient(135deg,rgba(29,78,216,0.2),rgba(59,130,246,0.1));border:1px solid rgba(96,165,250,0.4);border-radius:10px;padding:14px 16px;text-align:center;">
+        <div style="font-weight:800;margin-bottom:6px;color:#60a5fa;">Pro ✦</div>
+        <div style="color:var(--muted);line-height:1.5;">✓ Browse all plays<br>✓ Load to board<br>✓ Publish plays</div>
+      </div>
+      <div style="background:linear-gradient(135deg,rgba(88,28,135,0.2),rgba(168,85,247,0.1));border:1px solid rgba(168,85,247,0.4);border-radius:10px;padding:14px 16px;text-align:center;">
+        <div style="font-weight:800;margin-bottom:6px;color:#a855f7;">Club ✦</div>
+        <div style="color:var(--muted);line-height:1.5;">✓ Browse all plays<br>✓ Load to board<br>✓ Publish plays</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;">
+      <a href="courtdraw-app.html" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent,#3b82f6);color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;">Open Community Library →</a>
+      <p style="margin-top:14px;font-size:0.83rem;color:var(--muted);">No account needed to browse. Publishing requires a Pro or Club plan.</p>
+    </div>
   </div>
 </section>
 
@@ -1391,6 +1460,7 @@
           <li><span class="check">✓</span> <span>All 9 drawing tools — arrows, zones, curves &amp; text</span></li>
           <li><span class="check">✓</span> <span>Draggable player tokens + jersey numbers</span></li>
           <li><span class="check">✓</span> <span>3 saved plays</span></li>
+          <li><span class="check">✓</span> <span><strong>Browse Community Library</strong> — 200+ plays, all sports</span></li>
           <li><span class="check">✓</span> <span>PNG export (courtdraw.app watermark)</span></li>
           <li><span class="check">✓</span> <span>Offline — works without signal</span></li>
           <li style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"><span class="cross">✗</span> <span style="color:#475569">Stuck on one court — can't switch sports</span></li>
@@ -1408,6 +1478,7 @@
         <p class="plan-tagline" id="pro-tagline">7-day free trial, then €6/mo. Switch to annual to save 32%.</p>
         <a href="login.html?checkout=proMonthly" class="btn btn-primary plan-btn" id="btn-pro-plan">Start 7-Day Free Trial</a>
         <ul class="plan-features">
+          <li><span class="check">✓</span> <span><strong>🌐 Community Library</strong> — browse 200+ plays &amp; publish your own</span></li>
           <li><span class="check">✓</span> <span><strong>Unlimited saved plays</strong> — no ceiling, ever</span></li>
           <li><span class="check">✓</span> <span><strong>All 38+ sport courts</strong> + Whiteboard</span></li>
           <li><span class="check">✓</span> <span><strong>Phase animation (up to 5)</strong> + animated playback — show every movement</span></li>
@@ -1432,6 +1503,7 @@
         <p class="plan-tagline">One plan for your whole staff. 7-day free trial — cancel anytime.</p>
         <a href="login.html?checkout=club" class="btn btn-ghost plan-btn" style="border-color:#a855f7;color:#a855f7;">Start 7-Day Free Trial</a>
         <ul class="plan-features">
+          <li><span class="check">✓</span> <span><strong>🌐 Community Library</strong> — browse &amp; publish plays (same as Pro)</span></li>
           <li><span class="check">✓</span> <span><strong>Everything in Pro</strong> — all features unlocked for every coach</span></li>
           <li><span class="check">✓</span> <span><strong>Up to 10 coaching staff seats</strong> — invite with a 6-char code</span></li>
           <li><span class="check">✓</span> <span><strong>Shared tactic library</strong> — one play, visible to every coach instantly</span></li>
