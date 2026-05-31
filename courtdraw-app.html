@@ -7894,7 +7894,9 @@ function _getCommCurrentPlays() {
     _source:  'published',
     category: _tacticTypeToCat(t.tacticType) || t.category || 'Other',
   }));
-  return [...seed, ...published];
+  // Newest first: user-published plays (already ordered by publishedAt desc from Firestore)
+  // appear before the seed plays, which are treated as the baseline content.
+  return [...published, ...seed];
 }
 
 // ── Grid rendering ────────────────────────────────────────────────────────────
