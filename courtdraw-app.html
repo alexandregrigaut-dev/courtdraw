@@ -6513,6 +6513,7 @@ function showToast(msg, ms = 2400) {
       }
       #tut-tooltip .tut-foot {
         display: flex; align-items: center; justify-content: space-between;
+        margin-top: 4px;
       }
       #tut-tooltip .tut-skip {
         font-size: 12px; color: var(--text2, #94a3b8);
@@ -6520,6 +6521,20 @@ function showToast(msg, ms = 2400) {
         padding: 4px 0; font-family: inherit; transition: color .15s;
       }
       #tut-tooltip .tut-skip:hover { color: var(--text, #f1f5f9); }
+      #tut-tooltip .tut-nav {
+        display: flex; align-items: center; gap: 6px;
+      }
+      #tut-tooltip .tut-nav-btn {
+        width: 28px; height: 28px; border-radius: 8px;
+        background: var(--surface, #1a2d4a); border: 1px solid var(--border, #1e3250);
+        color: var(--text, #f1f5f9); font-size: 13px;
+        cursor: pointer; font-family: inherit;
+        display: flex; align-items: center; justify-content: center;
+        transition: background .15s; padding: 0;
+      }
+      #tut-tooltip .tut-nav-btn:hover { background: var(--accent, #3b82f6); border-color: var(--accent, #3b82f6); }
+      #tut-tooltip .tut-nav-btn:disabled { opacity: 0.3; cursor: default; }
+      #tut-tooltip .tut-nav-btn:disabled:hover { background: var(--surface, #1a2d4a); border-color: var(--border, #1e3250); }
       #tut-tooltip .tut-progress { display: flex; gap: 5px; align-items: center; }
       #tut-tooltip .tut-dot {
         width: 6px; height: 6px; border-radius: 50%;
@@ -6589,20 +6604,29 @@ function showToast(msg, ms = 2400) {
   }
 
   function renderTooltip(cfg) {
+    // cfg: { header, title, body, step, total, skipFn, prevFn, nextFn }
     if (!_tooltip) return;
     const dots = Array.from({ length: cfg.total }, (_, i) =>
       `<div class="tut-dot${i === cfg.step ? ' active' : ''}"></div>`
     ).join('');
+    const hasPrev = cfg.step > 0;
+    const hasNext = cfg.step < cfg.total - 1;
     _tooltip.innerHTML = `
       <div class="tut-header">${cfg.header || 'Tutorial'}</div>
       <div class="tut-title">${cfg.title}</div>
       <div class="tut-body">${cfg.body}</div>
       <div class="tut-foot">
-        <button class="tut-skip" id="tut-skip-btn">Skip tutorial</button>
-        <div class="tut-progress">${dots}</div>
+        <button class="tut-skip" id="tut-skip-btn">Skip</button>
+        <div class="tut-nav">
+          <button class="tut-nav-btn" id="tut-prev-btn" title="Previous step"${hasPrev ? '' : ' disabled'}>←</button>
+          <div class="tut-progress">${dots}</div>
+          <button class="tut-nav-btn" id="tut-next-btn" title="Skip this step"${hasNext ? '' : ' disabled'}>→</button>
+        </div>
       </div>
     `;
     document.getElementById('tut-skip-btn').onclick = cfg.skipFn;
+    if (hasPrev) document.getElementById('tut-prev-btn').onclick = cfg.prevFn;
+    if (hasNext) document.getElementById('tut-next-btn').onclick = cfg.nextFn;
   }
 
   function hideAll() {
@@ -6717,15 +6741,19 @@ function showToast(msg, ms = 2400) {
       getEl: () => getEl('.tb-btn[data-tool="select"]'),
       spotlight: true,
       title: 'Select & move shapes',
-      body: 'Tap <strong>Select</strong>, then drag any shape or player token to reposition it.',
+      body: 'Switch to <strong>Select</strong>, then click or tap any shape or player to select it — drag to move it.',
       attach: function(onAdvance) {
+        // Advance when the user activates the select tool AND selects an object
+        let toolSeen = false;
         let done = false;
         const iv = setInterval(function() {
           if (done) return;
-          if (state.tool === 'select' && state.preDragObjects !== null) {
-            done = true; clearInterval(iv); setTimeout(onAdvance, 400);
+          if (state.tool === 'select') toolSeen = true;
+          // Once they've switched to select and something is selected, advance
+          if (toolSeen && state.selectedIdx >= 0) {
+            done = true; clearInterval(iv); setTimeout(onAdvance, 500);
           }
-        }, 250);
+        }, 200);
         return function() { done = true; clearInterval(iv); };
       }
     });
@@ -6788,6 +6816,16 @@ function showToast(msg, ms = 2400) {
     } catch(e) { tutSkip(); }
   }
 
+  // Navigate to any step directly (used by prev/next buttons)
+  function tutGoTo(idx) {
+    if (!_tutActive) return;
+    try {
+      if (_cleanup) { _cleanup(); _cleanup = null; }
+      _tutIdx = Math.max(0, Math.min(idx, _tutSteps.length - 1));
+      tutShowStep(_tutIdx);
+    } catch(e) { tutSkip(); }
+  }
+
   function tutShowStep(idx) {
     try {
       if (!_tutActive) return;
@@ -6821,7 +6859,9 @@ function showToast(msg, ms = 2400) {
         body:   step.body,
         step:   idx,
         total:  _tutSteps.length,
-        skipFn: tutSkip
+        skipFn: tutSkip,
+        prevFn: function() { tutGoTo(idx - 1); },
+        nextFn: function() { tutGoTo(idx + 1); }
       });
       _tooltip.style.display = 'block';
       positionTooltip(el);
@@ -6997,7 +7037,9 @@ function showToast(msg, ms = 2400) {
         body:   step.body,
         step:   idx,
         total:  steps.length,
-        skipFn: proTutSkip
+        skipFn: proTutSkip,
+        prevFn: function() { if (_cleanup) { _cleanup(); _cleanup = null; } proTutShowStep(steps, idx - 1); },
+        nextFn: function() { if (_cleanup) { _cleanup(); _cleanup = null; } proTutAdvance(steps, idx); }
       });
       _tooltip.style.display = 'block';
       positionTooltip(el);
