@@ -6515,6 +6515,14 @@ function showToast(msg, ms = 2400) {
         background: var(--border, #1a2d4a); transition: background .2s;
       }
       #tut-tooltip .tut-dot.active { background: var(--accent, #3b82f6); }
+      /* Compact mobile tooltip overrides */
+      #tut-tooltip.tut-tooltip-compact .tut-header { font-size: 9px; margin-bottom: 3px; }
+      #tut-tooltip.tut-tooltip-compact .tut-title  { font-size: 14px; margin-bottom: 4px; }
+      #tut-tooltip.tut-tooltip-compact .tut-body   { font-size: 11px; margin-bottom: 8px; line-height: 1.4; }
+      #tut-tooltip.tut-tooltip-compact .tut-foot   { margin-top: 0; }
+      #tut-tooltip.tut-tooltip-compact .tut-nav-btn { width: 22px; height: 22px; font-size: 11px; border-radius: 6px; }
+      #tut-tooltip.tut-tooltip-compact .tut-skip   { font-size: 10px; }
+      #tut-tooltip.tut-tooltip-compact .tut-dot    { width: 4px; height: 4px; }
       /* Save-step mobile scroll hint: right-edge fade + animated chevron */
       #toolbar.tut-save-step {
         position: relative;
@@ -6575,9 +6583,13 @@ function showToast(msg, ms = 2400) {
     const vh  = window.innerHeight;
     const M   = 12;
     if (isMobileView()) {
-      // Anchor to top-right, below the app header (~52px), compact width
-      _tooltip.style.maxWidth = '210px';
-      const tw2 = _tooltip.offsetWidth || 210;
+      // Compact mobile tooltip: smaller font/padding, anchored top-right
+      _tooltip.style.maxWidth = '200px';
+      _tooltip.style.padding  = '10px 12px 8px';
+      _tooltip.style.fontSize = '12px';
+      // Tighten inner elements via class (applied once)
+      _tooltip.classList.add('tut-tooltip-compact');
+      const tw2 = _tooltip.offsetWidth || 200;
       const top  = 58;
       const left = vw - tw2 - M;
       _tooltip.style.top  = top + 'px';
@@ -6834,12 +6846,17 @@ function showToast(msg, ms = 2400) {
             const saveBtn = getEl('.tb-btn[title="Save tactic"]');
             const toolbar = getEl('#toolbar');
             if (saveBtn && toolbar) {
-              saveBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+              // Center the Save button in the toolbar viewport
+              const btnLeft  = saveBtn.offsetLeft;
+              const btnW     = saveBtn.offsetWidth;
+              const toolbarW = toolbar.clientWidth;
+              const target   = btnLeft - (toolbarW / 2) + (btnW / 2);
+              toolbar.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
               toolbar.classList.add('tut-save-step');
               // Re-spotlight after scroll animation completes so ring lands on the button
               setTimeout(function() {
                 if (_tutActive) spotlightEl(saveBtn);
-              }, 400);
+              }, 450);
             }
           }
           const prev = state.savedTactics.length;
@@ -6854,7 +6871,14 @@ function showToast(msg, ms = 2400) {
               done = true;
               window._tutorialSaveActive = false;
               clearInterval(iv);
-              setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 500);
+              // Close the save dialog (modal-library) — it stays open after saving.
+              // We must close it before advancing so Step 4's tutShowStep
+              // doesn't see anyModalOpen() and block indefinitely.
+              setTimeout(function() {
+                if (_tutGen !== gen) return;
+                try { if (typeof closeModal === 'function') closeModal('modal-library'); } catch(e2) {}
+                setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 250);
+              }, 400);
             }
           }, 300);
           return function() {
@@ -6868,19 +6892,37 @@ function showToast(msg, ms = 2400) {
         }
       },
       {
-        // Step 4: open My Plays
+        // Step 4: open My Plays.
+        // Advance after the modal opens (not on button click alone) so the user
+        // sees their saved play, then tutComplete fires while the modal is still open.
+        // tutComplete's overlay (z-index 10000) renders on top of the modal.
         id: 'my-plays',
         getEl: () => getEl('.tb-btn[title="My saved tactics"]'),
         spotlight: true,
         title: 'View your playbook',
-        body: 'Tap <strong>My Plays</strong> to find all your saved plays anytime.',
+        body: isMobileView()
+          ? 'Tap <strong>My Plays</strong> to find all your saved plays anytime.'
+          : 'Click <strong>My Plays</strong> to find all your saved plays anytime.',
         attach: function(onAdvance) {
           const btn = getEl('.tb-btn[title="My saved tactics"]');
           const gen = _tutGen;
-          return once(btn, 'click', function() {
-            if (_tutGen !== gen) return;
-            setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 400);
+          // Watch for modal-library to open (the My Plays modal)
+          let done = false;
+          const obs = new MutationObserver(function() {
+            if (done || _tutGen !== gen) { obs.disconnect(); return; }
+            const lib = getEl('#modal-library');
+            if (lib && lib.classList.contains('open')) {
+              done = true; obs.disconnect();
+              // Give user 1s to see their saved play, then complete tutorial
+              setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 1000);
+            }
           });
+          obs.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+          // Also listen for button click as primary trigger
+          const offBtn = once(btn, 'click', function() {
+            // MutationObserver will fire when modal opens
+          });
+          return function() { done = true; obs.disconnect(); offBtn(); };
         }
       }
     ];
@@ -7158,6 +7200,12 @@ function showToast(msg, ms = 2400) {
   function startNewUserTutorial() {
     try {
       if (localStorage.getItem(KEY_DONE)) return;
+      // Gate: skip tutorial for authenticated users and Pro/Club plan users.
+      // Logged-in users are returning users regardless of plan.
+      if (window.__currentUser) return;
+      if (state.isPro || state.isClub) return;
+      // Mark tutorial as seen immediately (so early dismissal also prevents replay)
+      localStorage.setItem(KEY_DONE, '1');
       _tutSteps  = buildNewUserSteps();
       _tutIdx    = 0;
       _tutActive = true;
@@ -7356,6 +7404,10 @@ function showToast(msg, ms = 2400) {
   window.__updatePro = function(isPro, isClub) {
     if (_origUpdatePro) _origUpdatePro.apply(this, arguments);
     try {
+      // If new-user tutorial is running but user turns out to be authenticated
+      // or Pro/Club (e.g. auth resolved after the 1s delay), abort it silently.
+      if (_tutActive && (window.__currentUser || isPro || isClub)) { tutSkip(); return; }
+
       const prevPlan = localStorage.getItem(KEY_PREV_PLAN) || 'free';
       const newPlan  = isClub ? 'club' : isPro ? 'pro' : 'free';
       localStorage.setItem(KEY_PREV_PLAN, newPlan);
