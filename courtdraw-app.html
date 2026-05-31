@@ -1222,21 +1222,32 @@ body.portrait-mode.pt-chrome-visible #toolbar    { transform: translateY(0); }
 /* Hide the floating toolbar-toggle circle in portrait (replaced by tap-to-reveal) */
 body.portrait-mode #toolbar-toggle-btn { display: none !important; }
 /* Three-dot hint at bottom-right — shows in portrait, hides when chrome is visible */
-#pt-bottom-hint {
+/* pt-bottom-hint and pt-top-hint: exact-tap-only three-dot buttons for portrait immersive mode.
+   Both are real <button> elements — no zone-based trigger. Only a direct tap opens chrome. */
+#pt-bottom-hint, #pt-top-hint {
   display: none;
   position: fixed;
-  bottom: 14px; right: 16px;
   z-index: 30;
   font-size: 22px; letter-spacing: 2px;
   color: rgba(255,255,255,0.55);
-  pointer-events: none;
+  pointer-events: auto;
   transition: opacity 0.3s ease;
+  /* Button reset */
+  background: none; border: none; padding: 10px 12px;
+  cursor: pointer; line-height: 1; font-family: inherit;
+  /* Larger hit area without changing visible size */
+  touch-action: manipulation;
 }
-body.portrait-mode #pt-bottom-hint { display: block; }
-body.portrait-mode.pt-chrome-visible #pt-bottom-hint { opacity: 0; }
+#pt-bottom-hint { bottom: 4px; right: 4px; }
+#pt-top-hint    { top: 4px;    right: 4px; }
+body.portrait-mode #pt-bottom-hint,
+body.portrait-mode #pt-top-hint    { display: block; }
+body.portrait-mode.pt-chrome-visible #pt-bottom-hint,
+body.portrait-mode.pt-chrome-visible #pt-top-hint    { opacity: 0; pointer-events: none; }
 @media (max-width: 900px) and (orientation: landscape) {
-  #pt-bottom-hint { display: block; }
-  body.ls-chrome-visible #pt-bottom-hint { opacity: 0; }
+  #pt-bottom-hint, #pt-top-hint    { display: block; }
+  body.ls-chrome-visible #pt-bottom-hint,
+  body.ls-chrome-visible #pt-top-hint    { opacity: 0; pointer-events: none; }
 }
 
 /* ── Toolbar pin button ──────────────────────────────────────────────────── */
@@ -1521,7 +1532,14 @@ body.portrait-mode .player-token:active {
 <!-- Landscape immersive-mode tap-hint strips (hidden in portrait/desktop via CSS) -->
 <div id="ls-top-hint"    style="display:none;" aria-hidden="true"></div>
 <div id="ls-bottom-hint" style="display:none;" aria-hidden="true"></div>
-<div id="pt-bottom-hint" aria-hidden="true">···</div>
+<button id="pt-bottom-hint" aria-label="Show toolbar"
+  onclick="event.stopPropagation(); window._showPtChrome && window._showPtChrome()">···</button>
+<!-- Top-right three-dot button — mirrors bottom hint; both open the same chrome layer.
+     Single toolbar: both buttons share pt-chrome-visible / ls-chrome-visible state — no conflict.
+     In portrait: calls _showPtChrome (reveals header + toolbar + phase-bar).
+     In landscape: calls _showLsChrome (same chrome layer). -->
+<button id="pt-top-hint" aria-label="Show toolbar"
+  onclick="event.stopPropagation(); (window._showPtChrome || window._showLsChrome) && (window._showPtChrome || window._showLsChrome)()">···</button>
 <div id="draw-nudge" aria-hidden="true">
   <div class="draw-nudge-bubble">Tap here to start drawing</div>
   <div class="draw-nudge-caret"></div>
@@ -1762,13 +1780,13 @@ body.portrait-mode .player-token:active {
     </div><!-- /#library-scroll -->
     <div class="modal-footer">
       <textarea id="tactic-notes-input" rows="2" maxlength="400"
-        placeholder="📝 Coach notes (Pro) — e.g. 'Works vs high press, use in final third'"
+        placeholder="📝 Coach notes — e.g. 'Works vs high press, use in final third'"
         onfocus="onNotesFocus()"></textarea>
       <input type="text" id="tactic-tags-input" maxlength="100"
-        placeholder="🏷 Tags (Pro) — comma separated, e.g. 'set play, press, U14'"
+        placeholder="🏷 Tags — comma separated, e.g. 'set play, press, U14'"
         onfocus="onTagsFocus()">
       <div class="save-rating-row">
-        <span class="save-rating-label">Rate (Pro):</span>
+        <span class="save-rating-label">Rate this play:</span>
         <span class="save-star" data-v="1" onclick="onRatingClick(1)">☆</span>
         <span class="save-star" data-v="2" onclick="onRatingClick(2)">☆</span>
         <span class="save-star" data-v="3" onclick="onRatingClick(3)">☆</span>
@@ -7467,13 +7485,10 @@ document.addEventListener('DOMContentLoaded', init);
     // Expose so toggleToolbarPin() can restart the auto-hide timer when unpinning
     window._showPtChrome = showPtChrome;
 
+    // Fix: chrome only opens via the exact three-dot buttons (#pt-bottom-hint, #pt-top-hint).
+    // Zone-based triggering removed — only touches on visible chrome elements extend the timer.
     document.addEventListener('touchstart', function(e) {
       if (!state.portraitRotated) return;
-      const y = e.touches[0].clientY;
-      const h = window.innerHeight;
-      if (y < TOP_ZONE || y > h - BOTTOM_ZONE) {
-        showPtChrome(); return;
-      }
       if (e.target.closest('#app-header, #phase-bar, #toolbar, #toolbar-pin-btn, #select-action-bar')) {
         clearTimeout(ptHideTimer);
         if (!isPinned()) ptHideTimer = setTimeout(hidePtChrome, HIDE_DELAY);
