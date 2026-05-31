@@ -213,35 +213,6 @@ button {
 .tb-btn.active { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); }
 .tb-btn.pro-lock { opacity: 0.6; }
 .tb-btn.pro-lock::after { content: '🔒'; font-size: 8px; position: absolute; top: 4px; right: 4px; }
-/* Draw nudge tooltip */
-#draw-nudge {
-  position: fixed; z-index: 200; pointer-events: none;
-  display: none; flex-direction: column; align-items: center;
-  transform: translateX(-50%);
-}
-.draw-nudge-bubble {
-  background: var(--accent); color: #fff;
-  font-size: 13px; font-weight: 600;
-  padding: 8px 14px; border-radius: 8px;
-  white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.35);
-  animation: nudge-float 1.8s ease-in-out infinite;
-}
-.draw-nudge-caret {
-  width: 0; height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 8px solid var(--accent);
-}
-@keyframes nudge-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-}
-@keyframes nudge-pulse-ring {
-  0%   { box-shadow: 0 0 0 0   rgba(99,102,241,0.55); }
-  70%  { box-shadow: 0 0 0 8px rgba(99,102,241,0); }
-  100% { box-shadow: 0 0 0 0   rgba(99,102,241,0); }
-}
-.tb-btn.nudge-pulse { animation: nudge-pulse-ring 1.4s ease-out infinite; }
 .color-dot {
   width: 24px; height: 24px; border-radius: 50%;
   border: 2.5px solid transparent; cursor: pointer; flex-shrink: 0;
@@ -1540,10 +1511,6 @@ body.portrait-mode .player-token:active {
      In landscape: calls _showLsChrome (same chrome layer). -->
 <button id="pt-top-hint" aria-label="Show toolbar"
   onclick="event.stopPropagation(); (window._showPtChrome || window._showLsChrome) && (window._showPtChrome || window._showLsChrome)()">···</button>
-<div id="draw-nudge" aria-hidden="true">
-  <div class="draw-nudge-bubble">Tap here to start drawing</div>
-  <div class="draw-nudge-caret"></div>
-</div>
 
 <!-- Select tool action bar -->
 <div id="select-action-bar" role="toolbar" aria-label="Selected object actions">
@@ -4270,7 +4237,6 @@ function renameToken(idx, el) {
 // TOOL SELECTION
 // ══════════════════════════════════════════════
 function setTool(t) {
-  dismissDrawNudge();
   if (t !== 'select') deselectObject(false);
   state.tool = t;
   document.querySelectorAll('.tb-btn[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
@@ -4417,9 +4383,6 @@ function switchCourt(id, locked, skipReset) {
       } else if (!skipReset) {
         // Same court re-selected: just re-position existing tokens
         repositionTokens();
-      }
-      if (!localStorage.getItem('cd_nudge_v2') && state.objects.length === 0) {
-        setTimeout(showDrawNudge, 300);
       }
     }, 80);
   }, 150);
@@ -5267,28 +5230,6 @@ function dismissWelcome(openPicker = false) {
   }
 }
 
-function showDrawNudge() {
-  if (localStorage.getItem('cd_nudge_v2')) return;
-  if (state.objects.length > 0) return;
-  const btn = document.querySelector('.tb-btn[data-tool="arrow"]');
-  const nudge = document.getElementById('draw-nudge');
-  if (!btn || !nudge) return;
-  const rect = btn.getBoundingClientRect();
-  const btnVisible = rect.top >= 0 && rect.bottom <= window.innerHeight + 60;
-  nudge.style.left  = btnVisible ? (rect.left + rect.width / 2) + 'px' : '80px';
-  nudge.style.bottom = btnVisible ? (window.innerHeight - rect.top + 8) + 'px' : '80px';
-  nudge.style.display = 'flex';
-  btn.classList.add('nudge-pulse');
-}
-
-function dismissDrawNudge() {
-  const nudge = document.getElementById('draw-nudge');
-  if (!nudge || nudge.style.display !== 'flex') return;
-  nudge.style.display = 'none';
-  localStorage.setItem('cd_nudge_v2', '1');
-  const btn = document.querySelector('.tb-btn[data-tool="arrow"]');
-  if (btn) btn.classList.remove('nudge-pulse');
-}
 
 
 function closeSavePrompt(goSignup = false) {
@@ -6635,11 +6576,6 @@ function init() {
         openCourtPicker();
       }
     }
-    // Show draw nudge on first load for users who haven't drawn yet.
-    // Long delay so it fires after any welcome/picker flow completes.
-    if (!sharedBoard && !localStorage.getItem('cd_nudge_v2')) {
-      setTimeout(showDrawNudge, 2500);
-    }
   });
   // PWA
   if ('serviceWorker' in navigator) {
@@ -7406,7 +7342,6 @@ document.addEventListener('DOMContentLoaded', init);
       document.body.classList.add('ls-chrome-visible');
       clearTimeout(hideTimer);
       if (!isPinned()) hideTimer = setTimeout(hideChrome, HIDE_DELAY);
-      setTimeout(showDrawNudge, 260);
     }
 
     function hideChrome() {
@@ -7474,7 +7409,6 @@ document.addEventListener('DOMContentLoaded', init);
       if (!isPinned()) {
         ptHideTimer = setTimeout(hidePtChrome, HIDE_DELAY);
       }
-      setTimeout(showDrawNudge, 260);
     }
     function hidePtChrome() {
       if (isPinned()) return; // never auto-hide when pinned
