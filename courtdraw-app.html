@@ -3334,8 +3334,9 @@ function onUp(e) {
   const obj = buildObject(state.startNX, state.startNY, nx, ny, state.points);
   if (obj) {
     saveUndo(); state.objects.push(obj); saveCurrentPhase();
-    // Show save-play prompt on first completed shape for non-logged-in users (once per session)
-    if (!window.__currentUser && !sessionStorage.getItem('cd_save_prompt_shown')) {
+    // Show save-play prompt on first completed shape for non-logged-in users (once per session).
+    // Suppressed while the tutorial is active — it fires after tutorial completion instead.
+    if (!window.__currentUser && !sessionStorage.getItem('cd_save_prompt_shown') && !window._tutActive) {
       sessionStorage.setItem('cd_save_prompt_shown', '1');
       setTimeout(() => openModal('modal-save-prompt'), 12000); // 12s — let them draw a bit first
       gtag('event', 'save_prompt_shown', { event_category: 'engagement' });
@@ -6650,30 +6651,36 @@ function showToast(msg, ms = 2400) {
   }
 
   // ── Modal guard ───────────────────────────────────────────────────────────
-  // While a modal is open, hide tooltip+ring. When it closes, reshow.
+  // Hides tooltip+ring while any modal is open; reshows when it closes.
+  // IMPORTANT: only fires _reshowFn on an open→closed TRANSITION, not on
+  // every class change. Firing on every class change caused tutShowStep()
+  // to be called repeatedly, stacking duplicate event listeners and causing
+  // steps to be skipped (double-advance bug).
   let _modalGuardActive = false;
   let _reshowFn = null;
+  let _guardObs = null;
+  let _guardWasModalOpen = false; // tracks previous modal state for transition detection
 
   function installModalGuard(reshowFn) {
     _reshowFn = reshowFn;
-    if (_modalGuardActive) return;
+    if (_modalGuardActive) return; // observer already running; just update reshowFn
     _modalGuardActive = true;
+    _guardWasModalOpen = anyModalOpen();
     const obs = new MutationObserver(function() {
       if (!_reshowFn) return;
-      if (anyModalOpen()) {
-        hideAll();
+      const isOpen = anyModalOpen();
+      if (isOpen === _guardWasModalOpen) return; // no transition — ignore
+      _guardWasModalOpen = isOpen;
+      if (isOpen) {
+        hideAll(); // modal just opened — hide tutorial chrome
       } else {
-        // Modal just closed — reshow current step after short delay
-        setTimeout(function() {
-          if (_reshowFn) _reshowFn();
-        }, 200);
+        // Modal just closed — reshow current step once
+        setTimeout(function() { if (_reshowFn) _reshowFn(); }, 250);
       }
     });
     obs.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
-    // Store so we can disconnect on skip/complete
     _guardObs = obs;
   }
-  let _guardObs = null;
 
   function teardownGuard() {
     _reshowFn = null;
@@ -6864,7 +6871,14 @@ function showToast(msg, ms = 2400) {
   function tutShowStep(idx) {
     try {
       if (!_tutActive) return;
-      // If a modal is open, install guard to retry when it closes — then wait
+
+      // Always tear down the previous step's listeners before attaching new ones.
+      // Skipping this caused duplicate listeners when tutShowStep was re-called
+      // for the same step (e.g. after the save-prompt modal closed), which led
+      // to tutAdvance() firing twice and steps being skipped.
+      if (_cleanup) { _cleanup(); _cleanup = null; }
+
+      // If a modal is open, wait for it to close before showing the step
       if (anyModalOpen()) {
         hideAll();
         installModalGuard(function() { if (_tutActive) tutShowStep(idx); });
@@ -6881,12 +6895,8 @@ function showToast(msg, ms = 2400) {
         return;
       }
 
-      // Spotlight only if step opts in
-      if (step.spotlight) {
-        spotlightEl(el);
-      } else {
-        if (_ring) _ring.style.display = 'none';
-      }
+      if (step.spotlight) { spotlightEl(el); }
+      else { if (_ring) _ring.style.display = 'none'; }
 
       renderTooltip({
         header: 'Getting started',
@@ -6901,7 +6911,7 @@ function showToast(msg, ms = 2400) {
       _tooltip.style.display = 'block';
       positionTooltip(el);
 
-      // Install modal guard so tooltip hides when modals open
+      // Install modal guard so tooltip hides when any modal opens mid-step
       installModalGuard(function() { if (_tutActive) tutShowStep(idx); });
 
       _cleanup = step.attach(tutAdvance);
@@ -6933,13 +6943,18 @@ function showToast(msg, ms = 2400) {
         const th = _tooltip.offsetHeight || 140;
         _tooltip.style.top  = ((window.innerHeight - th) / 2) + 'px';
         _tooltip.style.left = ((window.innerWidth  - tw) / 2) + 'px';
-        const card = _tooltip; // capture ref so timer isn't affected by future _tooltip changes
-        document.getElementById('tut-done-btn').onclick = function() {
-          card.style.display = 'none';
-        };
-        // Auto-dismiss after exactly 6 s — stored in a module-scoped var so nothing else can clear it
+        const card = _tooltip;
+        function dismissCard() { card.style.display = 'none'; }
+        document.getElementById('tut-done-btn').onclick = dismissCard;
         clearTimeout(_tutCompleteTimer);
-        _tutCompleteTimer = setTimeout(function() { card.style.display = 'none'; }, 6000);
+        _tutCompleteTimer = setTimeout(dismissCard, 6000);
+
+        // If the user is not logged in and the save prompt was suppressed during
+        // the tutorial, schedule it now that the tutorial is done.
+        if (!window.__currentUser && !sessionStorage.getItem('cd_save_prompt_shown')) {
+          sessionStorage.setItem('cd_save_prompt_shown', '1');
+          setTimeout(function() { openModal('modal-save-prompt'); }, 8000);
+        }
       }
     } catch(e) {}
   }
@@ -7159,6 +7174,9 @@ function showToast(msg, ms = 2400) {
       }
     } catch(e) {}
   };
+
+  // Expose active flag so external code (e.g. save-prompt) can check tutorial state
+  Object.defineProperty(window, '_tutActive', { get: function() { return _tutActive; } });
 
   // Console helpers for testing
   window._tutStart        = startNewUserTutorial;
