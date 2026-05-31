@@ -6791,8 +6791,12 @@ function showToast(msg, ms = 2400) {
   function tutShowStep(idx) {
     try {
       if (!_tutActive) return;
-      // Hide while any modal is open
-      if (anyModalOpen()) { hideAll(); return; }
+      // If a modal is open, install guard to retry when it closes — then wait
+      if (anyModalOpen()) {
+        hideAll();
+        installModalGuard(function() { if (_tutActive) tutShowStep(idx); });
+        return;
+      }
 
       const step = _tutSteps[idx];
       const el   = step.getEl();
@@ -6860,30 +6864,9 @@ function showToast(msg, ms = 2400) {
     } catch(e) {}
   }
 
-  // ── Wait for all onboarding modals to clear before starting ───────────────
-  // New users see welcome overlay → court picker. We must not start until
-  // both are gone. We poll for no open modal + freeCourt set.
+  // startNewUserTutorial: kick off the tutorial. tutShowStep() handles
+  // waiting for any open modals to close via installModalGuard().
   function startNewUserTutorial() {
-    try {
-      if (localStorage.getItem(KEY_DONE)) return;
-      // If any modal is still open, wait for it to close first
-      if (anyModalOpen()) {
-        const obs = new MutationObserver(function() {
-          if (!anyModalOpen()) {
-            obs.disconnect();
-            setTimeout(function() {
-              if (!localStorage.getItem(KEY_DONE)) _beginNewUserTutorial();
-            }, 600); // brief pause after last modal closes
-          }
-        });
-        obs.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
-        return;
-      }
-      _beginNewUserTutorial();
-    } catch(e) {}
-  }
-
-  function _beginNewUserTutorial() {
     try {
       if (localStorage.getItem(KEY_DONE)) return;
       _tutSteps  = buildNewUserSteps();
@@ -6996,7 +6979,11 @@ function showToast(msg, ms = 2400) {
   function proTutShowStep(steps, idx) {
     try {
       if (!_proTutActive) return;
-      if (anyModalOpen()) { hideAll(); return; }
+      if (anyModalOpen()) {
+        hideAll();
+        installModalGuard(function() { if (_proTutActive) proTutShowStep(steps, idx); });
+        return;
+      }
       const step = steps[idx];
       const el   = step.getEl();
       buildDOM();
