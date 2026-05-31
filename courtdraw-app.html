@@ -4600,7 +4600,8 @@ function saveTactic() {
     name = `${sportName} — ${now.getDate()} ${now.toLocaleDateString('en-GB', { month: 'long' })}`;
     document.getElementById('tactic-name-input').value = name;
   }
-  if (!state.isPro && !state.isClub && state.savedTactics.length >= FREE_SAVES) {
+  // Tutorial save is on us — don't count it against the free limit
+  if (!state.isPro && !state.isClub && !window._tutorialSaveActive && state.savedTactics.length >= FREE_SAVES) {
     closeModal('modal-library');
     openPaywall(`You've used all ${FREE_SAVES} free saves. Upgrade to Pro for unlimited saves.`);
     return;
@@ -6767,13 +6768,22 @@ function showToast(msg, ms = 2400) {
       attach: function(onAdvance) {
         const prev = state.savedTactics.length;
         let done = false;
+        // Allow this save to bypass the free-tier limit — it's on us
+        window._tutorialSaveActive = true;
         const iv = setInterval(function() {
           if (done) return;
           if (state.savedTactics.length > prev) {
-            done = true; clearInterval(iv); setTimeout(onAdvance, 500);
+            done = true;
+            window._tutorialSaveActive = false;
+            clearInterval(iv);
+            setTimeout(onAdvance, 500);
           }
         }, 300);
-        return function() { done = true; clearInterval(iv); };
+        return function() {
+          done = true;
+          window._tutorialSaveActive = false;
+          clearInterval(iv);
+        };
       }
     });
 
