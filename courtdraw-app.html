@@ -6513,6 +6513,24 @@ function showToast(msg, ms = 2400) {
         background: var(--border, #1a2d4a); transition: background .2s;
       }
       #tut-tooltip .tut-dot.active { background: var(--accent, #3b82f6); }
+      /* Save-step mobile scroll hint: right-edge fade + animated chevron */
+      #toolbar.tut-save-step {
+        position: relative;
+      }
+      #toolbar.tut-save-step::after {
+        content: '';
+        position: absolute;
+        right: 0; top: 0; bottom: 0;
+        width: 48px;
+        background: linear-gradient(to right, transparent, rgba(13,31,60,0.92));
+        pointer-events: none;
+        z-index: 10;
+        animation: tut-scroll-hint-pulse 1.2s ease-in-out infinite;
+      }
+      @keyframes tut-scroll-hint-pulse {
+        0%,100% { opacity: 1; }
+        50%      { opacity: 0.5; }
+      }
       /* Spotlight ring — pointer-events:none so it never blocks interaction */
       #tut-ring {
         position: fixed;
@@ -6545,14 +6563,24 @@ function showToast(msg, ms = 2400) {
     _ring.style.height  = (r.height + pad * 2) + 'px';
   }
 
-  // Position tooltip near element, staying fully on-screen
+  // Position tooltip near element, staying fully on-screen.
+  // On mobile, always anchor to the top of the screen so the canvas stays usable.
   function positionTooltip(el) {
     if (!_tooltip || !el) return;
-    const r   = el.getBoundingClientRect();
     const tw  = _tooltip.offsetWidth  || 280;
     const th  = _tooltip.offsetHeight || 160;
     const vw  = window.innerWidth;
     const vh  = window.innerHeight;
+    const M   = 12;
+    if (isMobileView()) {
+      // Anchor to top-right, below the app header (~52px)
+      const top  = 56;
+      const left = vw - tw - M;
+      _tooltip.style.top  = top + 'px';
+      _tooltip.style.left = Math.max(M, left) + 'px';
+      return;
+    }
+    const r   = el.getBoundingClientRect();
     const GAP = 14;
     let top, left;
     if (r.bottom + GAP + th < vh) {
@@ -6568,7 +6596,6 @@ function showToast(msg, ms = 2400) {
       top  = r.top + r.height / 2 - th / 2;
       left = r.right + GAP;
     }
-    const M = 12;
     left = Math.max(M, Math.min(left, vw - tw - M));
     top  = Math.max(M, Math.min(top,  vh - th - M));
     _tooltip.style.top  = top  + 'px';
@@ -6660,35 +6687,24 @@ function showToast(msg, ms = 2400) {
     // Mobile prepends 2 extra steps: three-dot → pin toolbar
     // Desktop: Draw → Select → Save → My Plays (4 steps)
     // Mobile:  Three-dot → Pin → Draw → Select → Save → My Plays (6 steps)
-    const mobileSteps = isMobileView() ? [
-      {
-        id: 'three-dot',
-        getEl: () => getEl('#pt-bottom-hint') || getEl('#pt-top-hint'),
-        spotlight: true,
-        title: 'Open your toolbar',
-        body: 'Tap the <strong>···</strong> button to reveal your drawing tools.',
-        attach: function(onAdvance) {
-          const obs = new MutationObserver(function() {
-            if (document.body.classList.contains('pt-chrome-visible')) {
-              obs.disconnect(); onAdvance();
-            }
-          });
-          obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-          return function() { obs.disconnect(); };
-        }
-      },
-      {
-        id: 'pin',
-        getEl: () => getEl('#toolbar-pin-btn'),
-        spotlight: true,
-        title: 'Keep your toolbar open',
-        body: 'Tap <strong>Keep open</strong> so the toolbar stays visible while you draw.',
-        attach: function(onAdvance) {
-          const btn = getEl('#toolbar-pin-btn');
-          return once(btn, 'click', function() { setTimeout(onAdvance, 350); });
-        }
+    // On mobile, auto-pin the toolbar so it stays visible during the tutorial.
+    // We skip the manual "pin" step — just show the three-dot step then proceed.
+    if (isMobileView()) {
+      // Pin the toolbar programmatically if not already pinned
+      if (!document.body.classList.contains('toolbar-pinned')) {
+        document.body.classList.add('toolbar-pinned');
+        document.body.classList.add('pt-chrome-visible');
+        document.body.classList.add('ls-chrome-visible');
+        const label = document.getElementById('toolbar-pin-label');
+        const icon  = document.getElementById('toolbar-pin-icon');
+        if (label) label.textContent = 'Pinned';
+        if (icon)  icon.textContent  = '✓';
+        window._tutPinnedToolbar = true; // remember to unpin on complete/skip
       }
-    ] : [];
+    }
+
+    // Mobile toolbar is auto-pinned above — no toolbar steps needed
+    const mobileSteps = [];
 
     return [...mobileSteps,
       {
@@ -6755,8 +6771,21 @@ function showToast(msg, ms = 2400) {
         getEl: () => getEl('.tb-btn[title="Save tactic"]'),
         spotlight: true,
         title: 'Save your play',
-        body: 'Tap <strong>Save</strong> to name and store your play. This one\'s on us — it won\'t count against your free saves.',
+        body: isMobileView()
+          ? 'Scroll the toolbar to the right and tap <strong>Save</strong>. This one\'s on us — it won\'t count against your free saves.'
+          : 'Tap <strong>Save</strong> to name and store your play. This one\'s on us — it won\'t count against your free saves.',
         attach: function(onAdvance) {
+          // On mobile, scroll the toolbar to reveal the Save button and show a scroll hint
+          if (isMobileView()) {
+            const saveBtn = getEl('.tb-btn[title="Save tactic"]');
+            const toolbar = getEl('#toolbar');
+            if (saveBtn && toolbar) {
+              saveBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+              // Add right-edge scroll hint gradient
+              toolbar.style.setProperty('--tut-scroll-hint', '1');
+              toolbar.classList.add('tut-save-step');
+            }
+          }
           const prev = state.savedTactics.length;
           const gen  = _tutGen;
           let done = false;
@@ -6776,6 +6805,9 @@ function showToast(msg, ms = 2400) {
             done = true;
             window._tutorialSaveActive = false;
             clearInterval(iv);
+            // Remove mobile scroll hint
+            const toolbar = getEl('#toolbar');
+            if (toolbar) toolbar.classList.remove('tut-save-step');
           };
         }
       },
@@ -6811,6 +6843,10 @@ function showToast(msg, ms = 2400) {
       teardownGuard();
       hideAll();
       localStorage.setItem(KEY_DONE, '1');
+      // Clean up toolbar scroll hint if skip happens on save step
+      const toolbar = getEl('#toolbar');
+      if (toolbar) toolbar.classList.remove('tut-save-step');
+      if (isMobileView()) _tutResetMobileState();
     } catch(e) {}
   }
 
@@ -6886,6 +6922,34 @@ function showToast(msg, ms = 2400) {
     } catch(e) { tutSkip(); }
   }
 
+  function _tutResetMobileState() {
+    // Clear canvas of any tutorial shapes
+    try {
+      if (typeof clearBoard === 'function') {
+        // clearBoard saves undo — use a lighter reset for tutorial cleanup
+        state.objects = [];
+        state.phases = [{ objects: [], tokens: JSON.parse(JSON.stringify(state.tokenPositions)) }];
+        state.currentPhase = 0;
+        if (typeof updatePhaseUI === 'function') updatePhaseUI();
+        if (typeof redrawAll === 'function') redrawAll();
+      }
+    } catch(e) {}
+    // Unpin toolbar and retract it
+    try {
+      if (window._tutPinnedToolbar) {
+        window._tutPinnedToolbar = false;
+        document.body.classList.remove('toolbar-pinned');
+        localStorage.setItem('toolbar_pinned', '0');
+        const label = document.getElementById('toolbar-pin-label');
+        const icon  = document.getElementById('toolbar-pin-icon');
+        if (label) label.textContent = 'Keep open';
+        if (icon)  icon.textContent  = '📌';
+        document.body.classList.remove('pt-chrome-visible');
+        document.body.classList.remove('ls-chrome-visible');
+      }
+    } catch(e) {}
+  }
+
   function tutComplete() {
     try {
       _tutActive = false;
@@ -6894,29 +6958,131 @@ function showToast(msg, ms = 2400) {
       if (_cleanup) { _cleanup(); _cleanup = null; }
       localStorage.setItem(KEY_DONE, '1');
       buildDOM();
-      // Hide spotlight ring — completion card needs no spotlight
       if (_ring) _ring.style.display = 'none';
-      if (_tooltip) {
-        _tooltip.style.display = 'block';
-        _tooltip.innerHTML = `
-          <div class="tut-header" style="color:#22c55e;">✓ You're all set!</div>
-          <div class="tut-title">Ready to coach 🏟</div>
-          <div class="tut-body">You know the basics — now go draw your best plays. Good luck out there!</div>
-          <div class="tut-foot" style="justify-content:flex-end;">
-            <button class="tut-skip" id="tut-done-btn"
-              style="color:var(--accent);font-weight:700;font-size:13px;">Let's go →</button>
-          </div>
-        `;
-        const tw = _tooltip.offsetWidth  || 280;
-        const th = _tooltip.offsetHeight || 140;
-        _tooltip.style.top  = ((window.innerHeight - th) / 2) + 'px';
-        _tooltip.style.left = ((window.innerWidth  - tw) / 2) + 'px';
-        const card = _tooltip;
-        function dismissCard() { card.style.display = 'none'; }
-        document.getElementById('tut-done-btn').onclick = dismissCard;
-        clearTimeout(_tutCompleteTimer);
-        _tutCompleteTimer = setTimeout(dismissCard, 6000);
 
+      const mobile = isMobileView();
+
+      if (mobile) {
+        // Full-screen completion overlay for mobile
+        const overlay = document.createElement('div');
+        overlay.id = 'tut-complete-overlay';
+        const style = document.createElement('style');
+        style.textContent = `
+          #tut-complete-overlay {
+            position: fixed; inset: 0; z-index: 10000;
+            background: #0a1628;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 32px 24px; text-align: center;
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            color: #f1f5f9;
+            animation: tut-overlay-in 0.35s ease;
+          }
+          @keyframes tut-overlay-in {
+            from { opacity: 0; transform: scale(0.96); }
+            to   { opacity: 1; transform: scale(1); }
+          }
+          #tut-complete-overlay .tut-co-check {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: #22c55e22; border: 3px solid #22c55e;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 36px; margin-bottom: 24px;
+            animation: tut-check-pop 0.4s 0.15s both cubic-bezier(.34,1.56,.64,1);
+          }
+          @keyframes tut-check-pop {
+            from { transform: scale(0); opacity: 0; }
+            to   { transform: scale(1); opacity: 1; }
+          }
+          #tut-complete-overlay .tut-co-title {
+            font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+            font-size: 28px; font-weight: 800; letter-spacing: -0.03em;
+            margin-bottom: 12px; line-height: 1.2;
+          }
+          #tut-complete-overlay .tut-co-body {
+            font-size: 15px; color: #94a3b8;
+            line-height: 1.6; margin-bottom: 36px; max-width: 300px;
+          }
+          #tut-complete-overlay .tut-co-btn {
+            background: #3b82f6; color: #fff;
+            border: none; border-radius: 14px;
+            padding: 16px 40px; font-size: 17px; font-weight: 700;
+            font-family: inherit; cursor: pointer;
+            letter-spacing: -0.01em;
+            box-shadow: 0 4px 24px rgba(59,130,246,0.4);
+            transition: transform .12s, box-shadow .12s;
+          }
+          #tut-complete-overlay .tut-co-btn:active {
+            transform: scale(0.97);
+            box-shadow: 0 2px 12px rgba(59,130,246,0.3);
+          }
+          /* confetti dots */
+          #tut-complete-overlay .tut-co-confetti {
+            position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+          }
+          .tut-co-dot {
+            position: absolute; border-radius: 50%;
+            animation: tut-dot-fall linear both;
+          }
+          @keyframes tut-dot-fall {
+            from { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+            to   { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+          }
+        `;
+        document.head.appendChild(style);
+
+        // Build confetti dots HTML
+        const colors = ['#3b82f6','#22c55e','#f59e0b','#ec4899','#a78bfa'];
+        let dotsHtml = '';
+        for (let i = 0; i < 22; i++) {
+          const size = (6 + Math.random() * 8).toFixed(1);
+          const left = (Math.random() * 100).toFixed(1);
+          const dur  = (1.5 + Math.random() * 2).toFixed(2);
+          const del  = (Math.random() * 0.6).toFixed(2);
+          dotsHtml += `<div class="tut-co-dot" style="width:${size}px;height:${size}px;left:${left}%;background:${colors[i%colors.length]};animation-duration:${dur}s;animation-delay:${del}s;"></div>`;
+        }
+        overlay.innerHTML = `
+          <div class="tut-co-confetti">${dotsHtml}</div>
+          <div class="tut-co-check">✓</div>
+          <div class="tut-co-title">You're ready to coach!</div>
+          <div class="tut-co-body">You know the basics. Now go draw your best plays and build your playbook.</div>
+          <button class="tut-co-btn" id="tut-done-btn">Let's go!</button>
+        `;
+        document.body.appendChild(overlay);
+
+        function dismissOverlay() {
+          overlay.style.animation = 'tut-overlay-in 0.25s ease reverse both';
+          setTimeout(function() {
+            overlay.remove();
+            _tutResetMobileState();
+          }, 250);
+        }
+        document.getElementById('tut-done-btn').onclick = dismissOverlay;
+        clearTimeout(_tutCompleteTimer);
+        _tutCompleteTimer = setTimeout(dismissOverlay, 6000);
+
+      } else {
+        // Desktop: compact completion card (unchanged)
+        if (_tooltip) {
+          _tooltip.style.display = 'block';
+          _tooltip.innerHTML = `
+            <div class="tut-header" style="color:#22c55e;">✓ You're all set!</div>
+            <div class="tut-title">Ready to coach 🏟</div>
+            <div class="tut-body">You know the basics — now go draw your best plays. Good luck out there!</div>
+            <div class="tut-foot" style="justify-content:flex-end;">
+              <button class="tut-skip" id="tut-done-btn"
+                style="color:var(--accent);font-weight:700;font-size:13px;">Let's go →</button>
+            </div>
+          `;
+          const tw = _tooltip.offsetWidth  || 280;
+          const th = _tooltip.offsetHeight || 140;
+          _tooltip.style.top  = ((window.innerHeight - th) / 2) + 'px';
+          _tooltip.style.left = ((window.innerWidth  - tw) / 2) + 'px';
+          const card = _tooltip;
+          function dismissCard() { card.style.display = 'none'; }
+          document.getElementById('tut-done-btn').onclick = dismissCard;
+          clearTimeout(_tutCompleteTimer);
+          _tutCompleteTimer = setTimeout(dismissCard, 6000);
+        }
       }
     } catch(e) {}
   }
