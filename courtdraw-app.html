@@ -1534,6 +1534,13 @@ body.portrait-mode .player-token:active {
   white-space: nowrap;
 }
 .comm-author { font-size: 11px; color: #64748b; margin-top: 4px; }
+.comm-unpub-btn {
+  margin-top: 8px; padding: 3px 10px; font-size: 11px; font-weight: 600;
+  color: #ef4444; background: transparent; border: 1px solid #ef444455;
+  border-radius: 6px; cursor: pointer; transition: background .15s, border-color .15s;
+}
+.comm-unpub-btn:hover { background: rgba(239,68,68,0.1); border-color: #ef4444; }
+.comm-unpub-btn:disabled { opacity: 0.5; cursor: default; }
 .comm-empty {
   grid-column: 1/-1; text-align: center; color: #94a3b8; padding: 40px 20px;
 }
@@ -7959,6 +7966,8 @@ function renderCommunityGrid() {
   const isMobile = window.innerWidth < 600;
   const e = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
+  const currentUid = window.__currentUser && window.__currentUser.uid;
+
   grid.innerHTML = slice.map((t, idx) => {
     const sport   = e(t.sport  || '');
     const cat     = e(t.category || '');
@@ -7967,6 +7976,10 @@ function renderCommunityGrid() {
     const sportBadge  = sport  ? `<span class="comm-sport-badge">${sport}</span>` : '';
     const catBadge    = cat    ? `<span class="comm-cat-badge">${cat}</span>`    : '';
     const thumbHtml   = isMobile ? '' : `<div class="comm-card-thumb">${renderTacticThumb(t)}</div>`;
+    const isMyPlay    = t._source === 'published' && t.id && t.authorUid && t.authorUid === currentUid;
+    const unpubBtn    = isMyPlay
+      ? `<button class="comm-unpub-btn" onclick="event.stopPropagation();unpublishCommunityPlay('${t.id}',this)" title="Remove from Community Library">Unpublish</button>`
+      : '';
     return `<div class="comm-card" onclick="handleCommPlayClick(${idx})" role="button" tabindex="0"
               aria-label="Load ${name}" onkeydown="if(event.key==='Enter'||event.key===' ')handleCommPlayClick(${idx})">
       ${thumbHtml}
@@ -7974,6 +7987,7 @@ function renderCommunityGrid() {
         <div class="comm-card-name">${name}</div>
         <div class="comm-card-badges">${sportBadge}${catBadge}</div>
         <div class="comm-author">${author}</div>
+        ${unpubBtn}
       </div>
     </div>`;
   }).join('');
@@ -7994,6 +8008,14 @@ function loadCommunityPlay(t) {
   loadLibTactic(t);
   if (t.authorName && t.authorName !== 'CourtDraw Team') {
     showAuthorCredit(t.authorName);
+  }
+  // Fire-and-forget save count increment for published plays
+  if (t._source === 'published' && t.id) {
+    fetch('/.netlify/functions/increment-community-play-saves', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playId: t.id }),
+    }).catch(() => {});
   }
 }
 
@@ -8047,6 +8069,32 @@ async function _loadCommClubPlays() {
   } catch {
     _commClubPlays = [];
     renderCommunityGrid();
+  }
+}
+
+// ── Unpublish from Community Library ─────────────────────────────────────────
+
+async function unpublishCommunityPlay(playId, btnEl) {
+  const user = window.__currentUser;
+  if (!user) return;
+  if (!confirm('Remove this play from the Community Library?')) return;
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Removing…'; }
+  try {
+    const token = await user.getIdToken();
+    const res = await fetch('/.netlify/functions/unpublish-community-play', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ playId }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    // Remove from local cache and re-render
+    if (window.__communityPlays) {
+      window.__communityPlays = window.__communityPlays.filter(p => p.id !== playId);
+    }
+    renderCommunityGrid();
+  } catch (err) {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Unpublish'; }
+    alert('Failed to unpublish: ' + (err.message || 'Unknown error'));
   }
 }
 

@@ -592,6 +592,37 @@ const templates = {
     };
   },
 
+  // ── Broadcast: Community Library announcement ────────────────────────────────
+  communityLibraryAnnouncement: (email, isPaid) => {
+    const proNote = isPaid
+      ? `You're on Pro or Club, so you can also <strong>publish your own plays</strong> directly to the library — shared with coaches worldwide. Hit the 🌐 Community button in the toolbar, load a play, customise it, and when you're ready, publish yours.`
+      : `Pro and Club coaches can also <strong>publish their own plays</strong> to the library and share their system with coaches worldwide. Your first 7 days are free — no charge until day 8.`;
+    const ctaText = isPaid ? 'Open the Community Library →' : 'Browse the Community Library →';
+    const ctaUrl  = `${APP_URL}/courtdraw-app.html`;
+    const data = {
+      label: '🌐 New feature',
+      labelColor: '#3b82f6',
+      title: 'Your tactics library just got a lot bigger',
+      body: `We just shipped the <strong>Community Library</strong> — a shared collection of 200+ ready-made plays across 12 sports, built into CourtDraw.<br><br>
+             Open the app, hit the <strong>🌐 Community</strong> button in the toolbar, and you'll find plays for football, basketball, volleyball, tennis, handball, and more — all ready to load onto your board in one click.<br><br>
+             No drawing from scratch. No starting from a blank court. Find a play you like, load it, and make it yours.<br><br>
+             ${proNote}`,
+      ctaText,
+      ctaUrl,
+      features: [
+        { icon: '🌐', label: '200+ plays' },
+        { icon: '⚡', label: 'Load in one click' },
+        { icon: '✏️', label: 'Customise anything' },
+      ],
+      footerNote: "You're receiving this because you have a CourtDraw account. <a href='mailto:hello@courtdraw.app?subject=Unsubscribe' style='color:#3b82f6;'>Unsubscribe</a>"
+    };
+    return {
+      from: FROM, reply_to: REPLY_TO, to: email,
+      subject: 'New: Browse 200+ plays in the Community Library 🌐',
+      html: layout(data), text: toPlainText(data),
+    };
+  },
+
   // Sent when a Club trial converts to a paid subscription (day 8 charge succeeds)
   clubTrialConverted: (email) => {
     const data = {

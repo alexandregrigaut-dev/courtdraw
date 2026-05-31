@@ -1470,6 +1470,16 @@ def build_page(sport):
     links = ' · '.join(f'<a href="/courtdraw-app.html?court={cid}">{cn}</a>' for cid, cn in sport['courtIds'])
     consolidation_note = f'<div class="consolidation-note"><strong>Covers:</strong> {links}</div>'
 
+  COMMUNITY_CALLOUT = '''
+<section class="sp-section" style="background:linear-gradient(135deg,rgba(29,78,216,0.08),rgba(59,130,246,0.04));border-top:1px solid rgba(59,130,246,0.2);border-bottom:1px solid rgba(59,130,246,0.2);padding:56px 0;">
+  <div class="container" style="text-align:center;">
+    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(59,130,246,0.15);border:1px solid rgba(96,165,250,0.35);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:700;color:#60a5fa;letter-spacing:.04em;margin-bottom:16px;">🌐 Community Library</div>
+    <h2 style="font-size:clamp(1.3rem,2.5vw,1.8rem);font-weight:800;margin-bottom:12px;">Browse plays shared by coaches worldwide</h2>
+    <p style="color:var(--muted);max-width:480px;margin:0 auto 24px;font-size:0.9rem;line-height:1.65;">The Community Library has 200+ plays across 12 sports. Load any tactic onto your board in one click — or publish your own with Pro.</p>
+    <a href="/courtdraw-app.html" style="display:inline-flex;align-items:center;gap:6px;background:rgba(59,130,246,0.2);border:1px solid rgba(96,165,250,0.4);color:#60a5fa;font-weight:700;font-size:14px;padding:10px 24px;border-radius:8px;text-decoration:none;">Open Community Library →</a>
+  </div>
+</section>'''
+
   plays_html = ''
   if sport['plays']:
     cards = '\n'.join(f'''        <div class="play-card">
@@ -1483,7 +1493,7 @@ def build_page(sport):
       <div class="section-header">
         <span class="badge"><span class="badge-dot"></span>Tactics Library</span>
         <h2 class="gradient-text">Ready-Made {sport['name']} Plays</h2>
-        <p>Load any play directly into your board and customise it.</p>
+        <p>Load any play directly into your board and customise it. Pro coaches can also publish their own plays to the Community Library — shared with coaches worldwide.</p>
       </div>
       <div class="plays-grid">
         {cards}
@@ -1702,6 +1712,8 @@ def build_page(sport):
     </div>
   </div>
 </section>
+
+{'' if sport['plays'] else COMMUNITY_CALLOUT}
 
 <section class="sp-cta" style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
   <div class="container">
