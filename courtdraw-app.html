@@ -6889,36 +6889,24 @@ function showToast(msg, ms = 2400) {
       {
         // Step 3: save the play
         id: 'save',
-        getEl: () => getEl('.tb-btn[title="Save tactic"]'),
-        spotlight: true,
+        getEl: () => getEl('.tb-btn[title="Save tactic"]') || getEl('#drawing-canvas'),
+        spotlight: true,   // desktop spotlight; mobile uses mobileCenter (no spotlight)
+        mobileCenter: true, // mobile: center tooltip, no ring, no scroll manipulation
         onEnter: function() {
           if (isMobileView() && !document.body.classList.contains('pt-chrome-visible')) {
             document.body.classList.add('pt-chrome-visible');
           }
         },
-        onEnterDelay: 350,
+        onEnterDelay: 300,
         title: 'Save your play',
         body: isMobileView()
           ? 'Scroll the toolbar to the right and tap <strong>Save</strong>. This one\'s on us — it won\'t count against your free saves.'
           : 'Tap <strong>Save</strong> to name and store your play. This one\'s on us — it won\'t count against your free saves.',
         attach: function(onAdvance) {
-          // On mobile, scroll the toolbar to reveal the Save button and show a scroll hint
+          // On mobile, just add the scroll-hint class (tooltip is centered, no spotlight)
           if (isMobileView()) {
-            const saveBtn = getEl('.tb-btn[title="Save tactic"]');
             const toolbar = getEl('#toolbar');
-            if (saveBtn && toolbar) {
-              // Center the Save button in the toolbar viewport
-              const btnLeft  = saveBtn.offsetLeft;
-              const btnW     = saveBtn.offsetWidth;
-              const toolbarW = toolbar.clientWidth;
-              const target   = btnLeft - (toolbarW / 2) + (btnW / 2);
-              toolbar.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
-              toolbar.classList.add('tut-save-step');
-              // Re-spotlight after scroll animation completes so ring lands on the button
-              setTimeout(function() {
-                if (_tutActive) spotlightEl(saveBtn);
-              }, 450);
-            }
+            if (toolbar) toolbar.classList.add('tut-save-step');
           }
           const prev = state.savedTactics.length;
           const gen  = _tutGen;
@@ -6958,9 +6946,10 @@ function showToast(msg, ms = 2400) {
         // sees their saved play, then tutComplete fires while the modal is still open.
         // tutComplete's overlay (z-index 10000) renders on top of the modal.
         id: 'my-plays',
-        getEl: () => getEl('.tb-btn[title="My saved tactics"]'),
-        spotlight: true,
-        // Re-pin toolbar so it can't auto-retract; scroll to center My Plays button
+        getEl: () => getEl('.tb-btn[title="My saved tactics"]') || getEl('#drawing-canvas'),
+        spotlight: true,    // desktop spotlight; mobile uses mobileCenter (no spotlight)
+        mobileCenter: true, // mobile: center tooltip, buttons display normally
+        // Re-pin toolbar so it can't auto-retract while user looks for My Plays
         onEnter: function() {
           if (isMobileView()) {
             document.body.classList.add('toolbar-pinned');
@@ -6970,16 +6959,9 @@ function showToast(msg, ms = 2400) {
             if (label) label.textContent = 'Pinned';
             if (icon)  icon.textContent  = '✓';
             window._tutPinnedToolbar = true;
-            // Scroll toolbar to center the My Plays button
-            const myPlaysBtn = getEl('.tb-btn[title="My saved tactics"]');
-            const toolbar    = getEl('#toolbar');
-            if (myPlaysBtn && toolbar) {
-              const target = myPlaysBtn.offsetLeft - (toolbar.clientWidth / 2) + (myPlaysBtn.offsetWidth / 2);
-              toolbar.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
-            }
           }
         },
-        onEnterDelay: 500,
+        onEnterDelay: 350,
         title: 'View your playbook',
         body: isMobileView()
           ? 'Tap <strong>My Plays</strong> to find all your saved plays anytime.'
@@ -7088,7 +7070,9 @@ function showToast(msg, ms = 2400) {
         return;
       }
 
-      if (step.spotlight) { spotlightEl(el); }
+      // On mobile, mobileCenter steps skip spotlight and center the tooltip
+      const useMobileCenter = isMobileView() && step.mobileCenter;
+      if (step.spotlight && !useMobileCenter) { spotlightEl(el); }
       else { if (_ring) _ring.style.display = 'none'; }
 
       renderTooltip({
@@ -7102,7 +7086,16 @@ function showToast(msg, ms = 2400) {
         nextFn: function() { tutGoTo(idx + 1); }
       });
       _tooltip.style.display = 'block';
-      positionTooltip(el);
+      if (useMobileCenter) {
+        // Center tooltip horizontally and vertically in the canvas area
+        _tooltip.style.maxWidth = '260px';
+        const tw = _tooltip.offsetWidth || 260;
+        const th = _tooltip.offsetHeight || 140;
+        _tooltip.style.left = Math.max(12, (window.innerWidth - tw) / 2) + 'px';
+        _tooltip.style.top  = Math.max(70, (window.innerHeight - th) / 2 - 60) + 'px';
+      } else {
+        positionTooltip(el);
+      }
 
       // Install modal guard so tooltip hides when any modal opens mid-step
       installModalGuard(function() { if (_tutActive) tutShowStep(idx); });
