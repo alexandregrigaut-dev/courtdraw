@@ -7109,9 +7109,7 @@ function showToast(msg, ms = 2400) {
     try {
       const banner = document.getElementById('pwa-banner');
       if (banner) banner.style.display = ''; // always clear the inline override
-      const isMobileDevice = /iphone|ipad|ipod|android/i.test(navigator.userAgent) ||
-        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      if (isMobileDevice && banner &&
+      if (banner && window.matchMedia('(pointer: coarse)').matches &&
           !localStorage.getItem('pwa_banner_dismissed') &&
           !localStorage.getItem('pwa_installed')) {
         setTimeout(function() {
@@ -7267,14 +7265,15 @@ function showToast(msg, ms = 2400) {
       if (state.isPro || state.isClub) return;
       // Mark tutorial as seen immediately (so early dismissal also prevents replay)
       localStorage.setItem(KEY_DONE, '1');
-      // Force-hide PWA install banner during tutorial. Using style.display='none'
-      // overrides the .ready { display:flex } CSS class, so showBanner() can't
-      // make it visible even if it fires after this point (race condition).
-      const banner = document.getElementById('pwa-banner');
-      if (banner) {
-        banner.classList.remove('visible');
-        banner.classList.remove('ready');
-        banner.style.display = 'none';
+      // Force-hide PWA install banner during tutorial (mobile only — it can't
+      // show on desktop, but guard here prevents a race on slow mobile loads).
+      if (window.matchMedia('(pointer: coarse)').matches) {
+        const banner = document.getElementById('pwa-banner');
+        if (banner) {
+          banner.classList.remove('visible');
+          banner.classList.remove('ready');
+          banner.style.display = 'none';
+        }
       }
       _tutSteps  = buildNewUserSteps();
       _tutIdx    = 0;
@@ -8531,10 +8530,9 @@ document.addEventListener('DOMContentLoaded', init);
     if (window.matchMedia('(display-mode: standalone)').matches) return;
     if (localStorage.getItem(INSTALL_KEY))   return;
     if (localStorage.getItem(DISMISSED_KEY)) return;
-    // Mobile only — desktop users don't need a home-screen install prompt
-    const _isMobileDevice = /iphone|ipad|ipod|android/i.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (!_isMobileDevice) return;
+    // Mobile/touch devices only. Use (pointer: coarse) — true on touchscreens,
+    // false on desktop mice and Mac trackpads (which are fine/precise pointers).
+    if (!window.matchMedia('(pointer: coarse)').matches) return;
 
     function showBanner() {
       // Wait for welcome modal to be dismissed before showing, then add a small gap
