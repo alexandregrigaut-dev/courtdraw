@@ -6680,126 +6680,88 @@ function showToast(msg, ms = 2400) {
   // ══════════════════════════════════════════════════════════════════════════
 
   function buildNewUserSteps() {
-    const mobile = isMobileView();
-    const steps  = [];
-
-    // Steps 1 & 2: mobile-only (three-dot button + pin toolbar)
-    if (mobile) {
-      steps.push({
-        id: 'three-dot',
-        getEl: () => getEl('#pt-bottom-hint') || getEl('#pt-top-hint'),
-        spotlight: true,
-        title: 'Open your toolbar',
-        body: 'Tap the <strong>···</strong> button to reveal your drawing tools.',
+    // Fixed 4-step sequence, same on mobile and desktop:
+    // Draw → Select → Save → My Plays
+    return [
+      {
+        // Step 1: draw something on the court
+        id: 'draw',
+        getEl: () => getEl('.tb-btn[data-tool="arrow"]'),
+        spotlight: false, // no ring — canvas must stay fully interactive
+        title: 'Draw on the court',
+        body: 'The Arrow tool is ready. Click or drag anywhere on the <strong>court</strong> to draw your first move.',
         attach: function(onAdvance) {
-          const obs = new MutationObserver(function() {
-            if (document.body.classList.contains('pt-chrome-visible')) {
-              obs.disconnect();
-              onAdvance();
+          const prev = state.objects.length;
+          let done = false;
+          const iv = setInterval(function() {
+            if (done) return;
+            if (state.objects.length > prev) {
+              done = true; clearInterval(iv); setTimeout(onAdvance, 400);
             }
-          });
-          obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-          return function() { obs.disconnect(); };
+          }, 200);
+          return function() { done = true; clearInterval(iv); };
         }
-      });
-
-      steps.push({
-        id: 'pin',
-        getEl: () => getEl('#toolbar-pin-btn'),
+      },
+      {
+        // Step 2: switch to select tool and tap any object
+        id: 'select',
+        getEl: () => getEl('.tb-btn[data-tool="select"]'),
         spotlight: true,
-        title: 'Keep your toolbar open',
-        body: 'Tap <strong>Keep open</strong> so the toolbar stays visible while you draw.',
+        title: 'Select & move shapes',
+        body: 'Click <strong>Select</strong> in the toolbar, then click any shape or player on the court to select it.',
         attach: function(onAdvance) {
-          const btn = getEl('#toolbar-pin-btn');
-          return once(btn, 'click', function() { setTimeout(onAdvance, 350); });
+          let toolSeen = false;
+          let done = false;
+          const iv = setInterval(function() {
+            if (done) return;
+            if (state.tool === 'select') toolSeen = true;
+            if (toolSeen && state.selectedIdx >= 0) {
+              done = true; clearInterval(iv); setTimeout(onAdvance, 500);
+            }
+          }, 200);
+          return function() { done = true; clearInterval(iv); };
         }
-      });
-    }
-
-    // Step: Draw — NO spotlight ring, NO overlay dimming so canvas is fully usable.
-    // Anchor tooltip to the toolbar (arrow button) but don't dim the court.
-    steps.push({
-      id: 'draw',
-      getEl: () => getEl('.tb-btn[data-tool="arrow"]'),
-      spotlight: false, // intentionally no ring — canvas must be fully clickable
-      title: 'Draw on the court',
-      body: 'The Arrow tool is selected. Click or drag on the <strong>court</strong> to draw your first move.',
-      attach: function(onAdvance) {
-        const prev = state.objects.length;
-        let done = false;
-        const iv = setInterval(function() {
-          if (done) return;
-          if (state.objects.length > prev) {
-            done = true; clearInterval(iv); setTimeout(onAdvance, 400);
-          }
-        }, 200);
-        return function() { done = true; clearInterval(iv); };
-      }
-    });
-
-    steps.push({
-      id: 'select',
-      getEl: () => getEl('.tb-btn[data-tool="select"]'),
-      spotlight: true,
-      title: 'Select & move shapes',
-      body: 'Switch to <strong>Select</strong>, then click or tap any shape or player to select it — drag to move it.',
-      attach: function(onAdvance) {
-        // Advance when the user activates the select tool AND selects an object
-        let toolSeen = false;
-        let done = false;
-        const iv = setInterval(function() {
-          if (done) return;
-          if (state.tool === 'select') toolSeen = true;
-          // Once they've switched to select and something is selected, advance
-          if (toolSeen && state.selectedIdx >= 0) {
-            done = true; clearInterval(iv); setTimeout(onAdvance, 500);
-          }
-        }, 200);
-        return function() { done = true; clearInterval(iv); };
-      }
-    });
-
-    steps.push({
-      id: 'save',
-      getEl: () => getEl('.tb-btn[title="Save tactic"]'),
-      spotlight: true,
-      title: 'Save your play',
-      body: 'Tap <strong>Save</strong> to name and store your play in your personal playbook.',
-      attach: function(onAdvance) {
-        const prev = state.savedTactics.length;
-        let done = false;
-        // Allow this save to bypass the free-tier limit — it's on us
-        window._tutorialSaveActive = true;
-        const iv = setInterval(function() {
-          if (done) return;
-          if (state.savedTactics.length > prev) {
+      },
+      {
+        // Step 3: save the play
+        id: 'save',
+        getEl: () => getEl('.tb-btn[title="Save tactic"]'),
+        spotlight: true,
+        title: 'Save your play',
+        body: 'Tap <strong>Save</strong> to name and store your play. This one\'s on us — it won\'t count against your free saves.',
+        attach: function(onAdvance) {
+          const prev = state.savedTactics.length;
+          let done = false;
+          window._tutorialSaveActive = true; // bypass free-tier limit for this save
+          const iv = setInterval(function() {
+            if (done) return;
+            if (state.savedTactics.length > prev) {
+              done = true;
+              window._tutorialSaveActive = false;
+              clearInterval(iv);
+              setTimeout(onAdvance, 500);
+            }
+          }, 300);
+          return function() {
             done = true;
             window._tutorialSaveActive = false;
             clearInterval(iv);
-            setTimeout(onAdvance, 500);
-          }
-        }, 300);
-        return function() {
-          done = true;
-          window._tutorialSaveActive = false;
-          clearInterval(iv);
-        };
+          };
+        }
+      },
+      {
+        // Step 4: open My Plays
+        id: 'my-plays',
+        getEl: () => getEl('.tb-btn[title="My saved tactics"]'),
+        spotlight: true,
+        title: 'View your playbook',
+        body: 'Tap <strong>My Plays</strong> to find all your saved plays anytime.',
+        attach: function(onAdvance) {
+          const btn = getEl('.tb-btn[title="My saved tactics"]');
+          return once(btn, 'click', function() { setTimeout(onAdvance, 400); });
+        }
       }
-    });
-
-    steps.push({
-      id: 'my-plays',
-      getEl: () => getEl('.tb-btn[title="My saved tactics"]'),
-      spotlight: true,
-      title: 'View your playbook',
-      body: 'Tap <strong>My Plays</strong> to see all your saved plays anytime.',
-      attach: function(onAdvance) {
-        const btn = getEl('.tb-btn[title="My saved tactics"]');
-        return once(btn, 'click', function() { setTimeout(onAdvance, 400); });
-      }
-    });
-
-    return steps;
+    ];
   }
 
   let _tutSteps  = [];
