@@ -6422,9 +6422,7 @@ function showToast(msg, ms = 2400) {
   'use strict';
 
   // ── Constants ──────────────────────────────────────────────────────────────
-  const KEY_DONE      = 'cd_tutorial_done';
-  const KEY_PRO_DONE  = 'cd_pro_tutorial_done';
-  const KEY_PREV_PLAN = 'cd_prev_plan';
+  const KEY_DONE = 'cd_tutorial_done'; // set immediately on start; prevents replay
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function isMobileView() {
@@ -6893,8 +6891,15 @@ function showToast(msg, ms = 2400) {
         spotlight: true,   // desktop spotlight; mobile uses mobileCenter (no spotlight)
         mobileCenter: true, // mobile: center tooltip, no ring, no scroll manipulation
         onEnter: function() {
-          if (isMobileView() && !document.body.classList.contains('pt-chrome-visible')) {
+          if (isMobileView()) {
+            // Pin toolbar so it can't retract while user scrolls to find Save
+            document.body.classList.add('toolbar-pinned');
             document.body.classList.add('pt-chrome-visible');
+            const label = document.getElementById('toolbar-pin-label');
+            const icon  = document.getElementById('toolbar-pin-icon');
+            if (label) label.textContent = 'Pinned';
+            if (icon)  icon.textContent  = '✓';
+            window._tutPinnedToolbar = true;
           }
         },
         onEnterDelay: 300,
@@ -7286,216 +7291,36 @@ function showToast(msg, ms = 2400) {
   // PRO / CLUB UPGRADE TUTORIAL
   // ══════════════════════════════════════════════════════════════════════════
 
-  function buildUpgradeSteps(plan) {
-    const isClub = plan === 'club';
-    const steps  = [];
-
-    steps.push({
-      id: 'welcome',
-      getEl: () => getEl('#pro-badge'),
-      spotlight: true,
-      title: isClub ? 'Welcome to Club! 🏟' : 'Welcome to Pro! ⚡',
-      body: isClub
-        ? 'Your Club plan is active. Here\'s a quick look at your new features.'
-        : 'Your Pro plan is active. Here\'s a quick look at what\'s unlocked.',
-      attach: function(onAdvance) {
-        const badge = getEl('#pro-badge');
-        let t = setTimeout(onAdvance, 3500);
-        const off = once(badge, 'click', function() { clearTimeout(t); onAdvance(); });
-        return function() { clearTimeout(t); off(); };
-      }
-    });
-
-    steps.push({
-      id: 'save',
-      getEl: () => getEl('.tb-btn[title="Save tactic"]'),
-      spotlight: true,
-      title: 'Unlimited saves',
-      body: 'Save as many plays as you want — no limits. Your entire playbook, right here.',
-      attach: function(onAdvance) {
-        let t = setTimeout(onAdvance, 4000);
-        return function() { clearTimeout(t); };
-      }
-    });
-
-    steps.push({
-      id: 'playbook',
-      getEl: () => getEl('.tb-btn[title="My saved tactics"]'),
-      spotlight: true,
-      title: 'Your personal playbook',
-      body: 'Rate, tag, and search your plays. Find the right tactic in seconds.',
-      attach: function(onAdvance) {
-        let t = setTimeout(onAdvance, 4000);
-        return function() { clearTimeout(t); };
-      }
-    });
-
-    steps.push({
-      id: 'sessions',
-      getEl: () => getEl('.tb-btn[title="Training Sessions — chain plays into a plan"]'),
-      spotlight: true,
-      title: 'Training Sessions',
-      body: 'Chain plays into a full session plan, present them on the pitch, and export as a PDF.',
-      attach: function(onAdvance) {
-        let t = setTimeout(onAdvance, 4000);
-        return function() { clearTimeout(t); };
-      }
-    });
-
-    if (isClub) {
-      steps.push({
-        id: 'club-library',
-        // TODO: verify selector when club admin UI is finalised
-        getEl: () => getEl('#btn-pro-library') || getEl('.tb-btn[title="200+ pre-built tactics library"]'),
-        spotlight: true,
-        title: 'Club shared library',
-        body: 'Your whole coaching staff shares one library. Everyone can access and build on every play.',
-        attach: function(onAdvance) {
-          let t = setTimeout(onAdvance, 4500);
-          return function() { clearTimeout(t); };
-        }
-      });
-    }
-
-    return steps;
-  }
-
-  let _proTutActive = false;
-
-  function proTutSkip() {
-    try {
-      _proTutActive = false;
-      if (_cleanup) { _cleanup(); _cleanup = null; }
-      teardownGuard();
-      hideAll();
-      localStorage.setItem(KEY_PRO_DONE, '1');
-    } catch(e) {}
-  }
-
-  function proTutAdvance(steps, idx) {
-    if (!_proTutActive) return;
-    try {
-      if (_cleanup) { _cleanup(); _cleanup = null; }
-      const next = idx + 1;
-      if (next >= steps.length) { proTutComplete(); }
-      else { proTutShowStep(steps, next); }
-    } catch(e) { proTutSkip(); }
-  }
-
-  function proTutShowStep(steps, idx) {
-    try {
-      if (!_proTutActive) return;
-      if (anyModalOpen()) {
-        hideAll();
-        installModalGuard(function() { if (_proTutActive) proTutShowStep(steps, idx); });
-        return;
-      }
-      const step = steps[idx];
-      const el   = step.getEl();
-      buildDOM();
-      if (!el || el.getBoundingClientRect().width === 0) {
-        proTutAdvance(steps, idx); return; // skip invisible steps
-      }
-      if (step.spotlight) { spotlightEl(el); } else { if (_ring) _ring.style.display = 'none'; }
-      renderTooltip({
-        header: 'New features',
-        title:  step.title,
-        body:   step.body,
-        step:   idx,
-        total:  steps.length,
-        skipFn: proTutSkip,
-        prevFn: function() { if (_cleanup) { _cleanup(); _cleanup = null; } proTutShowStep(steps, idx - 1); },
-        nextFn: function() { if (_cleanup) { _cleanup(); _cleanup = null; } proTutAdvance(steps, idx); }
-      });
-      _tooltip.style.display = 'block';
-      positionTooltip(el);
-      installModalGuard(function() { if (_proTutActive) proTutShowStep(steps, idx); });
-      _cleanup = step.attach(function() { proTutAdvance(steps, idx); });
-    } catch(e) { proTutSkip(); }
-  }
-
-  function proTutComplete() {
-    try {
-      _proTutActive = false;
-      teardownGuard();
-      if (_cleanup) { _cleanup(); _cleanup = null; }
-      localStorage.setItem(KEY_PRO_DONE, '1');
-      buildDOM(); hideAll();
-      if (_tooltip) {
-        _tooltip.style.display = 'block';
-        _tooltip.innerHTML = `
-          <div class="tut-header" style="color:#22c55e;">✓ Tour complete</div>
-          <div class="tut-title">You're ready to go! 🚀</div>
-          <div class="tut-body">All your new features are unlocked. Enjoy the full CourtDraw experience.</div>
-          <div class="tut-foot" style="justify-content:flex-end;">
-            <button class="tut-skip" id="pro-tut-done-btn"
-              style="color:var(--accent);font-weight:700;font-size:13px;">Got it →</button>
-          </div>
-        `;
-        const tw = _tooltip.offsetWidth  || 280;
-        const th = _tooltip.offsetHeight || 140;
-        _tooltip.style.top  = ((window.innerHeight - th) / 2) + 'px';
-        _tooltip.style.left = ((window.innerWidth  - tw) / 2) + 'px';
-        document.getElementById('pro-tut-done-btn').onclick = function() {
-          if (_tooltip) _tooltip.style.display = 'none';
-        };
-        setTimeout(function() { if (_tooltip) _tooltip.style.display = 'none'; }, 6000);
-      }
-    } catch(e) {}
-  }
-
-  function startUpgradeTutorial(plan) {
-    try {
-      if (localStorage.getItem(KEY_PRO_DONE)) return;
-      const steps = buildUpgradeSteps(plan);
-      _proTutActive = true;
-      proTutShowStep(steps, 0);
-    } catch(e) {}
-  }
-
   // ══════════════════════════════════════════════════════════════════════════
   // TRIGGER LOGIC
   // ══════════════════════════════════════════════════════════════════════════
 
-  // New-user tutorial: wait for the page to fully load, then wait for
-  // all onboarding modals (welcome + court picker) to be dismissed.
+  // New-user tutorial: fires only for unauthenticated, free, first-time visitors.
+  // startNewUserTutorial itself checks __currentUser / isPro / isClub and returns
+  // early if any is set, so even if auth resolves after the 1 s delay, the tutorial
+  // never shows for registered or paid users.
   window.addEventListener('load', function() {
     try {
       if (localStorage.getItem(KEY_DONE)) return;
-      // Give Firebase auth + court init 1 s head-start, then hand off
-      // to startNewUserTutorial which waits for modals to clear.
       setTimeout(startNewUserTutorial, 1000);
     } catch(e) {}
   });
 
-  // Upgrade tutorial: wrap __updatePro to detect plan upgrades.
+  // Abort in-progress tutorial if auth resolves late for a paid/logged-in user.
   const _origUpdatePro = window.__updatePro;
   window.__updatePro = function(isPro, isClub) {
     if (_origUpdatePro) _origUpdatePro.apply(this, arguments);
     try {
-      // If new-user tutorial is running but user turns out to be authenticated
-      // or Pro/Club (e.g. auth resolved after the 1s delay), abort it silently.
-      if (_tutActive && (window.__currentUser || isPro || isClub)) { tutSkip(); return; }
-
-      const prevPlan = localStorage.getItem(KEY_PREV_PLAN) || 'free';
-      const newPlan  = isClub ? 'club' : isPro ? 'pro' : 'free';
-      localStorage.setItem(KEY_PREV_PLAN, newPlan);
-      const upgraded =
-        (newPlan === 'pro'  && prevPlan === 'free') ||
-        (newPlan === 'club' && (prevPlan === 'free' || prevPlan === 'pro'));
-      if (upgraded && !localStorage.getItem(KEY_PRO_DONE)) {
-        setTimeout(function() { startUpgradeTutorial(newPlan); }, 1000);
-      }
+      if (_tutActive && (window.__currentUser || isPro || isClub)) { tutSkip(); }
     } catch(e) {}
   };
 
   // Expose active flag so external code can check whether tutorial is running
   Object.defineProperty(window, '_tutActive', { get: function() { return _tutActive; } });
 
-  // Console helpers for testing
-  window._tutStart        = startNewUserTutorial;
-  window._tutStartUpgrade = startUpgradeTutorial;
-  window._tutSkip         = tutSkip;
+  // Console helper for testing
+  window._tutStart = startNewUserTutorial;
+  window._tutSkip  = tutSkip;
 
 })();
 
