@@ -640,13 +640,6 @@ button {
 .welcome-signin a { color: var(--accent); text-decoration: none; font-weight: 600; }
 .welcome-signin a:hover { text-decoration: underline; }
 
-#modal-save-prompt .modal-sheet { max-width: 380px; }
-.save-prompt-body { text-align: center; padding: 20px 24px 28px; }
-.save-prompt-body .sp-icon { font-size: 44px; margin-bottom: 12px; }
-.save-prompt-body h3 { font-size: 20px; font-weight: 800; margin: 0 0 10px; letter-spacing: -0.02em; }
-.save-prompt-body p { color: var(--text2); font-size: 14px; line-height: 1.6; margin: 0 0 22px; }
-.save-prompt-body .btn-accent { width: 100%; margin-bottom: 10px; font-size: 15px; padding: 13px 20px; }
-.save-prompt-skip { background: none; border: none; color: var(--text2); font-size: 13px; cursor: pointer; padding: 6px; width: 100%; }
 .paywall-hero { text-align: center; padding: 8px 0 16px; }
 .paywall-hero .pw-icon { font-size: 48px; }
 .paywall-hero h2 { font-family: 'Cabinet Grotesk', system-ui, sans-serif; font-size: 24px; font-weight: 900; margin: 8px 0 4px; }
@@ -1950,21 +1943,6 @@ body.portrait-mode .player-token:active {
 </div>
 
 <!-- Modal: Save-play prompt (shown after first draw for non-logged-in users) -->
-<div class="modal-backdrop" id="modal-save-prompt">
-  <div class="modal-sheet">
-    <div class="modal-header">
-      <span class="modal-title">Don't lose your play!</span>
-      <button class="modal-close" aria-label="Close" onclick="closeSavePrompt()">✕</button>
-    </div>
-    <div class="save-prompt-body">
-      <div class="sp-icon">💾</div>
-      <h3>Your play will disappear</h3>
-      <p>It'll be gone when you close this tab. Create a <strong>free account</strong> to save it — takes 10 seconds, no credit card needed.</p>
-      <button class="btn-accent" onclick="closeSavePrompt(true)">Create free account →</button>
-      <button class="save-prompt-skip" onclick="closeSavePrompt()">Continue without saving</button>
-    </div>
-  </div>
-</div>
 
 <!-- Modal: Confirm clear -->
 <div class="modal-backdrop" id="modal-confirm">
@@ -3334,13 +3312,6 @@ function onUp(e) {
   const obj = buildObject(state.startNX, state.startNY, nx, ny, state.points);
   if (obj) {
     saveUndo(); state.objects.push(obj); saveCurrentPhase();
-    // Show save-play prompt on first completed shape for non-logged-in users (once per session).
-    // Suppressed while the tutorial is active — it fires after tutorial completion instead.
-    if (!window.__currentUser && !sessionStorage.getItem('cd_save_prompt_shown') && !window._tutActive) {
-      sessionStorage.setItem('cd_save_prompt_shown', '1');
-      setTimeout(() => openModal('modal-save-prompt'), 12000); // 12s — let them draw a bit first
-      gtag('event', 'save_prompt_shown', { event_category: 'engagement' });
-    }
   }
   previewObj = null;
   redrawAll();
@@ -5240,13 +5211,6 @@ function dismissWelcome(openPicker = false) {
 
 
 
-function closeSavePrompt(goSignup = false) {
-  closeModal('modal-save-prompt');
-  if (goSignup) {
-    gtag('event', 'save_prompt_signup_click', { event_category: 'engagement' });
-    window.location.href = '/login.html?next=' + encodeURIComponent(location.pathname) + '&mode=signup';
-  }
-}
 
 function openPaywall(reason) {
   document.getElementById('paywall-reason').textContent = reason || 'Upgrade to Pro to unlock all 38+ sport courts and unlimited saves.';
@@ -6765,7 +6729,11 @@ function showToast(msg, ms = 2400) {
           const gen = _tutGen;
           function onSelectClick() {
             if (done || _tutGen !== gen) return;
-            // Select button clicked — now wait for ANY pointerdown on the canvas
+            // Select tool activated — remove dim immediately so canvas is fully visible
+            if (_ring) _ring.style.display = 'none';
+            // Also update spotlight/tooltip anchor to the canvas area
+            positionTooltip(canvas || btn);
+            // Now wait for ANY pointerdown on the canvas
             offCanvas = once(canvas, 'pointerdown', function() {
               if (done || _tutGen !== gen) return;
               done = true;
@@ -6874,7 +6842,7 @@ function showToast(msg, ms = 2400) {
 
       // Always tear down the previous step's listeners before attaching new ones.
       // Skipping this caused duplicate listeners when tutShowStep was re-called
-      // for the same step (e.g. after the save-prompt modal closed), which led
+      // for the same step (e.g. after a modal closed), which led
       // to tutAdvance() firing twice and steps being skipped.
       if (_cleanup) { _cleanup(); _cleanup = null; }
 
@@ -6949,12 +6917,6 @@ function showToast(msg, ms = 2400) {
         clearTimeout(_tutCompleteTimer);
         _tutCompleteTimer = setTimeout(dismissCard, 6000);
 
-        // If the user is not logged in and the save prompt was suppressed during
-        // the tutorial, schedule it now that the tutorial is done.
-        if (!window.__currentUser && !sessionStorage.getItem('cd_save_prompt_shown')) {
-          sessionStorage.setItem('cd_save_prompt_shown', '1');
-          setTimeout(function() { openModal('modal-save-prompt'); }, 8000);
-        }
       }
     } catch(e) {}
   }
@@ -7175,7 +7137,7 @@ function showToast(msg, ms = 2400) {
     } catch(e) {}
   };
 
-  // Expose active flag so external code (e.g. save-prompt) can check tutorial state
+  // Expose active flag so external code can check whether tutorial is running
   Object.defineProperty(window, '_tutActive', { get: function() { return _tutActive; } });
 
   // Console helpers for testing
