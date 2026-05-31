@@ -7062,13 +7062,10 @@ function showToast(msg, ms = 2400) {
       buildDOM();
       if (_ring) _ring.style.display = 'none';
 
-      const mobile = isMobileView();
-
-      if (mobile) {
-        // Full-screen completion overlay for mobile
-        const overlay = document.createElement('div');
-        overlay.id = 'tut-complete-overlay';
+      // Inject overlay CSS once (shared by mobile and desktop)
+      if (!document.getElementById('tut-complete-style')) {
         const style = document.createElement('style');
+        style.id = 'tut-complete-style';
         style.textContent = `
           #tut-complete-overlay {
             position: fixed; inset: 0; z-index: 10000;
@@ -7102,7 +7099,7 @@ function showToast(msg, ms = 2400) {
           }
           #tut-complete-overlay .tut-co-body {
             font-size: 15px; color: #94a3b8;
-            line-height: 1.6; margin-bottom: 36px; max-width: 300px;
+            line-height: 1.6; margin-bottom: 36px; max-width: 340px;
           }
           #tut-complete-overlay .tut-co-btn {
             background: #3b82f6; color: #fff;
@@ -7113,11 +7110,7 @@ function showToast(msg, ms = 2400) {
             box-shadow: 0 4px 24px rgba(59,130,246,0.4);
             transition: transform .12s, box-shadow .12s;
           }
-          #tut-complete-overlay .tut-co-btn:active {
-            transform: scale(0.97);
-            box-shadow: 0 2px 12px rgba(59,130,246,0.3);
-          }
-          /* confetti dots */
+          #tut-complete-overlay .tut-co-btn:active { transform: scale(0.97); }
           #tut-complete-overlay .tut-co-confetti {
             position: absolute; inset: 0; pointer-events: none; overflow: hidden;
           }
@@ -7131,66 +7124,36 @@ function showToast(msg, ms = 2400) {
           }
         `;
         document.head.appendChild(style);
-
-        // Build confetti dots HTML
-        const colors = ['#3b82f6','#22c55e','#f59e0b','#ec4899','#a78bfa'];
-        let dotsHtml = '';
-        for (let i = 0; i < 22; i++) {
-          const size = (6 + Math.random() * 8).toFixed(1);
-          const left = (Math.random() * 100).toFixed(1);
-          const dur  = (1.5 + Math.random() * 2).toFixed(2);
-          const del  = (Math.random() * 0.6).toFixed(2);
-          dotsHtml += `<div class="tut-co-dot" style="width:${size}px;height:${size}px;left:${left}%;background:${colors[i%colors.length]};animation-duration:${dur}s;animation-delay:${del}s;"></div>`;
-        }
-        overlay.innerHTML = `
-          <div class="tut-co-confetti">${dotsHtml}</div>
-          <div class="tut-co-check">✓</div>
-          <div class="tut-co-title">You're ready to coach!</div>
-          <div class="tut-co-body">You know the basics. Now go draw your best plays and build your playbook.</div>
-          <button class="tut-co-btn" id="tut-done-btn">Let's go!</button>
-        `;
-        document.body.appendChild(overlay);
-
-        function dismissOverlay() {
-          overlay.style.animation = 'tut-overlay-in 0.25s ease reverse both';
-          setTimeout(function() {
-            overlay.remove();
-            _tutResetMobileState();
-          }, 250);
-        }
-        document.getElementById('tut-done-btn').onclick = dismissOverlay;
-        clearTimeout(_tutCompleteTimer);
-        _tutCompleteTimer = setTimeout(dismissOverlay, 6000);
-
-      } else {
-        // Desktop: same full-screen overlay as mobile
-        const overlay = document.createElement('div');
-        overlay.id = 'tut-complete-overlay';
-        const colors = ['#3b82f6','#22c55e','#f59e0b','#ec4899','#a78bfa'];
-        let dotsHtml = '';
-        for (let i = 0; i < 28; i++) {
-          const size = (6 + Math.random() * 10).toFixed(1);
-          const left = (Math.random() * 100).toFixed(1);
-          const dur  = (1.5 + Math.random() * 2).toFixed(2);
-          const del  = (Math.random() * 0.8).toFixed(2);
-          dotsHtml += `<div class="tut-co-dot" style="width:${size}px;height:${size}px;left:${left}%;background:${colors[i%colors.length]};animation-duration:${dur}s;animation-delay:${del}s;"></div>`;
-        }
-        overlay.innerHTML = `
-          <div class="tut-co-confetti">${dotsHtml}</div>
-          <div class="tut-co-check">✓</div>
-          <div class="tut-co-title">You're ready to coach!</div>
-          <div class="tut-co-body">You know the basics — now go draw your best plays and build your playbook.</div>
-          <button class="tut-co-btn" id="tut-done-btn">Let's go!</button>
-        `;
-        document.body.appendChild(overlay);
-        function dismissOverlay() {
-          overlay.style.animation = 'tut-overlay-in 0.25s ease reverse both';
-          setTimeout(function() { overlay.remove(); _tutResetState(); }, 250);
-        }
-        document.getElementById('tut-done-btn').onclick = dismissOverlay;
-        clearTimeout(_tutCompleteTimer);
-        _tutCompleteTimer = setTimeout(dismissOverlay, 6000);
       }
+
+      // Build and show full-screen completion overlay (same on mobile + desktop)
+      const overlay = document.createElement('div');
+      overlay.id = 'tut-complete-overlay';
+      const colors = ['#3b82f6','#22c55e','#f59e0b','#ec4899','#a78bfa'];
+      const dotCount = isMobileView() ? 22 : 28;
+      let dotsHtml = '';
+      for (let i = 0; i < dotCount; i++) {
+        const size = (6 + Math.random() * 10).toFixed(1);
+        const left = (Math.random() * 100).toFixed(1);
+        const dur  = (1.5 + Math.random() * 2).toFixed(2);
+        const del  = (Math.random() * 0.7).toFixed(2);
+        dotsHtml += `<div class="tut-co-dot" style="width:${size}px;height:${size}px;left:${left}%;background:${colors[i%colors.length]};animation-duration:${dur}s;animation-delay:${del}s;"></div>`;
+      }
+      overlay.innerHTML = `
+        <div class="tut-co-confetti">${dotsHtml}</div>
+        <div class="tut-co-check">✓</div>
+        <div class="tut-co-title">You're ready to coach!</div>
+        <div class="tut-co-body">You know the basics — now go draw your best plays and build your playbook.</div>
+        <button class="tut-co-btn" id="tut-done-btn">Let's go!</button>
+      `;
+      document.body.appendChild(overlay);
+      function dismissOverlay() {
+        overlay.style.animation = 'tut-overlay-in 0.25s ease reverse both';
+        setTimeout(function() { overlay.remove(); _tutResetState(); }, 250);
+      }
+      document.getElementById('tut-done-btn').onclick = dismissOverlay;
+      clearTimeout(_tutCompleteTimer);
+      _tutCompleteTimer = setTimeout(dismissOverlay, 6000);
     } catch(e) {}
   }
   let _tutCompleteTimer = null;
