@@ -8529,6 +8529,10 @@ document.addEventListener('DOMContentLoaded', init);
     if (window.matchMedia('(display-mode: standalone)').matches) return;
     if (localStorage.getItem(INSTALL_KEY))   return;
     if (localStorage.getItem(DISMISSED_KEY)) return;
+    // Mobile only — desktop users don't need a home-screen install prompt
+    const _isMobileDevice = /iphone|ipad|ipod|android/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!_isMobileDevice) return;
 
     function showBanner() {
       // Wait for welcome modal to be dismissed before showing, then add a small gap
