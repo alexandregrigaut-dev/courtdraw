@@ -6680,9 +6680,40 @@ function showToast(msg, ms = 2400) {
   // ══════════════════════════════════════════════════════════════════════════
 
   function buildNewUserSteps() {
-    // Fixed 4-step sequence, same on mobile and desktop:
-    // Draw → Select → Save → My Plays
-    return [
+    // Mobile prepends 2 extra steps: three-dot → pin toolbar
+    // Desktop: Draw → Select → Save → My Plays (4 steps)
+    // Mobile:  Three-dot → Pin → Draw → Select → Save → My Plays (6 steps)
+    const mobileSteps = isMobileView() ? [
+      {
+        id: 'three-dot',
+        getEl: () => getEl('#pt-bottom-hint') || getEl('#pt-top-hint'),
+        spotlight: true,
+        title: 'Open your toolbar',
+        body: 'Tap the <strong>···</strong> button to reveal your drawing tools.',
+        attach: function(onAdvance) {
+          const obs = new MutationObserver(function() {
+            if (document.body.classList.contains('pt-chrome-visible')) {
+              obs.disconnect(); onAdvance();
+            }
+          });
+          obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+          return function() { obs.disconnect(); };
+        }
+      },
+      {
+        id: 'pin',
+        getEl: () => getEl('#toolbar-pin-btn'),
+        spotlight: true,
+        title: 'Keep your toolbar open',
+        body: 'Tap <strong>Keep open</strong> so the toolbar stays visible while you draw.',
+        attach: function(onAdvance) {
+          const btn = getEl('#toolbar-pin-btn');
+          return once(btn, 'click', function() { setTimeout(onAdvance, 350); });
+        }
+      }
+    ] : [];
+
+    return [...mobileSteps,
       {
         // Step 1: draw something on the court
         id: 'draw',
