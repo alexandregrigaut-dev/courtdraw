@@ -303,6 +303,17 @@ button {
 #save-counter.warn { background: rgba(245,158,11,0.15); color: #f59e0b; border-color: rgba(245,158,11,0.3); }
 #save-counter.full { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); cursor: pointer; }
 
+/* My Plays saved-count badge */
+.myplays-count {
+  display: none;
+  font-size: 10px; font-weight: 700; line-height: 1;
+  padding: 2px 5px; border-radius: 10px; margin-left: 4px;
+  background: rgba(99,102,241,0.25); color: #a5b4fc;
+  border: 1px solid rgba(99,102,241,0.35);
+  vertical-align: middle;
+}
+.myplays-count.has-plays { display: inline-block; }
+
 /* Point 2: upgrade toast with CTA */
 #toast.upgrade-toast {
   white-space: normal; max-width: 340px; text-align: left;
@@ -1804,22 +1815,22 @@ body.portrait-mode .player-token:active {
   <button class="tb-btn" title="Court picker" onclick="openCourtPicker()">
     <span class="icon">🏟</span><span>Courts</span>
   </button>
+  <button class="tb-btn" id="btn-pro-library" title="Community Tactic Library — browse 200+ plays" aria-label="Community Library" onclick="openCommunityLibrary()">
+    <span class="icon">🌐</span><span>Community</span>
+  </button>
+  <button class="tb-btn" title="Training Sessions — chain plays into a plan" onclick="openSessionBuilder()">
+    <span class="icon">📅</span><span>Sessions</span>
+  </button>
   <button class="tb-btn" title="Save tactic" onclick="openSaveDialog()">
     <span class="icon">💾</span><span>Save</span>
   </button>
   <button class="tb-btn" title="My saved tactics" onclick="openLibrary()">
-    <span class="icon">💼</span><span>My Plays</span>
-  </button>
-  <button class="tb-btn" title="Training Sessions — chain plays into a plan" onclick="openSessionBuilder()">
-    <span class="icon">📅</span><span>Sessions</span>
+    <span class="icon">💼</span><span>My Plays</span><span id="myplays-badge" class="myplays-count"></span>
   </button>
   <!-- Point 1: save counter pill — shown for free users only -->
   <span id="save-counter" role="status" aria-live="polite" title="Upgrade to Pro for unlimited saves"></span>
   <button class="tb-btn" title="Export PNG" onclick="exportPNG()">
     <span class="icon">🖼</span><span>PNG</span>
-  </button>
-  <button class="tb-btn" id="btn-pro-library" title="Community Tactic Library — browse 200+ plays" aria-label="Community Library" onclick="openCommunityLibrary()">
-    <span class="icon">🌐</span><span>Community</span>
   </button>
   <button class="tb-btn" id="btn-print" title="Print / Export PDF" onclick="exportPDF()">
     <span class="icon">🖨</span><span>Print</span>
@@ -1829,9 +1840,6 @@ body.portrait-mode .player-token:active {
   </button>
   <button class="tb-btn" id="btn-share" title="Copy share link" onclick="shareBoard()">
     <span class="icon">🔗</span><span>Share</span>
-  </button>
-  <button class="tb-btn" id="btn-jersey" title="Auto-number jerseys 1–N" onclick="autoNumberJerseys()">
-    <span class="icon">#</span><span>Jerseys</span>
   </button>
   <button class="tb-btn" id="btn-video" title="Video overlay — draw on top of match footage (Pro/Club)" onclick="openVideoUpload()">
     <span class="icon">📹</span><span>Video</span>
@@ -5291,13 +5299,27 @@ async function _renderTacticDataUrl(tactic, W, H) {
 // POINT 1 — Save counter
 // ══════════════════════════════════════════════
 function updateSaveCounter() {
+  // Tutorial saves are free — exclude them from counts
+  const used = state.savedTactics.filter(function(t) { return !t._tutorial; }).length;
+
+  // My Plays badge — always show count for all users when there are saves
+  const badge = document.getElementById('myplays-badge');
+  if (badge) {
+    if (used > 0) {
+      badge.textContent = used;
+      badge.classList.add('has-plays');
+    } else {
+      badge.textContent = '';
+      badge.classList.remove('has-plays');
+    }
+  }
+
+  // Save-counter pill — free users only, shows quota usage
   const el = document.getElementById('save-counter');
   if (!el) return;
   const hasPro = state.isPro || state.isClub;
   if (hasPro) { el.style.display = 'none'; return; }
-  // Tutorial saves are free — exclude them from the displayed count
-  const used = state.savedTactics.filter(function(t) { return !t._tutorial; }).length;
-  const max  = FREE_SAVES;
+  const max = FREE_SAVES;
   el.style.display = 'inline-block';
   el.classList.remove('warn', 'full');
   if (used >= max) {
@@ -6424,26 +6446,6 @@ function toggleLoop() {
 // ══════════════════════════════════════════════
 // JERSEY AUTO-NUMBERING
 // ══════════════════════════════════════════════
-function autoNumberJerseys() {
-  if (!state.tokenPositions.length) { showToast('No tokens on the board.'); return; }
-  saveUndo();
-  let blueN = 1, redN = 1;
-  state.tokenPositions.forEach(t => {
-    if (t.team === 'blue') t.label = String(blueN++);
-    else if (t.team === 'red')  t.label = String(redN++);
-  });
-  // Sync jersey numbers into all phases too
-  if (state.phases) {
-    state.phases.forEach(ph => {
-      if (ph.tokens) ph.tokens.forEach((pt, i) => {
-        if (state.tokenPositions[i]) pt.label = state.tokenPositions[i].label;
-      });
-    });
-  }
-  buildTokens();
-  showToast('Jerseys numbered 1–' + Math.max(blueN - 1, redN - 1) + '!');
-}
-
 // ══════════════════════════════════════════════
 // VIDEO OVERLAY (Pro / Club)
 // ══════════════════════════════════════════════
