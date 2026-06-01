@@ -74,7 +74,7 @@ exports.handler = async (event) => {
       tacticType:   tacticType || 'other',
       ageGroup:     (body.ageGroup    || '').trim().slice(0, 30),
       authorUid:    uid,
-      authorName:   (body.authorName  || 'Coach').trim().slice(0, 80),
+      authorName:   (userData.username || 'Coach').slice(0, 80),
       publishedAt:  admin.firestore.FieldValue.serverTimestamp(),
       isClubOnly:   false,
       plan,            // plan tier at publish time

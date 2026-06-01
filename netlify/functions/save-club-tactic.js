@@ -58,8 +58,7 @@ exports.handler = async (event) => {
       phasesJson:   JSON.stringify(body.phases       || []),
       currentPhase: body.currentPhase || 0,
       authorUid:    uid,
-      authorName:   body.authorName   || '',
-      authorEmail:  userData.email    || '',
+      authorName:   userData.username || 'Coach',
       sharedAt:     admin.firestore.FieldValue.serverTimestamp()
     });
 

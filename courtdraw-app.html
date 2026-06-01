@@ -1695,6 +1695,7 @@ body.portrait-mode .player-token:active {
 
 <!-- Account dropdown -->
 <div id="account-menu" role="dialog" aria-label="Account">
+  <div class="acct-username" id="acct-username" style="display:none;font-size:13px;font-weight:700;margin-bottom:2px;color:var(--text)"></div>
   <div class="acct-email" id="acct-email">—</div>
   <div class="acct-plan"  id="acct-plan">Free Plan</div>
   <div class="acct-divider"></div>
@@ -6335,7 +6336,7 @@ async function shareToClubTactic(t) {
   const res = await fetch('/.netlify/functions/save-club-tactic', {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...t, authorName: user.displayName || user.email || 'Coach' })
+    body: JSON.stringify({ ...t, authorName: window.__currentUsername || user.displayName || 'Coach' })
   });
   if (!res.ok) {
     const msg = await res.text().catch(() => '');
@@ -7996,6 +7997,7 @@ function signOutUser() {
 }
 function updateAccountUI(user, isPro, isClub, isClubOwner) {
   const btn                = document.getElementById('btn-account');
+  const usernameEl         = document.getElementById('acct-username');
   const emailEl            = document.getElementById('acct-email');
   const planEl             = document.getElementById('acct-plan');
   const billingBtn         = document.getElementById('acct-billing-btn');
@@ -8007,7 +8009,15 @@ function updateAccountUI(user, isPro, isClub, isClubOwner) {
   if (!btn) return;
   if (user) {
     btn.classList.add('signed-in');
-    btn.title = user.email || 'My account';
+    btn.title = window.__currentUsername ? '@' + window.__currentUsername : (user.email || 'My account');
+    if (usernameEl) {
+      if (window.__currentUsername) {
+        usernameEl.textContent = '@' + window.__currentUsername;
+        usernameEl.style.display = 'block';
+      } else {
+        usernameEl.style.display = 'none';
+      }
+    }
     if (emailEl) emailEl.textContent = user.email || '—';
     if (planEl)  planEl.textContent  = isClub ? 'Club Plan' : isPro ? 'Pro Plan' : 'Free Plan';
     if (billingBtn)      billingBtn.style.display      = (isPro || isClub) ? 'block' : 'none';
@@ -8044,6 +8054,43 @@ let commLibState = { sport: 'All', filter: 'All', page: 0, tab: 'community', sor
 const COMM_PAGE_SIZE = 10;
 window.__communityPlays = null;  // null = not fetched yet; [] = fetched (empty ok)
 let _commClubPlays = null;       // cached club plays for community lib Club tab
+window.__currentUsername = null; // set from Firestore on login; used as authorName
+
+// ── Username helpers ──────────────────────────────────────────────────────────
+
+function _generateUsernameBase(displayName, email) {
+  const src = displayName || (email || '').split('@')[0] || 'coach';
+  let base = src.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_{2,}/g, '_').replace(/^_+|_+$/g, '');
+  if (base.length < 3) base = 'user_' + base;
+  return base.slice(0, 25);
+}
+
+async function autoSetUsername(user, email) {
+  try {
+    const base  = _generateUsernameBase(user.displayName, email);
+    let username = base;
+    const token = await user.getIdToken();
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const res = await fetch('/.netlify/functions/set-username', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      });
+      if (res.ok) {
+        window.__currentUsername = username;
+        // Update account panel display now that we have a username
+        if (typeof updateAccountUI === 'function')
+          updateAccountUI(window.__currentUser, state.isPro, state.isClub, state.isClubOwner);
+        break;
+      }
+      if (res.status === 409) {
+        username = base + '_' + (1000 + Math.floor(Math.random() * 9000));
+      } else {
+        break;
+      }
+    }
+  } catch {}
+}
 
 // ── Open / Close ──────────────────────────────────────────────────────────────
 
@@ -8414,7 +8461,7 @@ async function publishCommunityPlay(tactic) {
         tokens:       tactic.tokens       || [],
         phases:       tactic.phases       || [],
         currentPhase: tactic.currentPhase || 0,
-        authorName:   user.displayName || user.email || 'Coach',
+        authorName:   window.__currentUsername || user.displayName || 'Coach',
       })
     });
     if (!res.ok) {
@@ -9022,6 +9069,7 @@ document.addEventListener('DOMContentLoaded', init);
     localStorage.removeItem('courtdraw_club_name');
     try { await signOut(auth); } catch {}
     window.__currentUser = null;
+    window.__currentUsername = null;
     window.location.href = '/login.html';
   };
 
@@ -9049,6 +9097,12 @@ document.addEventListener('DOMContentLoaded', init);
       const snap = await getDoc(doc(db, 'users', user.uid));
       if (myGen !== _authGen) return; // auth state changed while we were fetching
       const data = snap.exists() ? snap.data() : {};
+      // Set username immediately so publish calls have it before any user action
+      window.__currentUsername = data.username || null;
+      if (!data.username) {
+        // Silently auto-generate a username for existing users (fire-and-forget)
+        autoSetUsername(user, data.email || user.email);
+      }
       const plan = data.plan || 'free';
       const isPro = plan === 'pro' || plan === 'club';
       const isClubOwner = plan === 'club';

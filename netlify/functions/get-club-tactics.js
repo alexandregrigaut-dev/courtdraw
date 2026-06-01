@@ -14,6 +14,11 @@ function safeJsonParse(str, fallback) {
   try { return str ? JSON.parse(str) : fallback; } catch { return fallback; }
 }
 
+function _sanitizeAuthorName(name) {
+  if (!name || typeof name !== 'string') return 'Coach';
+  return name.includes('@') ? 'Coach' : name;
+}
+
 exports.handler = async (event) => {
   try {
     if (event.httpMethod !== 'GET') return { statusCode: 405, body: 'Method Not Allowed' };
@@ -54,8 +59,7 @@ exports.handler = async (event) => {
         courtId:      data.courtId      || '',
         currentPhase: data.currentPhase || 0,
         authorUid:    data.authorUid    || '',
-        authorName:   data.authorName   || '',
-        authorEmail:  data.authorEmail  || '',
+        authorName:   _sanitizeAuthorName(data.authorName),
         viewCount:    data.viewCount    || 0,
         sharedAt,
         objects:      safeJsonParse(data.objectsJson, []),

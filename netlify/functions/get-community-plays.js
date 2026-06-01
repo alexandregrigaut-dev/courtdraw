@@ -25,6 +25,12 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
+function _sanitizeAuthorName(name) {
+  if (!name || typeof name !== 'string') return 'Coach';
+  // Strip any stored email addresses — usernames never contain '@'
+  return name.includes('@') ? 'Coach' : name;
+}
+
 function safeJsonParse(str, fallback) {
   try { return str ? JSON.parse(str) : fallback; } catch { return fallback; }
 }
@@ -54,7 +60,7 @@ exports.handler = async (event) => {
         tacticType:   data.tacticType   || '',
         ageGroup:     data.ageGroup     || '',
         authorUid:    data.authorUid    || '',
-        authorName:   data.authorName   || 'Coach',
+        authorName:   _sanitizeAuthorName(data.authorName),
         saveCount:    data.saveCount    || 0,
         publishedAt,
         currentPhase: data.currentPhase || 0,

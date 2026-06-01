@@ -59,7 +59,7 @@ exports.handler = async (event) => {
     const count = (await commentsRef.limit(50).get()).size;
     if (count >= 50) return { statusCode: 429, body: 'Comment limit reached for this tactic' };
 
-    const authorName = displayName || userData.displayName || email || 'Coach';
+    const authorName = userData.username || displayName || 'Coach';
 
     const newRef = await commentsRef.add({
       text:       sanitised,
