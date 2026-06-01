@@ -893,11 +893,14 @@ body.share-view #share-footer { display: flex; }
 }
 #author-credit-dismiss:hover { opacity: 1; }
 #drawing-canvas, #token-layer { transition: opacity 0.25s ease; }
-/* ── Video overlay ── */
-#video-overlay {
+/* ── Video / image overlay ── */
+#video-overlay, #image-overlay {
   position: absolute; z-index: 1; object-fit: contain;
   opacity: 0.75; pointer-events: none; display: none;
+  top: 0; left: 0; width: 100%; height: 100%;
 }
+/* Controls bar lives in #board-area (outside rotated court-container) so it
+   is never rotated in portrait mode. Position relative to board-area. */
 #video-controls-bar {
   display: none; position: absolute; bottom: 10px; left: 50%;
   transform: translateX(-50%); z-index: 30;
@@ -908,6 +911,12 @@ body.share-view #share-footer { display: flex; }
   box-shadow: 0 4px 24px rgba(0,0,0,0.5);
 }
 #video-controls-bar.visible { display: flex; }
+/* In portrait mode board-area fills the screen — keep bar above the toolbar */
+body.portrait-mode #video-controls-bar {
+  bottom: calc(var(--toolbar-h) + env(safe-area-inset-bottom) + 10px);
+}
+/* Hide video-only controls when a photo is loaded */
+#video-controls-bar[data-media-type="image"] .vc-video-only { display: none !important; }
 .vc-btn {
   background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
   color: var(--text); padding: 4px 9px; font-size: 12px; cursor: pointer;
@@ -1709,22 +1718,23 @@ body.portrait-mode .player-token:active {
   <div id="court-container">
     <svg id="court-svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
     <video id="video-overlay" playsinline></video>
+    <img id="image-overlay" alt="">
     <canvas id="drawing-canvas"></canvas>
     <div id="token-layer"></div>
-    <!-- Video controls bar (appears when a video is loaded) -->
-    <div id="video-controls-bar">
-      <button class="vc-btn" id="vc-play" title="Play/Pause">▶</button>
-      <button class="vc-btn" id="vc-prev" title="Previous frame">⏮</button>
-      <button class="vc-btn" id="vc-next" title="Next frame">⏭</button>
-      <input type="range" id="video-scrub" min="0" max="100" step="0.1" value="0" title="Seek">
-      <span id="video-time">0:00</span>
-      <span style="font-size:10px;color:var(--text2);white-space:nowrap;">Opacity</span>
-      <input type="range" id="video-opacity" min="10" max="100" value="75" title="Video opacity">
-      <button class="vc-btn" id="vc-close" title="Remove video" onclick="closeVideo()">✕ Video</button>
-    </div>
   </div>
-  <!-- Hidden video file input -->
-  <input type="file" id="video-file-input" accept="video/mp4,video/webm,video/quicktime,video/avi" style="display:none" onchange="loadVideoFile(this)">
+  <!-- Media controls bar — outside court-container so it is never rotated in portrait mode -->
+  <div id="video-controls-bar">
+    <button class="vc-btn vc-video-only" id="vc-play" title="Play/Pause">▶</button>
+    <button class="vc-btn vc-video-only" id="vc-prev" title="Previous frame">⏮</button>
+    <button class="vc-btn vc-video-only" id="vc-next" title="Next frame">⏭</button>
+    <input type="range" id="video-scrub" class="vc-video-only" min="0" max="100" step="0.1" value="0" title="Seek">
+    <span id="video-time" class="vc-video-only">0:00</span>
+    <span style="font-size:10px;color:var(--text2);white-space:nowrap;">Opacity</span>
+    <input type="range" id="video-opacity" min="10" max="100" value="75" title="Opacity">
+    <button class="vc-btn" id="vc-close" title="Remove media" onclick="closeMedia()">✕</button>
+  </div>
+  <!-- Hidden media file input — accepts video and images -->
+  <input type="file" id="video-file-input" accept="video/mp4,video/webm,video/quicktime,video/avi,image/jpeg,image/png,image/gif,image/webp" style="display:none" onchange="loadMediaFile(this)">
   <button id="btn-reset-zoom" onclick="state.zoom=1;state.panX=0;state.panY=0;applyZoom()"
     style="display:none;position:absolute;bottom:12px;right:12px;z-index:25;
     background:rgba(29,78,216,0.85);color:#fff;border:none;border-radius:20px;
@@ -1832,6 +1842,9 @@ body.portrait-mode .player-token:active {
   <button class="tb-btn" title="Export PNG" onclick="exportPNG()">
     <span class="icon">🖼</span><span>PNG</span>
   </button>
+  <button class="tb-btn" id="btn-clip" title="Export animated clip (MP4/WebM) — phases as a shareable video" onclick="exportClip()">
+    <span class="icon">🎬</span><span>Clip</span>
+  </button>
   <button class="tb-btn" id="btn-print" title="Print / Export PDF" onclick="exportPDF()">
     <span class="icon">🖨</span><span>Print</span>
   </button>
@@ -1841,8 +1854,8 @@ body.portrait-mode .player-token:active {
   <button class="tb-btn" id="btn-share" title="Copy share link" onclick="shareBoard()">
     <span class="icon">🔗</span><span>Share</span>
   </button>
-  <button class="tb-btn" id="btn-video" title="Video overlay — draw on top of match footage (Pro/Club)" onclick="openVideoUpload()">
-    <span class="icon">📹</span><span>Video</span>
+  <button class="tb-btn" id="btn-video" title="Video / Photo overlay — draw on match footage or screenshots (Pro/Club)" onclick="openMediaUpload()">
+    <span class="icon">📹</span><span>Media</span>
   </button>
 </div>
 
@@ -2089,7 +2102,7 @@ body.portrait-mode .player-token:active {
         </div>
         <div class="pw-cell">
           <span class="pw-check">✓</span>
-          <div><div class="pw-feat">Video overlay</div><div class="pw-feat-sub">draw on match footage</div></div>
+          <div><div class="pw-feat">Video &amp; Photo overlay</div><div class="pw-feat-sub">draw on footage or screenshots</div></div>
         </div>
         <div class="pw-cell">
           <span class="pw-check">✓</span>
@@ -3065,6 +3078,7 @@ const state = {
   portraitRotated: false,
   pinching: false, _pinchCooldown: null,
   videoObjectUrl: null,  // current video object URL (revoked on close)
+  imageObjectUrl: null,  // current image object URL (revoked on close)
 };
 
 const COLORS = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#ffffff','#111827','#a855f7','#f97316'];
@@ -3105,7 +3119,7 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
   if (phaseBtn) phaseBtn.textContent = isPro ? '+ Phase' : '+ Phase 🔒';
   // Apply/remove pro-lock visual cue on gated toolbar buttons
   const hasPro = isPro || isClub;
-  ['btn-print', 'btn-share', 'btn-video'].forEach(id => {
+  ['btn-print', 'btn-share', 'btn-video', 'btn-clip'].forEach(id => {
     const btn = document.getElementById(id);
     if (btn) btn.classList.toggle('pro-lock', !hasPro);
   });
@@ -5386,7 +5400,7 @@ function closeReturnBanner() {
 // ══════════════════════════════════════════════
 const FEATURE_PREVIEWS = {
   phases:    { icon: '📐', title: 'Phase-by-Phase Animation',   desc: 'Plan your play in up to 5 steps. Each phase shows exactly how players and the ball move. Tap through them during a timeout.' },
-  video:     { icon: '📹', title: 'Video Overlay',              desc: 'Load match footage and draw plays directly on top — frame by frame. Perfect for post-match analysis and game prep.' },
+  video:     { icon: '📹', title: 'Video & Photo Overlay',      desc: 'Load match footage or a screenshot and draw plays directly on top — frame by frame for video, instant annotation for photos. Perfect for post-match analysis and game prep.' },
   library:   { icon: '🌐', title: 'Community Library',           desc: 'Browse 200+ plays from coaches worldwide across 12 sports. Load any tactic in one tap — or publish your own to the community.' },
   share:     { icon: '🔗', title: 'Live Shareable Board Links', desc: 'Generate a link to your play. Anyone with it can open the exact tactic in their browser — no account needed.' },
   animation: { icon: '▶️',  title: 'Animated Playback',         desc: 'Watch your tactical sequence play out automatically — perfect for showing your team the full flow of a play.' },
@@ -5562,6 +5576,28 @@ function exportPNG() {
   img.onload = () => {
     oc.drawImage(img, 0, 0, W, H);
     URL.revokeObjectURL(url);
+
+    // Draw video/image overlay if one is currently loaded (same layer order as on screen)
+    const _vidEl = document.getElementById('video-overlay');
+    const _imgEl = document.getElementById('image-overlay');
+    if (_vidEl && _vidEl.style.display !== 'none' && _vidEl.readyState >= 2) {
+      const iw = _vidEl.videoWidth || W, ih = _vidEl.videoHeight || H;
+      const scale = Math.min(W / iw, H / ih);
+      const dw = iw * scale, dh = ih * scale;
+      oc.save();
+      oc.globalAlpha = parseFloat(_vidEl.style.opacity) || 0.75;
+      oc.drawImage(_vidEl, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      oc.restore();
+    } else if (_imgEl && _imgEl.style.display !== 'none' && _imgEl.complete && _imgEl.naturalWidth) {
+      const iw = _imgEl.naturalWidth, ih = _imgEl.naturalHeight;
+      const scale = Math.min(W / iw, H / ih);
+      const dw = iw * scale, dh = ih * scale;
+      oc.save();
+      oc.globalAlpha = parseFloat(_imgEl.style.opacity) || 0.75;
+      oc.drawImage(_imgEl, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      oc.restore();
+    }
+
     const savedW = canvasW, savedH = canvasH;
     canvasW = W; canvasH = H;
 
@@ -6464,103 +6500,270 @@ function toggleLoop() {
 // JERSEY AUTO-NUMBERING
 // ══════════════════════════════════════════════
 // ══════════════════════════════════════════════
-// VIDEO OVERLAY (Pro / Club)
+// VIDEO / PHOTO OVERLAY (Pro / Club)
 // ══════════════════════════════════════════════
-function openVideoUpload() {
+function openMediaUpload() {
   if (!state.isPro && !state.isClub) {
-    showFeaturePreview('video', 'Load match footage and draw plays on top, frame by frame. Pro & Club feature.');
+    showFeaturePreview('video', 'Load match footage or a screenshot and draw plays on top. Pro & Club feature.');
     return;
   }
   document.getElementById('video-file-input').click();
 }
+// Legacy alias so any saved onclick="openVideoUpload()" still works
+function openVideoUpload() { openMediaUpload(); }
 
-function loadVideoFile(input) {
+function loadMediaFile(input) {
   const file = input.files && input.files[0];
   if (!file) return;
-  // Revoke any previous object URL to avoid memory leaks
+  const isImage = file.type.startsWith('image/');
+
+  // Revoke any previous object URLs to avoid memory leaks
   if (state.videoObjectUrl) { URL.revokeObjectURL(state.videoObjectUrl); state.videoObjectUrl = null; }
+  if (state.imageObjectUrl) { URL.revokeObjectURL(state.imageObjectUrl); state.imageObjectUrl = null; }
+
+  // Hide whichever overlay type is not in use
+  const vid = document.getElementById('video-overlay');
+  const imgEl = document.getElementById('image-overlay');
+  const bar = document.getElementById('video-controls-bar');
+  vid.style.display  = 'none';
+  imgEl.style.display = 'none';
 
   const url = URL.createObjectURL(file);
-  state.videoObjectUrl = url;
 
-  const vid  = document.getElementById('video-overlay');
-  const bar  = document.getElementById('video-controls-bar');
-  const scrub   = document.getElementById('video-scrub');
-  const timeEl  = document.getElementById('video-time');
-  const playBtn = document.getElementById('vc-play');
-
-  vid.src = url;
-  vid.load();
-
-  // Position & size video to exactly match the drawing canvas
-  function positionVideo() {
+  // Shared: position overlay to cover the court exactly like the drawing canvas
+  function positionMedia() {
     if (!canvas) return;
     const left = parseFloat(canvas.style.left) || 0;
     const top  = parseFloat(canvas.style.top)  || 0;
-    vid.style.left   = left + 'px';
-    vid.style.top    = top  + 'px';
-    vid.style.width  = canvasW + 'px';
-    vid.style.height = canvasH + 'px';
+    const w = canvasW + 'px', h = canvasH + 'px';
+    vid.style.left   = imgEl.style.left   = left + 'px';
+    vid.style.top    = imgEl.style.top    = top  + 'px';
+    vid.style.width  = imgEl.style.width  = w;
+    vid.style.height = imgEl.style.height = h;
   }
-  positionVideo();
-  // Re-position whenever the canvas resizes
-  window.__videoResizeCb = positionVideo;
+  positionMedia();
+  window.__videoResizeCb = positionMedia;
 
-  vid.style.display = '';
-  bar.classList.add('visible');
-
-  vid.addEventListener('timeupdate', () => {
-    if (!vid.duration) return;
-    scrub.value = (vid.currentTime / vid.duration) * 100;
-    const m = Math.floor(vid.currentTime / 60);
-    const s = Math.floor(vid.currentTime % 60).toString().padStart(2, '0');
-    timeEl.textContent = `${m}:${s}`;
-  });
-
-  scrub.oninput = () => {
-    if (vid.duration) vid.currentTime = (scrub.value / 100) * vid.duration;
-  };
-
-  playBtn.onclick = () => {
-    if (vid.paused) { vid.play(); playBtn.textContent = '⏸'; }
-    else            { vid.pause(); playBtn.textContent = '▶'; }
-  };
-  vid.onplay  = () => { playBtn.textContent = '⏸'; };
-  vid.onpause = () => { playBtn.textContent = '▶'; };
-
-  // Frame-step (≈1/30 s)
-  document.getElementById('vc-prev').onclick = () => {
-    vid.pause();
-    vid.currentTime = Math.max(0, vid.currentTime - 1 / 30);
-  };
-  document.getElementById('vc-next').onclick = () => {
-    vid.pause();
-    vid.currentTime = Math.min(vid.duration || 0, vid.currentTime + 1 / 30);
-  };
-
+  // Opacity slider applies to whichever element is active
   document.getElementById('video-opacity').oninput = function() {
-    vid.style.opacity = this.value / 100;
+    const v = this.value / 100;
+    if (!isImage) vid.style.opacity = v;
+    else          imgEl.style.opacity = v;
   };
 
-  input.value = ''; // allow re-selecting the same file
-  showToast('Video loaded — draw over it to annotate!');
+  if (isImage) {
+    state.imageObjectUrl = url;
+    bar.setAttribute('data-media-type', 'image');
+    imgEl.src = url;
+    imgEl.style.display = 'block';
+    imgEl.style.opacity = '0.75';
+    bar.classList.add('visible');
+    input.value = '';
+    showToast('Photo loaded — draw over it to annotate!');
+  } else {
+    // Video path
+    state.videoObjectUrl = url;
+    bar.setAttribute('data-media-type', 'video');
+    bar.removeAttribute('data-media-type'); // reset first, then set below
+    bar.setAttribute('data-media-type', 'video');
+
+    const scrub   = document.getElementById('video-scrub');
+    const timeEl  = document.getElementById('video-time');
+    const playBtn = document.getElementById('vc-play');
+
+    vid.src = url;
+    vid.load();
+    vid.style.display = 'block'; // ← was '' which left display:none from CSS; now explicit
+    vid.style.opacity = '0.75';
+    bar.classList.add('visible');
+
+    vid.addEventListener('timeupdate', () => {
+      if (!vid.duration) return;
+      scrub.value = (vid.currentTime / vid.duration) * 100;
+      const m = Math.floor(vid.currentTime / 60);
+      const s = Math.floor(vid.currentTime % 60).toString().padStart(2, '0');
+      timeEl.textContent = `${m}:${s}`;
+    });
+    scrub.oninput = () => {
+      if (vid.duration) vid.currentTime = (scrub.value / 100) * vid.duration;
+    };
+    playBtn.onclick = () => {
+      if (vid.paused) { vid.play(); playBtn.textContent = '⏸'; }
+      else            { vid.pause(); playBtn.textContent = '▶'; }
+    };
+    vid.onplay  = () => { playBtn.textContent = '⏸'; };
+    vid.onpause = () => { playBtn.textContent = '▶'; };
+    document.getElementById('vc-prev').onclick = () => {
+      vid.pause();
+      vid.currentTime = Math.max(0, vid.currentTime - 1 / 30);
+    };
+    document.getElementById('vc-next').onclick = () => {
+      vid.pause();
+      vid.currentTime = Math.min(vid.duration || 0, vid.currentTime + 1 / 30);
+    };
+
+    input.value = '';
+    showToast('Video loaded — draw over it to annotate!');
+  }
+}
+// Legacy alias
+function loadVideoFile(input) { loadMediaFile(input); }
+
+function closeMedia() {
+  const vid   = document.getElementById('video-overlay');
+  const imgEl = document.getElementById('image-overlay');
+  const bar   = document.getElementById('video-controls-bar');
+  vid.pause();
+  vid.src = '';
+  vid.style.display  = 'none';
+  imgEl.src = '';
+  imgEl.style.display = 'none';
+  bar.classList.remove('visible');
+  bar.removeAttribute('data-media-type');
+  document.getElementById('vc-play').textContent      = '▶';
+  document.getElementById('video-scrub').value        = 0;
+  document.getElementById('video-time').textContent   = '0:00';
+  document.getElementById('video-opacity').value      = 75;
+  if (state.videoObjectUrl) { URL.revokeObjectURL(state.videoObjectUrl); state.videoObjectUrl = null; }
+  if (state.imageObjectUrl) { URL.revokeObjectURL(state.imageObjectUrl); state.imageObjectUrl = null; }
+  window.__videoResizeCb = null;
+}
+// Legacy alias
+function closeVideo() { closeMedia(); }
+
+// ── Clip export ──────────────────────────────────────────────────────────
+// Renders one board frame (court + objects + tokens) to an offscreen canvas.
+// Returns a Promise that resolves once all async SVG drawing is done.
+function renderFrameToCanvas(oc, W, H, objects, tokens) {
+  return new Promise((resolve, reject) => {
+    const court = COURTS.find(c => c.id === state.courtId) || COURTS[0];
+    const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" width="${W}" height="${H}">${court.svg()}</svg>`;
+    const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+    const url  = URL.createObjectURL(blob);
+    const img  = new Image();
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Court render failed')); };
+    img.onload  = () => {
+      oc.clearRect(0, 0, W, H);
+      oc.drawImage(img, 0, 0, W, H);
+      URL.revokeObjectURL(url);
+
+      // Temporarily override canvasW/H so drawObject scales correctly
+      const savedW = canvasW, savedH = canvasH;
+      canvasW = W; canvasH = H;
+      for (const obj of objects) drawObject(oc, obj);
+
+      const exportScale  = savedH > 0 ? H / savedH : 3;
+      const playerRadius = Math.round(16 * exportScale);
+      const playerFont   = Math.round(10 * exportScale);
+      const playerStroke = Math.max(1, Math.round(2 * exportScale));
+      const ballDiam     = Math.round(16 * exportScale);
+
+      for (const t of tokens) {
+        if (t.team === 'ball') continue;
+        const x = t.pct[0] * W, y = t.pct[1] * H;
+        oc.beginPath(); oc.arc(x, y, playerRadius, 0, Math.PI * 2);
+        oc.fillStyle = t.team === 'red' ? (state.teamColorB || '#dc2626') : (state.teamColorA || '#60a5fa');
+        oc.fill();
+        oc.strokeStyle = 'rgba(255,255,255,0.7)'; oc.lineWidth = playerStroke; oc.stroke();
+        oc.fillStyle = 'white'; oc.font = `bold ${playerFont}px system-ui`;
+        oc.textAlign = 'center'; oc.textBaseline = 'middle';
+        oc.fillText(t.label, x, y);
+      }
+      canvasW = savedW; canvasH = savedH;
+
+      // Ball tokens require async SVG load
+      const balls = tokens.filter(t => t.team === 'ball');
+      if (!balls.length) { resolve(); return; }
+      const ballSvgStr = getBallSvg(state.courtId);
+      const ballBlob   = new Blob([ballSvgStr], { type: 'image/svg+xml' });
+      const ballUrl    = URL.createObjectURL(ballBlob);
+      const bi = new Image();
+      bi.onload = () => {
+        for (const t of balls) {
+          const bx = t.pct[0] * W, by = t.pct[1] * H;
+          oc.drawImage(bi, bx - ballDiam / 2, by - ballDiam / 2, ballDiam, ballDiam);
+        }
+        URL.revokeObjectURL(ballUrl);
+        resolve();
+      };
+      bi.onerror = () => { URL.revokeObjectURL(ballUrl); resolve(); };
+      bi.src = ballUrl;
+    };
+    img.src = url;
+  });
 }
 
-function closeVideo() {
-  const vid = document.getElementById('video-overlay');
-  const bar = document.getElementById('video-controls-bar');
-  vid.pause();
-  vid.src     = '';
-  vid.style.display = 'none';
-  bar.classList.remove('visible');
-  document.getElementById('vc-play').textContent = '▶';
-  document.getElementById('video-scrub').value   = 0;
-  document.getElementById('video-time').textContent = '0:00';
-  if (state.videoObjectUrl) {
-    URL.revokeObjectURL(state.videoObjectUrl);
-    state.videoObjectUrl = null;
+async function exportClip() {
+  if (!state.isPro && !state.isClub) {
+    showFeaturePreview('export', 'Clip export is a Pro feature. Export your phase animation as a shareable video.');
+    return;
   }
-  window.__videoResizeCb = null;
+  if (!window.MediaRecorder) {
+    showToast('Clip export requires Chrome, Firefox, or Edge. Safari is not yet supported.');
+    return;
+  }
+  if (!state.phases || state.phases.length < 2) {
+    showToast('Add at least 2 phases to export a clip — use + Phase to add phases.');
+    return;
+  }
+
+  const mimeType = ['video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+    .find(m => { try { return MediaRecorder.isTypeSupported(m); } catch { return false; } });
+  if (!mimeType) {
+    showToast('Clip export is not supported in this browser. Try Chrome or Firefox.');
+    return;
+  }
+
+  const W = 1200, H = 720;
+  const off = document.createElement('canvas');
+  off.width = W; off.height = H;
+  const oc = off.getContext('2d');
+
+  let stream;
+  try { stream = off.captureStream(10); } catch {
+    showToast('Clip export failed — canvas capture not supported in this browser.');
+    return;
+  }
+
+  const chunks = [];
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 3000000 });
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+  const ext = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: mimeType });
+    const dlUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = dlUrl; a.download = `courtdraw-play.${ext}`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(dlUrl), 2000);
+    showToast('Clip downloaded!');
+  };
+  recorder.onerror = () => showToast('Clip export failed — try again.');
+
+  showToast('Exporting clip…');
+  recorder.start();
+
+  const savedPhase = state.currentPhase;
+  const MS_PER_PHASE = 1500; // hold each phase for 1.5 s
+
+  try {
+    for (let i = 0; i < state.phases.length; i++) {
+      const ph = state.phases[i];
+      await renderFrameToCanvas(oc, W, H, ph.objects || [], ph.tokens || state.tokenPositions);
+      await new Promise(r => setTimeout(r, MS_PER_PHASE));
+    }
+    await new Promise(r => setTimeout(r, 400)); // brief hold on last frame
+  } catch (e) {
+    console.warn('[CourtDraw] Clip render error:', e);
+    try { recorder.stop(); } catch {}
+    showToast('Clip export failed — try again.');
+    loadPhase(savedPhase);
+    return;
+  }
+
+  recorder.stop();
+  loadPhase(savedPhase); // restore original phase
 }
 
 // ── Presentation Mode ─────────────────────────────────────────────────────
