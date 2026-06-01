@@ -1,4 +1,15 @@
 User-agent: *
 Allow: /
 
+# Block API and Netlify function endpoints — auth-protected, not indexable
+Disallow: /api/
+Disallow: /.netlify/
+
+# Block app, auth, and club-management pages — not useful in search results
+Disallow: /courtdraw-app.html
+Disallow: /login.html
+Disallow: /success.html
+Disallow: /club-admin.html
+Disallow: /join-club.html
+
 Sitemap: https://courtdraw.app/sitemap.xml
