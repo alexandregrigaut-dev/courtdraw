@@ -894,8 +894,15 @@ body.share-view #share-footer { display: flex; }
 #author-credit-dismiss:hover { opacity: 1; }
 #drawing-canvas, #token-layer { transition: opacity 0.25s ease; }
 /* ── Video / image overlay ── */
-#video-overlay, #image-overlay {
+#video-overlay {
   position: absolute; z-index: 1; object-fit: contain;
+  opacity: 0.75; pointer-events: none; display: none;
+  top: 0; left: 0; width: 100%; height: 100%;
+}
+/* Image overlay lives directly in #board-area (outside rotated court-container)
+   so it is never affected by the portrait-mode 90° rotation. */
+#image-overlay {
+  position: absolute; z-index: 5; object-fit: contain;
   opacity: 0.75; pointer-events: none; display: none;
   top: 0; left: 0; width: 100%; height: 100%;
 }
@@ -1718,10 +1725,11 @@ body.portrait-mode .player-token:active {
   <div id="court-container">
     <svg id="court-svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
     <video id="video-overlay" playsinline></video>
-    <img id="image-overlay" alt="">
     <canvas id="drawing-canvas"></canvas>
     <div id="token-layer"></div>
   </div>
+  <!-- Image overlay lives here (outside court-container) so portrait-mode rotation never affects it -->
+  <img id="image-overlay" alt="">
   <!-- Media controls bar — outside court-container so it is never rotated in portrait mode -->
   <div id="video-controls-bar">
     <button class="vc-btn vc-video-only" id="vc-play" title="Play/Pause">▶</button>
@@ -4136,6 +4144,8 @@ function saveUndo(push=true) {
   updateUndoButtons();
 }
 function undo() {
+  const imgEl = document.getElementById('image-overlay');
+  if (imgEl && imgEl.style.display !== 'none') { closeMedia(); return; }
   if (!state.undoStack.length) { showToast('Nothing left to undo.'); return; }
   state.redoStack.push(JSON.stringify(state.objects));
   state.objects = JSON.parse(state.undoStack.pop());
@@ -4157,6 +4167,7 @@ function updateUndoButtons() {
 // ── Clear ──
 function confirmClear() { openModal('modal-confirm'); }
 function clearBoard() {
+  closeMedia();
   saveUndo();
   state.objects = [];
   // Reset all phases to empty, stay on phase 0
@@ -6530,19 +6541,19 @@ function loadMediaFile(input) {
 
   const url = URL.createObjectURL(file);
 
-  // Shared: position overlay to cover the court exactly like the drawing canvas
+  // Position the video overlay to cover the court exactly like the drawing canvas.
+  // Image overlay is full-board-area via CSS and needs no JS positioning.
   function positionMedia() {
     if (!canvas) return;
     const left = parseFloat(canvas.style.left) || 0;
     const top  = parseFloat(canvas.style.top)  || 0;
     const w = canvasW + 'px', h = canvasH + 'px';
-    vid.style.left   = imgEl.style.left   = left + 'px';
-    vid.style.top    = imgEl.style.top    = top  + 'px';
-    vid.style.width  = imgEl.style.width  = w;
-    vid.style.height = imgEl.style.height = h;
+    vid.style.left   = left + 'px';
+    vid.style.top    = top  + 'px';
+    vid.style.width  = w;
+    vid.style.height = h;
   }
-  positionMedia();
-  window.__videoResizeCb = positionMedia;
+  if (!isImage) { positionMedia(); window.__videoResizeCb = positionMedia; }
 
   // Opacity slider applies to whichever element is active
   document.getElementById('video-opacity').oninput = function() {
