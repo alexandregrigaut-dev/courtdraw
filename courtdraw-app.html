@@ -6552,6 +6552,10 @@ function loadMediaFile(input) {
   if (state.videoObjectUrl) { URL.revokeObjectURL(state.videoObjectUrl); state.videoObjectUrl = null; }
   if (state.imageObjectUrl) { URL.revokeObjectURL(state.imageObjectUrl); state.imageObjectUrl = null; }
 
+  // Always reset media-active state; the image branch re-adds it below if needed.
+  // Prevents stale full-screen board-area when swapping an image for a video.
+  document.body.classList.remove('media-active');
+
   // Hide whichever overlay type is not in use
   const vid = document.getElementById('video-overlay');
   const imgEl = document.getElementById('image-overlay');
