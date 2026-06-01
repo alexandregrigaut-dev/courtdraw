@@ -902,7 +902,7 @@ body.share-view #share-footer { display: flex; }
 /* Image overlay lives directly in #board-area (outside rotated court-container)
    so it is never affected by the portrait-mode 90° rotation. */
 #image-overlay {
-  position: absolute; z-index: 5; object-fit: contain;
+  position: absolute; z-index: 5; object-fit: cover;
   opacity: 0.75; pointer-events: none; display: none;
   top: 0; left: 0; width: 100%; height: 100%;
 }
@@ -3087,6 +3087,7 @@ const state = {
   pinching: false, _pinchCooldown: null,
   videoObjectUrl: null,  // current video object URL (revoked on close)
   imageObjectUrl: null,  // current image object URL (revoked on close)
+  mediaLoadUndoDepth: -1, // undoStack.length at the moment media was loaded; -1 = no media
 };
 
 const COLORS = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#ffffff','#111827','#a855f7','#f97316'];
@@ -4145,7 +4146,15 @@ function saveUndo(push=true) {
 }
 function undo() {
   const imgEl = document.getElementById('image-overlay');
-  if (imgEl && imgEl.style.display !== 'none') { closeMedia(); return; }
+  const vidEl = document.getElementById('video-overlay');
+  const mediaVisible = (imgEl && imgEl.style.display !== 'none') ||
+                       (vidEl && vidEl.style.display !== 'none');
+  // If media is loaded and no strokes have been drawn since loading it,
+  // ↩ removes the media. If strokes were drawn after loading, ↩ undoes them
+  // (the media stays visible).
+  if (mediaVisible && state.undoStack.length <= state.mediaLoadUndoDepth) {
+    closeMedia(); return;
+  }
   if (!state.undoStack.length) { showToast('Nothing left to undo.'); return; }
   state.redoStack.push(JSON.stringify(state.objects));
   state.objects = JSON.parse(state.undoStack.pop());
@@ -6569,6 +6578,7 @@ function loadMediaFile(input) {
     imgEl.style.display = 'block';
     imgEl.style.opacity = '0.75';
     bar.classList.add('visible');
+    state.mediaLoadUndoDepth = state.undoStack.length; // track for smart undo
     input.value = '';
     showToast('Photo loaded — draw over it to annotate!');
   } else {
@@ -6613,6 +6623,7 @@ function loadMediaFile(input) {
       vid.currentTime = Math.min(vid.duration || 0, vid.currentTime + 1 / 30);
     };
 
+    state.mediaLoadUndoDepth = state.undoStack.length; // track for smart undo
     input.value = '';
     showToast('Video loaded — draw over it to annotate!');
   }
@@ -6637,6 +6648,7 @@ function closeMedia() {
   document.getElementById('video-opacity').value      = 75;
   if (state.videoObjectUrl) { URL.revokeObjectURL(state.videoObjectUrl); state.videoObjectUrl = null; }
   if (state.imageObjectUrl) { URL.revokeObjectURL(state.imageObjectUrl); state.imageObjectUrl = null; }
+  state.mediaLoadUndoDepth = -1;
   window.__videoResizeCb = null;
 }
 // Legacy alias
