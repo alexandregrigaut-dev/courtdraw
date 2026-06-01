@@ -55,6 +55,7 @@ exports.handler = async (event) => {
         ageGroup:     data.ageGroup     || '',
         authorUid:    data.authorUid    || '',
         authorName:   data.authorName   || 'Coach',
+        saveCount:    data.saveCount    || 0,
         publishedAt,
         currentPhase: data.currentPhase || 0,
         objects:      safeJsonParse(data.objectsJson, []),

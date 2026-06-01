@@ -8133,8 +8133,9 @@ function _renderCommFilterBar() {
 function commSetFilter(cat) {
   commLibState.filter = cat;
   commLibState.page = 0;
-  document.querySelectorAll('#community-lib-filter-bar .lib-filter-btn')
-    .forEach(b => b.classList.toggle('active', b.textContent === cat));
+  // Re-render the whole filter bar so the Trending sort button keeps its correct
+  // active state (the old querySelectorAll shortcut would strip it incorrectly).
+  _renderCommFilterBar();
   renderCommunityGrid();
 }
 
