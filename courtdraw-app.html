@@ -3120,6 +3120,12 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
     state.savedTactics = t ? JSON.parse(t) : [];
   } catch { state.savedTactics = []; }
   loadSessionsFromStorage();
+  // Firestore plays sync — fire-and-forget; merges remote plays and runs one-time migration.
+  // Runs after localStorage is loaded so local plays are never lost even if Firestore is slow.
+  const _syncUid = window.__currentUser && window.__currentUser.uid;
+  if (_syncUid && typeof window.__syncPlaysFromFirestore === 'function') {
+    window.__syncPlaysFromFirestore(_syncUid);
+  }
   // Deep-link: if the user arrived from club-admin "Open" button, load that tactic
   if (isClub) {
     try {
@@ -4833,6 +4839,11 @@ function saveTactic() {
   const nonTutorialCount = state.savedTactics.filter(function(t) { return !t._tutorial; }).length;
   if (nonTutorialCount === 1) successMomentUpsell('firstSave', "Your first play is saved. Build an unlimited library with Pro.");
   saveToStorage();
+  // Firestore write — fire-and-forget; localStorage already saved it so UI is never blocked
+  const _saveUid = window.__currentUser && window.__currentUser.uid;
+  if (_saveUid && typeof window.__savePlayToFirestore === 'function') {
+    window.__savePlayToFirestore(_saveUid, tactic);
+  }
   // Track activity in Firestore for weekly digest (Pro/Club only, best-effort)
   if ((state.isPro || state.isClub) && typeof window.__trackPlaySaved === 'function') {
     const court = COURTS.find(c => c.id === state.courtId);
@@ -4892,8 +4903,14 @@ function renderTokensFromState() {
 
 function deleteTactic(i) {
   if (!confirm('Delete this play? This cannot be undone.')) return;
+  const _deleted = state.savedTactics[i]; // capture before splice
   state.savedTactics.splice(i, 1);
   saveToStorage();
+  // Firestore delete — fire-and-forget; localStorage already reflects the removal
+  const _delUid = window.__currentUser && window.__currentUser.uid;
+  if (_delUid && _deleted && typeof window.__deletePlayFromFirestore === 'function') {
+    window.__deletePlayFromFirestore(_delUid, _deleted.id);
+  }
   renderLibrary();
   updateSaveCounter(); // Point 1
   showToast('Play deleted.');
@@ -8595,7 +8612,7 @@ document.addEventListener('DOMContentLoaded', init);
 <script type="module">
   import { auth, db } from '/src/firebase.js';
   import { onAuthStateChanged, signOut } from 'firebase/auth';
-  import { doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore';
+  import { doc, collection, getDocs, getDoc, setDoc, deleteDoc, arrayUnion } from 'firebase/firestore';
 
   // Expose activation event tracker. Writes to Firestore only on the first occurrence of each
   // event — subsequent calls for the same key are no-ops (setDoc merge won't overwrite).
@@ -8641,6 +8658,71 @@ document.addEventListener('DOMContentLoaded', init);
     } catch (e) {
       // Non-critical — don't surface to user
       console.warn('Activity track failed:', e.message);
+    }
+  };
+
+  // ── Personal plays: Firestore sync ──────────────────────────────────────
+  // Phase 1 (read) + Phase 4 (migration): fetch remote plays, merge into state,
+  // then on first run write all plays back to Firestore so pre-existing localStorage
+  // plays are migrated without data loss.
+  window.__syncPlaysFromFirestore = async (uid) => {
+    try {
+      const snap = await getDocs(collection(db, 'userPlays', uid, 'plays'));
+      const fsPlays = snap.docs.map(d => d.data());
+
+      // Merge: add any Firestore play whose id is not already in state
+      const existingIds = new Set(state.savedTactics.map(t => String(t.id)));
+      let added = 0;
+      for (const play of fsPlays) {
+        if (!existingIds.has(String(play.id))) {
+          state.savedTactics.push(play);
+          added++;
+        }
+      }
+      if (added > 0) {
+        // Keep oldest-first order (library renders newest-first via reversed loop)
+        state.savedTactics.sort((a, b) => (a.ts || a.id || 0) - (b.ts || b.id || 0));
+        if (typeof saveToStorage === 'function') saveToStorage();
+        if (typeof updateSaveCounter === 'function') updateSaveCounter();
+        // Re-render library if it is currently open
+        const modal = document.getElementById('modal-library');
+        if (modal && modal.classList.contains('open') && typeof renderLibrary === 'function') {
+          renderLibrary();
+        }
+      }
+
+      // Phase 4 — one-time migration: write all current plays to Firestore
+      // Using play.id as the document key makes this idempotent across devices
+      const migKey = 'courtdraw_fs_migrated_' + uid;
+      if (!localStorage.getItem(migKey)) {
+        const writes = state.savedTactics.map(t =>
+          setDoc(doc(db, 'userPlays', uid, 'plays', String(t.id)), t)
+            .catch(e => console.warn('[CourtDraw] Migration write failed for play', t.id, e.message))
+        );
+        await Promise.all(writes);
+        localStorage.setItem(migKey, '1');
+        console.log('[CourtDraw] Plays migrated to Firestore:', state.savedTactics.length, 'play(s)');
+      }
+    } catch (e) {
+      console.warn('[CourtDraw] Firestore plays sync failed:', e.message);
+    }
+  };
+
+  // Phase 2 — write: called from saveTactic() after localStorage is already updated
+  window.__savePlayToFirestore = async (uid, tactic) => {
+    try {
+      await setDoc(doc(db, 'userPlays', uid, 'plays', String(tactic.id)), tactic);
+    } catch (e) {
+      console.warn('[CourtDraw] Failed to save play to Firestore:', e.message);
+    }
+  };
+
+  // Phase 3 — delete: called from deleteTactic() after localStorage is already updated
+  window.__deletePlayFromFirestore = async (uid, tacticId) => {
+    try {
+      await deleteDoc(doc(db, 'userPlays', uid, 'plays', String(tacticId)));
+    } catch (e) {
+      console.warn('[CourtDraw] Failed to delete play from Firestore:', e.message);
     }
   };
 
