@@ -8665,10 +8665,25 @@ document.addEventListener('DOMContentLoaded', init);
   // Phase 1 (read) + Phase 4 (migration): fetch remote plays, merge into state,
   // then on first run write all plays back to Firestore so pre-existing localStorage
   // plays are migrated without data loss.
+  // Tactic objects contain nested arrays (phases[].objects[], phases[].tokens[],
+  // objects[].points[]) which Firestore does not support. Envelope the full tactic
+  // as a JSON string under the 'data' field; keep 'id' and 'ts' as top-level scalars
+  // so the document is still identifiable without parsing.
+  function _tacticToDoc(t) {
+    return { id: String(t.id), ts: t.ts || t.id || 0, data: JSON.stringify(t) };
+  }
+  function _docToTactic(docData) {
+    if (docData.data) {
+      try { return JSON.parse(docData.data); } catch { return null; }
+    }
+    return docData; // fallback for any legacy flat doc
+  }
+
   window.__syncPlaysFromFirestore = async (uid) => {
     try {
       const snap = await getDocs(collection(db, 'userPlays', uid, 'plays'));
-      const fsPlays = snap.docs.map(d => d.data());
+      // Unwrap envelope — filter out any doc that failed to parse
+      const fsPlays = snap.docs.map(d => _docToTactic(d.data())).filter(Boolean);
 
       // Merge: add any Firestore play whose id is not already in state
       const existingIds = new Set(state.savedTactics.map(t => String(t.id)));
@@ -8696,7 +8711,7 @@ document.addEventListener('DOMContentLoaded', init);
       const migKey = 'courtdraw_fs_migrated_' + uid;
       if (!localStorage.getItem(migKey)) {
         const writes = state.savedTactics.map(t =>
-          setDoc(doc(db, 'userPlays', uid, 'plays', String(t.id)), t)
+          setDoc(doc(db, 'userPlays', uid, 'plays', String(t.id)), _tacticToDoc(t))
             .catch(e => console.warn('[CourtDraw] Migration write failed for play', t.id, e.message))
         );
         await Promise.all(writes);
@@ -8711,7 +8726,7 @@ document.addEventListener('DOMContentLoaded', init);
   // Phase 2 — write: called from saveTactic() after localStorage is already updated
   window.__savePlayToFirestore = async (uid, tactic) => {
     try {
-      await setDoc(doc(db, 'userPlays', uid, 'plays', String(tactic.id)), tactic);
+      await setDoc(doc(db, 'userPlays', uid, 'plays', String(tactic.id)), _tacticToDoc(tactic));
     } catch (e) {
       console.warn('[CourtDraw] Failed to save play to Firestore:', e.message);
     }
