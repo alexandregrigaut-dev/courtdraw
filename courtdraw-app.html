@@ -8122,8 +8122,10 @@ function _renderCommFilterBar() {
   const plays = _getCommCurrentPlays()
     .filter(t => commLibState.sport === 'All' || t.sport === commLibState.sport);
   const cats = ['All', ...new Set(plays.map(t => (t.category || '')).filter(Boolean))];
-  // Trending sort toggle — amber when active, separated from category filters
-  const trendBtn = `<button class="lib-filter-btn comm-sort-trending${commLibState.sort === 'trending' ? ' active' : ''}" onclick="commSetSort('trending')" title="Sort by most loaded">🔥 Trending</button><span class="comm-filter-sep"></span>`;
+  // Trending sort toggle — only on community tab (club plays have no saveCount)
+  const trendBtn = commLibState.tab !== 'club'
+    ? `<button class="lib-filter-btn comm-sort-trending${commLibState.sort === 'trending' ? ' active' : ''}" onclick="commSetSort('trending')" title="Sort by most loaded">🔥 Trending</button><span class="comm-filter-sep"></span>`
+    : '';
   el.innerHTML = trendBtn + cats.map(c =>
     `<button class="lib-filter-btn${commLibState.filter === c ? ' active' : ''}" onclick="commSetFilter('${c.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">` +
     c.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</button>'
