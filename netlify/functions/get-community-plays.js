@@ -11,6 +11,9 @@
  * - Drawing data stored as JSON strings to avoid Firestore nested-array rejection
  * - Ordered by publishedAt desc (newest first)
  * - Capped at 500 docs; community library UI paginates client-side at 10/page
+ * - Legacy plays published before username feature (2026-06-01) may have an
+ *   email stored in authorName. Those are resolved against users/{authorUid}.username
+ *   via a single batch lookup; unknown authors fall back to 'Coach'.
  */
 
 const admin = require('firebase-admin');
@@ -24,12 +27,6 @@ if (!admin.apps.length) {
   });
 }
 const db = admin.firestore();
-
-function _sanitizeAuthorName(name) {
-  if (!name || typeof name !== 'string') return 'Coach';
-  // Strip any stored email addresses — usernames never contain '@'
-  return name.includes('@') ? 'Coach' : name;
-}
 
 function safeJsonParse(str, fallback) {
   try { return str ? JSON.parse(str) : fallback; } catch { return fallback; }
@@ -46,7 +43,9 @@ exports.handler = async (event) => {
       .limit(500)
       .get();
 
-    const plays = snap.docs.map(d => {
+    // First pass: build the raw play list and collect UIDs that need username resolution
+    // (plays published before the username feature have an email in authorName)
+    const rawPlays = snap.docs.map(d => {
       const data = d.data();
       const publishedAt = data.publishedAt && typeof data.publishedAt.toDate === 'function'
         ? data.publishedAt.toDate().toISOString()
@@ -60,7 +59,7 @@ exports.handler = async (event) => {
         tacticType:   data.tacticType   || '',
         ageGroup:     data.ageGroup     || '',
         authorUid:    data.authorUid    || '',
-        authorName:   _sanitizeAuthorName(data.authorName),
+        _rawAuthorName: data.authorName || '',
         saveCount:    data.saveCount    || 0,
         publishedAt,
         currentPhase: data.currentPhase || 0,
@@ -68,6 +67,41 @@ exports.handler = async (event) => {
         tokens:       safeJsonParse(data.tokensJson,  []),
         phases:       safeJsonParse(data.phasesJson,  []),
       };
+    });
+
+    // Collect unique UIDs whose stored authorName looks like an email
+    const uidsNeedingLookup = [
+      ...new Set(
+        rawPlays
+          .filter(p => p._rawAuthorName.includes('@') && p.authorUid)
+          .map(p => p.authorUid)
+      )
+    ];
+
+    // Batch-fetch user docs for those UIDs to resolve their current username
+    const usernameByUid = {};
+    if (uidsNeedingLookup.length > 0) {
+      const userSnaps = await Promise.all(
+        uidsNeedingLookup.map(uid => db.collection('users').doc(uid).get())
+      );
+      userSnaps.forEach((snap, i) => {
+        if (snap.exists && snap.data().username) {
+          usernameByUid[uidsNeedingLookup[i]] = snap.data().username;
+        }
+      });
+    }
+
+    // Second pass: resolve authorName
+    const plays = rawPlays.map(p => {
+      let authorName;
+      if (p._rawAuthorName.includes('@')) {
+        // Legacy email — replace with username if resolved, else 'Coach'
+        authorName = usernameByUid[p.authorUid] || 'Coach';
+      } else {
+        authorName = p._rawAuthorName || 'Coach';
+      }
+      const { _rawAuthorName, ...rest } = p;
+      return { ...rest, authorName };
     });
 
     return {

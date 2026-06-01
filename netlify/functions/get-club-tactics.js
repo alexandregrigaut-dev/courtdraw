@@ -14,10 +14,6 @@ function safeJsonParse(str, fallback) {
   try { return str ? JSON.parse(str) : fallback; } catch { return fallback; }
 }
 
-function _sanitizeAuthorName(name) {
-  if (!name || typeof name !== 'string') return 'Coach';
-  return name.includes('@') ? 'Coach' : name;
-}
 
 exports.handler = async (event) => {
   try {
@@ -45,29 +41,57 @@ exports.handler = async (event) => {
     const snap = await db.collection('clubs').doc(clubId).collection('tactics')
       .orderBy('sharedAt', 'desc').limit(100).get();
 
-    const tactics = snap.docs.map(d => {
+    // First pass: collect raw data and find UIDs needing username resolution
+    const rawTactics = snap.docs.map(d => {
       const data = d.data();
-      // Convert Firestore Timestamp → ISO string so the client can use new Date(sharedAt)
       const sharedAt = data.sharedAt && typeof data.sharedAt.toDate === 'function'
         ? data.sharedAt.toDate().toISOString()
         : null;
-      // Parse JSON-serialised drawing fields (stored as strings to avoid Firestore
-      // nested-array rejection on point tuples [[x,y],[x,y],...]).
-      // Only expose scalar metadata + parsed arrays — never the raw *Json strings.
       return {
-        name:         data.name         || '',
-        courtId:      data.courtId      || '',
-        currentPhase: data.currentPhase || 0,
-        authorUid:    data.authorUid    || '',
-        authorName:   _sanitizeAuthorName(data.authorName),
-        viewCount:    data.viewCount    || 0,
+        name:            data.name         || '',
+        courtId:         data.courtId      || '',
+        currentPhase:    data.currentPhase || 0,
+        authorUid:       data.authorUid    || '',
+        _rawAuthorName:  data.authorName   || '',
+        viewCount:       data.viewCount    || 0,
         sharedAt,
-        objects:      safeJsonParse(data.objectsJson, []),
-        tokens:       safeJsonParse(data.tokensJson,  []),
-        phases:       safeJsonParse(data.phasesJson,  []),
-        _clubShared:  true,
-        _firestoreId: d.id
+        objects:         safeJsonParse(data.objectsJson, []),
+        tokens:          safeJsonParse(data.tokensJson,  []),
+        phases:          safeJsonParse(data.phasesJson,  []),
+        _clubShared:     true,
+        _firestoreId:    d.id
       };
+    });
+
+    // Batch-resolve usernames for legacy tactics that stored an email as authorName
+    const uidsNeedingLookup = [
+      ...new Set(
+        rawTactics
+          .filter(t => t._rawAuthorName.includes('@') && t.authorUid)
+          .map(t => t.authorUid)
+      )
+    ];
+    const usernameByUid = {};
+    if (uidsNeedingLookup.length > 0) {
+      const userSnaps = await Promise.all(
+        uidsNeedingLookup.map(u => db.collection('users').doc(u).get())
+      );
+      userSnaps.forEach((snap, i) => {
+        if (snap.exists && snap.data().username) {
+          usernameByUid[uidsNeedingLookup[i]] = snap.data().username;
+        }
+      });
+    }
+
+    const tactics = rawTactics.map(t => {
+      let authorName;
+      if (t._rawAuthorName.includes('@')) {
+        authorName = usernameByUid[t.authorUid] || 'Coach';
+      } else {
+        authorName = t._rawAuthorName || 'Coach';
+      }
+      const { _rawAuthorName, ...rest } = t;
+      return { ...rest, authorName };
     });
 
     return {
