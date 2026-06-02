@@ -271,6 +271,26 @@ const templates = {
     };
   },
 
+  // ── Anonymous email capture: first-visit welcome ─────────────────────────────
+  anonWelcome: (email) => {
+    const data = {
+      label: 'Your play is saved',
+      labelColor: '#22c55e',
+      title: 'Create a free account to keep your plays',
+      body: `You just drew your first play on CourtDraw. Nice work.<br><br>
+             Create a free account and your plays sync across every device — phone, tablet, laptop. No more starting from scratch.<br><br>
+             It takes 30 seconds and it's completely free.`,
+      ctaText: 'Create my free account →',
+      ctaUrl: `${APP_URL}/login.html?mode=register`,
+      footerNote: "You're receiving this because you saved a play on CourtDraw."
+    };
+    return {
+      from: FROM, reply_to: REPLY_TO, to: email,
+      subject: 'Your CourtDraw play is waiting for you',
+      html: layout(data), text: toPlainText(data),
+    };
+  },
+
   // ── Drip email: Day 2 — Feature spotlight ───────────────────────────────────
   dripDay2: (email) => {
     const data = {

@@ -98,6 +98,32 @@ exports.handler = async () => {
       }
     } while (pageToken);
 
+    // ── Anonymous email captures (tutorial_complete) ──────────────────────────
+    const anonSnap = await db.collection('anonEmails').get();
+    for (const doc of anonSnap.docs) {
+      const data = doc.data();
+      if (!data.email || !data.capturedAt) { skipped++; continue; }
+      processed++;
+
+      const capturedMs = data.capturedAt.toMillis ? data.capturedAt.toMillis() : data.capturedAt;
+      const ageDays    = (now - capturedMs) / DAY_MS;
+      const matchDay   = DRIP_DAYS.find(d => Math.abs(ageDays - d) * DAY_MS < WINDOW_MS);
+      if (!matchDay) { skipped++; continue; }
+
+      const dripEmailsSent = Array.isArray(data.dripEmailsSent) ? data.dripEmailsSent : [];
+      if (dripEmailsSent.includes(matchDay)) { skipped++; continue; }
+
+      const template = `dripDay${matchDay}`;
+      try {
+        await sendDrip(data.email, template);
+        await doc.ref.set({ dripEmailsSent: [...dripEmailsSent, matchDay] }, { merge: true });
+        sent++;
+        console.log(`Sent ${template} (anon) to ${data.email}`);
+      } catch (e) {
+        console.error(`Failed to send ${template} (anon) to ${data.email}:`, e.message);
+      }
+    }
+
     console.log(`Drip run complete. Processed: ${processed}, Sent: ${sent}, Skipped: ${skipped}`);
     return { statusCode: 200, body: JSON.stringify({ processed, sent, skipped }) };
   } catch (err) {

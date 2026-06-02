@@ -7716,6 +7716,33 @@ function showToast(msg, ms = 2400) {
             from { transform: translateY(-20px) rotate(0deg); opacity: 1; }
             to   { transform: translateY(110vh) rotate(720deg); opacity: 0; }
           }
+          #tut-complete-overlay .tut-co-email-section {
+            width: 100%; max-width: 320px; margin-top: 4px;
+          }
+          #tut-complete-overlay .tut-co-email-row {
+            display: flex; gap: 8px; width: 100%;
+          }
+          #tut-complete-overlay .tut-co-email-input {
+            flex: 1; min-width: 0; background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 10px;
+            padding: 12px 14px; font-size: 15px; color: #f1f5f9;
+            font-family: inherit; outline: none;
+          }
+          #tut-complete-overlay .tut-co-email-input::placeholder { color: #64748b; }
+          #tut-complete-overlay .tut-co-email-input:focus { border-color: rgba(34,197,94,0.6); }
+          #tut-complete-overlay .tut-co-email-submit {
+            background: #22c55e; color: #fff; border: none; border-radius: 10px;
+            padding: 12px 14px; font-size: 14px; font-weight: 700;
+            font-family: inherit; cursor: pointer; white-space: nowrap;
+            transition: opacity .12s;
+          }
+          #tut-complete-overlay .tut-co-email-submit:disabled { opacity: 0.6; cursor: default; }
+          #tut-complete-overlay .tut-co-skip {
+            background: none; border: none; color: #475569; font-size: 13px;
+            cursor: pointer; margin-top: 10px; font-family: inherit; padding: 4px;
+            transition: color .12s;
+          }
+          #tut-complete-overlay .tut-co-skip:hover { color: #94a3b8; }
         `;
         document.head.appendChild(style);
       }
@@ -7733,12 +7760,24 @@ function showToast(msg, ms = 2400) {
         const del  = (Math.random() * 0.7).toFixed(2);
         dotsHtml += `<div class="tut-co-dot" style="width:${size}px;height:${size}px;left:${left}%;background:${colors[i%colors.length]};animation-duration:${dur}s;animation-delay:${del}s;"></div>`;
       }
+      const showEmailCapture = !window.__currentUser && !localStorage.getItem('cd_email_captured');
       overlay.innerHTML = `
         <div class="tut-co-confetti">${dotsHtml}</div>
         <div class="tut-co-check">✓</div>
         <div class="tut-co-title">You're ready to coach!</div>
-        <div class="tut-co-body">You know the basics — now go draw your best plays and build your playbook.</div>
-        <button class="tut-co-btn" id="tut-done-btn">Let's go!</button>
+        ${showEmailCapture ? `
+          <div class="tut-co-body">Drop your email to keep your plays across devices.</div>
+          <div class="tut-co-email-section">
+            <div class="tut-co-email-row">
+              <input type="email" class="tut-co-email-input" id="tut-co-email-input" placeholder="your@email.com" autocomplete="email" />
+              <button class="tut-co-email-submit" id="tut-co-email-submit">Keep my plays →</button>
+            </div>
+          </div>
+          <button class="tut-co-skip" id="tut-done-btn">Skip — just start drawing</button>
+        ` : `
+          <div class="tut-co-body">You know the basics — now go draw your best plays and build your playbook.</div>
+          <button class="tut-co-btn" id="tut-done-btn">Let's go!</button>
+        `}
       `;
       document.body.appendChild(overlay);
       function dismissOverlay() {
@@ -7746,6 +7785,38 @@ function showToast(msg, ms = 2400) {
         setTimeout(function() { overlay.remove(); _tutResetState(); }, 250);
       }
       document.getElementById('tut-done-btn').onclick = dismissOverlay;
+      if (showEmailCapture) {
+        const emailInput  = document.getElementById('tut-co-email-input');
+        const submitBtn   = document.getElementById('tut-co-email-submit');
+        submitBtn.onclick = async function() {
+          const email = emailInput.value.trim();
+          if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            emailInput.style.borderColor = '#ef4444';
+            emailInput.focus();
+            return;
+          }
+          submitBtn.disabled = true;
+          submitBtn.textContent = '…';
+          try {
+            await fetch('/api/capture-anonymous-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email })
+            });
+          } catch(e) {}
+          localStorage.setItem('cd_email_captured', '1');
+          const section = overlay.querySelector('.tut-co-email-section');
+          if (section) section.innerHTML = '<div style="color:#22c55e;font-size:15px;font-weight:600;margin-top:4px">📬 Check your inbox!</div>';
+          const skipBtn = document.getElementById('tut-done-btn');
+          if (skipBtn) skipBtn.textContent = "Let's go!";
+          clearTimeout(_tutCompleteTimer);
+          _tutCompleteTimer = setTimeout(dismissOverlay, 2000);
+        };
+        // Also submit on Enter in the email field
+        emailInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') submitBtn.click();
+        });
+      }
       clearTimeout(_tutCompleteTimer);
       _tutCompleteTimer = setTimeout(dismissOverlay, 6000);
     } catch(e) {}
