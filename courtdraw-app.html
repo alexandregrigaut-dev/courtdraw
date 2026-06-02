@@ -2232,7 +2232,7 @@ body.portrait-mode .player-token:active {
 
 <!-- Point 6: Return visitor banner -->
 <div id="return-visitor-banner" role="alert" aria-live="polite">
-  <p>👋 You keep coming back — ready to unlock everything?</p>
+  <p id="rv-message">You've saved 2 of your 3 free plays — unlock unlimited with a 7-day free trial.</p>
   <button class="rv-cta" onclick="closeReturnBanner(); openPaywall('Try Pro free for 7 days — unlock all courts, unlimited saves, and clean exports.')">Try Pro free →</button>
   <button class="rv-dismiss" onclick="closeReturnBanner()" aria-label="Dismiss">✕</button>
 </div>
@@ -5410,13 +5410,28 @@ function checkReturnVisitor() {
   // Increment visit count
   const count = parseInt(localStorage.getItem('cd_visit_count') || '0', 10) + 1;
   localStorage.setItem('cd_visit_count', count);
-  if (count === 3) {
+  // Show on visits 2 and 3 — return visitors are highest-intent
+  if (count >= 2 && count <= 3) {
     localStorage.setItem('cd_return_prompt_shown', '1');
     setTimeout(() => {
+      if (state.isPro || state.isClub) return;
+      // Build personalised message from actual save count
+      const saved = state.savedTactics.filter(function(t) { return !t._tutorial; }).length;
+      const limit = FREE_SAVES;
+      let msg;
+      if (saved === 0) {
+        msg = 'You have ' + limit + ' free saves waiting — start building your playbook.';
+      } else if (saved >= limit) {
+        msg = 'You\'ve hit your ' + limit + '-play limit. Go unlimited with a 7-day free trial.';
+      } else {
+        msg = 'You\'ve saved ' + saved + ' of your ' + limit + ' free plays — unlock unlimited with a 7-day free trial.';
+      }
+      const msgEl = document.getElementById('rv-message');
+      if (msgEl) msgEl.textContent = msg;
       const banner = document.getElementById('return-visitor-banner');
-      if (banner && !state.isPro && !state.isClub) {
+      if (banner) {
         banner.classList.add('visible');
-        gtag('event', 'return_visitor_prompt_shown', { event_category: 'engagement' });
+        gtag('event', 'return_visitor_prompt_shown', { event_category: 'engagement', visit: count, saves: saved });
       }
     }, 5000);
   }
