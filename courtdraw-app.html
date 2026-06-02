@@ -2090,8 +2090,8 @@ body.portrait-mode .player-token:active {
     <div class="modal-body">
 
       <div class="pw-hero">
-        <div class="pw-hero-icon">⚡</div>
-        <h2>Unlock Everything</h2>
+        <div class="pw-hero-icon" id="paywall-hero-icon">⚡</div>
+        <h2 id="paywall-hero-title">Unlock Everything</h2>
         <p class="pw-hero-reason" id="paywall-reason">Upgrade to Pro to unlock all 38+ sport courts and unlimited saves.</p>
       </div>
 
@@ -4589,8 +4589,8 @@ function filterCourts(q) { renderCourtGrid(q); }
 function switchCourt(id, locked, skipReset) {
   if (locked) {
     closeModal('modal-court-picker');
-    const freeName = COURTS.find(c => c.id === state.freeCourt)?.name || 'your free court';
-    openPaywall(`You're on the free plan with ${freeName} as your court. Upgrade to Pro to access all 38+ courts.`);
+    const freeName = COURTS.find(c => c.id === state.freeCourt)?.name || 'your sport';
+    openCourtPaywall(freeName);
     return;
   }
   // Clear attribution whenever the court changes (user is leaving the loaded tactic)
@@ -5526,7 +5526,19 @@ function dismissWelcome(openPicker = false) {
 
 
 function openPaywall(reason) {
-  document.getElementById('paywall-reason').textContent = reason || 'Upgrade to Pro to unlock all 38+ sport courts and unlimited saves.';
+  // Always reset to default framing before opening
+  document.getElementById('paywall-hero-icon').textContent  = '⚡';
+  document.getElementById('paywall-hero-title').textContent = 'Unlock Everything';
+  document.getElementById('paywall-reason').textContent     = reason || 'Upgrade to Pro to unlock all 38+ sport courts and unlimited saves.';
+  openModal('modal-paywall');
+}
+
+function openCourtPaywall(freeName) {
+  // Softer, invitation-framed variant shown when a user taps a locked court.
+  const sport = freeName || 'your sport';
+  document.getElementById('paywall-hero-icon').textContent  = '🏟';
+  document.getElementById('paywall-hero-title').textContent = `You're on your free ${sport} court`;
+  document.getElementById('paywall-reason').textContent     = 'Want all 38 sports? Try 7 days free — no charge until day 8, cancel anytime.';
   openModal('modal-paywall');
 }
 
