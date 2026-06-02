@@ -24,7 +24,7 @@
   <!-- End Meta Pixel -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CourtDraw — Tactics Board for Every Sport | Draw & Share Plays Online</title>
+  <title>CourtDraw — Tactics Board for Multi-Sport Clubs | 38 Sports, One Tool</title>
   <meta name="description" content="The tactics board for every sport your club runs. Football, basketball, tennis, padel — 38+ sports, all in one tool. Draw plays, share strategy, animate formations. No install required." />
   <meta name="keywords" content="tactics board, football tactics board, basketball playbook, coach drawing tool, play designer, formation builder, sports strategy app, online whiteboard for coaches" />
   <link rel="canonical" href="https://courtdraw.app/" />
@@ -235,16 +235,37 @@
       border-radius: 16px;
       overflow: hidden;
       position: relative;
-      aspect-ratio: 3/2;
-      background: #1a3a2a;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      background: #0a1628;
     }
-    .hero-preview svg { width: 100%; height: 100%; }
+    .hero-sport-panel {
+      position: relative; overflow: hidden;
+      aspect-ratio: 5/3;
+    }
+    .hero-sport-panel svg { width: 100%; height: 100%; display: block; }
+    .hero-sport-label {
+      position: absolute; bottom: 8px; left: 0; right: 0;
+      text-align: center; font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: rgba(255,255,255,0.7);
+    }
+    .hero-sport-panel + .hero-sport-panel { border-left: 1px solid rgba(255,255,255,0.08); }
+    @media (max-width: 600px) {
+      .hero-preview-inner { grid-template-columns: 1fr; }
+      .hero-sport-panel + .hero-sport-panel { border-left: none; border-top: 1px solid rgba(255,255,255,0.08); }
+      .hero-sport-panel { aspect-ratio: 5/2; }
+    }
     .preview-overlay {
       position: absolute; inset: 0;
+      grid-column: 1/-1;
       background: linear-gradient(to bottom, transparent 60%, rgba(11,17,32,0.7) 100%);
       display: flex; align-items: flex-end; justify-content: center;
       padding: 24px;
+      pointer-events: none;
     }
+    .preview-overlay a { pointer-events: auto; }
     .preview-cta-pill {
       background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.4);
       color: var(--accent); padding: 10px 24px; border-radius: 100px;
@@ -809,8 +830,8 @@
     </div>
     <h1 class="fade-up fade-up-1">The tactics board for every sport<br /><span class="gradient-text">your club runs.</span></h1>
     <p class="hero-sub fade-up fade-up-2">
-      Football, basketball, tennis, padel — 38+ sports, all in one tool.
-      Draw plays and share strategy right in your browser, on any device.
+      Football, basketball, tennis, padel — 38+ sports, all in one tool.<br />
+      Draw on your phone. Show your team in 30 seconds.
     </p>
     <div class="hero-actions fade-up fade-up-3">
       <a href="courtdraw-app.html" class="btn btn-primary btn-lg">Start Drawing Free →</a>
@@ -829,7 +850,9 @@
 
     <div class="hero-preview fade-up" style="animation-delay:.4s">
       <div class="hero-preview-inner">
-        <!-- Football / Soccer pitch preview -->
+
+        <!-- ── Panel 1: Football ── -->
+        <div class="hero-sport-panel">
         <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
           <!-- Pitch -->
           <rect width="1000" height="600" fill="#2d7a4f"/>
@@ -928,8 +951,87 @@
           <!-- Pass line -->
           <path d="M 350 300 C 420 270, 470 270, 530 300" fill="none" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#aa)"/>
         </svg>
-        <div class="preview-overlay">
-          <a href="courtdraw-app.html" class="preview-cta-pill">Open Tactics Board →</a>
+        <div class="hero-sport-label">Football</div>
+        </div>
+
+        <!-- ── Panel 2: Basketball ── -->
+        <div class="hero-sport-panel">
+        <svg viewBox="0 0 500 300" xmlns="http://www.w3.org/2000/svg">
+          <rect width="500" height="300" fill="#1a2d4a"/>
+          <!-- Court outline -->
+          <rect x="15" y="15" width="470" height="270" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2"/>
+          <!-- Half-court line -->
+          <line x1="255" y1="15" x2="255" y2="285" stroke="rgba(255,255,255,0.8)" stroke-width="2"/>
+          <!-- Centre circle -->
+          <circle cx="255" cy="150" r="45" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2"/>
+          <!-- Paint area (right) -->
+          <rect x="335" y="80" width="150" height="140" fill="rgba(59,130,246,0.12)" stroke="rgba(255,255,255,0.8)" stroke-width="2"/>
+          <!-- Free throw circle -->
+          <circle cx="335" cy="150" r="52" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="1.5" stroke-dasharray="0"/>
+          <!-- Backboard -->
+          <line x1="478" y1="118" x2="478" y2="182" stroke="rgba(255,255,255,0.9)" stroke-width="3"/>
+          <!-- Basket -->
+          <circle cx="464" cy="150" r="10" fill="none" stroke="rgba(255,165,0,0.95)" stroke-width="2.5"/>
+          <!-- Three-point arc -->
+          <path d="M 15 52 L 195 52 A 205 205 0 0 1 195 248 L 15 248" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2"/>
+          <!-- Tokens -->
+          <defs>
+            <marker id="arh-b1" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto">
+              <polygon points="0 0, 6 2.5, 0 5" fill="#3b82f6"/>
+            </marker>
+            <marker id="arh-b2" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto">
+              <polygon points="0 0, 6 2.5, 0 5" fill="#f59e0b"/>
+            </marker>
+          </defs>
+          <g font-family="system-ui,sans-serif" font-weight="800" font-size="12" text-anchor="middle" dominant-baseline="central">
+            <circle cx="60" cy="150" r="17" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/><text x="60" y="150" fill="#fff">PG</text>
+            <circle cx="195" cy="68" r="17" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/><text x="195" y="68" fill="#fff">SF</text>
+            <circle cx="195" cy="232" r="17" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/><text x="195" y="232" fill="#fff">SG</text>
+            <circle cx="310" cy="100" r="17" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/><text x="310" y="100" fill="#fff">PF</text>
+            <circle cx="310" cy="200" r="17" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/><text x="310" y="200" fill="#fff">C</text>
+            <circle cx="370" cy="150" r="17" fill="#dc2626" stroke="#fff" stroke-width="1.5"/><text x="370" y="150" fill="#fff">D</text>
+          </g>
+          <path d="M 195 68 C 255 68, 295 88, 312 100" fill="none" stroke="#3b82f6" stroke-width="2.5" marker-end="url(#arh-b1)"/>
+          <path d="M 195 232 C 255 232, 295 212, 312 200" fill="none" stroke="#f59e0b" stroke-width="2" marker-end="url(#arh-b2)"/>
+        </svg>
+        <div class="hero-sport-label">Basketball</div>
+        </div>
+
+        <!-- ── Panel 3: Tennis ── -->
+        <div class="hero-sport-panel">
+        <svg viewBox="0 0 500 300" xmlns="http://www.w3.org/2000/svg">
+          <rect width="500" height="300" fill="#1c5e35"/>
+          <!-- Doubles lines (outer) -->
+          <rect x="28" y="12" width="444" height="276" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
+          <!-- Singles sidelines -->
+          <rect x="62" y="12" width="376" height="276" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2"/>
+          <!-- Net -->
+          <line x1="28" y1="150" x2="472" y2="150" stroke="rgba(255,255,255,0.9)" stroke-width="2.5"/>
+          <circle cx="28" cy="150" r="4" fill="rgba(255,255,255,0.85)"/>
+          <circle cx="472" cy="150" r="4" fill="rgba(255,255,255,0.85)"/>
+          <!-- Service lines -->
+          <line x1="62" y1="92" x2="438" y2="92" stroke="rgba(255,255,255,0.9)" stroke-width="2"/>
+          <line x1="62" y1="208" x2="438" y2="208" stroke="rgba(255,255,255,0.9)" stroke-width="2"/>
+          <!-- Centre service line -->
+          <line x1="250" y1="92" x2="250" y2="208" stroke="rgba(255,255,255,0.9)" stroke-width="2"/>
+          <!-- Tokens -->
+          <defs>
+            <marker id="arh-t1" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto">
+              <polygon points="0 0, 6 2.5, 0 5" fill="#f59e0b"/>
+            </marker>
+          </defs>
+          <g font-family="system-ui,sans-serif" font-weight="800" font-size="12" text-anchor="middle" dominant-baseline="central">
+            <circle cx="250" cy="250" r="17" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/><text x="250" y="250" fill="#fff">A</text>
+            <circle cx="180" cy="172" r="17" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/><text x="180" y="172" fill="#fff">V</text>
+            <circle cx="250" cy="50" r="17" fill="#dc2626" stroke="#fff" stroke-width="1.5"/><text x="250" y="50" fill="#fff">B</text>
+          </g>
+          <path d="M 250 234 C 245 210, 218 195, 180 188" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="7,4" marker-end="url(#arh-t1)"/>
+        </svg>
+        <div class="hero-sport-label">Tennis</div>
+        </div>
+
+        <div class="preview-overlay" style="grid-column:1/-1;">
+          <a href="/app" class="preview-cta-pill">Open Tactics Board →</a>
         </div>
       </div>
     </div>
@@ -959,6 +1061,20 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
       Export to PNG &amp; PDF
     </div>
+  </div>
+</div>
+
+<!-- ════ COMMUNITY CALLOUT ════ -->
+<div style="border-bottom:1px solid rgba(59,130,246,0.2);background:linear-gradient(90deg,rgba(29,78,216,0.06) 0%,rgba(59,130,246,0.03) 100%);">
+  <div class="container" style="padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="font-size:22px;">🌐</span>
+      <div>
+        <span style="font-weight:700;font-size:0.92rem;color:var(--text);">Community Library</span>
+        <span style="color:var(--muted);font-size:0.85rem;margin-left:8px;">200+ tactics shared by coaches worldwide — football, basketball, tennis, padel and more.</span>
+      </div>
+    </div>
+    <a href="/community" style="display:inline-flex;align-items:center;gap:6px;font-size:0.84rem;font-weight:700;color:var(--accent);white-space:nowrap;border:1px solid rgba(59,130,246,0.35);border-radius:8px;padding:7px 14px;transition:border-color .15s,background .15s;" onmouseover="this.style.background='rgba(59,130,246,0.1)'" onmouseout="this.style.background='transparent'">Browse plays →</a>
   </div>
 </div>
 
@@ -1066,69 +1182,8 @@
       <p>Purpose-built for coaching, not graphic design. Fast, focused, and frustration-free.</p>
     </div>
     <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🏟️</div>
-        <h3>38+ Regulation Courts</h3>
-        <p>Every court drawn to correct proportions — full pitch, half-court, or zoomed penalty area. Switch sport in one tap.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">✏️</div>
-        <h3>9 Drawing Tools</h3>
-        <p>Solid arrows for runs, dashed arrows for off-ball movement, curve left &amp; right arcs, lines, circles, rectangles, text labels, and an eraser — everything you need for any tactical scenario.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🧑‍🤝‍🧑</div>
-        <h3>Draggable Player Tokens</h3>
-        <p>Sport-specific player counts loaded automatically — 11v11 for football, 5v5 for basketball, 6v6 for volleyball, and so on. Add or remove players, drag to any position, and tap a token to rename it. Works with touch and mouse equally well.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📚</div>
-        <h3>Tactic Library</h3>
-        <p>Save any board state — court, players, drawings — as a named tactic. Load it back in one click. Stored locally, no cloud needed.</p>
-      </div>
-      <div class="feature-card" style="border-color:rgba(147,197,253,0.3);background:linear-gradient(135deg,rgba(147,197,253,0.08) 0%,transparent 100%);">
-        <div class="feature-icon">📒</div>
-        <h3>Personal Playbook <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
-        <p>Turn your saved plays into a structured playbook. Add coach notes, tag plays by situation ("set play", "press defense", "U14 session"), rate 1–5 stars, and search your library in seconds.</p>
-      </div>
-      <div class="feature-card" style="border-color:rgba(147,197,253,0.3);background:linear-gradient(135deg,rgba(147,197,253,0.08) 0%,transparent 100%);">
-        <div class="feature-icon">📅</div>
-        <h3>Training Sessions <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
-        <p>Chain 3–8 saved plays into a full training plan. Set drill durations, step through each play on the pitch, and export the whole session as a multi-page PDF — ready to hand to your assistant coaches.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🖼️</div>
-        <h3>PNG Export</h3>
-        <p>Export a high-res 1200×720 PNG of your tactic. Share directly in WhatsApp, Telegram, or paste into a presentation.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">↩️</div>
-        <h3>50-Step Undo / Redo</h3>
-        <p>Full 50-step undo history. Fix a misplaced arrow or undo an accidental clear without losing your whole board.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📶</div>
-        <h3>Works Offline</h3>
-        <p>CourtDraw is a Progressive Web App. Install it to your home screen and draw plays pitch-side with zero signal required.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🌙</div>
-        <h3>Dark &amp; Light Mode</h3>
-        <p>Dark interface by default for pitch-side use. Flip to light mode for presentations on a projector or printed handouts.</p>
-      </div>
-      <div class="feature-card" style="border-color:rgba(147,197,253,0.3);background:linear-gradient(135deg,rgba(147,197,253,0.08) 0%,transparent 100%);">
-        <div class="feature-icon">▶️</div>
-        <h3>Animated Playback <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
-        <p>Hit Play and watch your tactical sequence unfold automatically — phase by phase, at your pace. Perfect for team talks and video analysis sessions.</p>
-      </div>
-      <div class="feature-card" style="border-color:rgba(147,197,253,0.3);background:linear-gradient(135deg,rgba(147,197,253,0.08) 0%,transparent 100%);">
-        <div class="feature-icon">📹</div>
-        <h3>Video &amp; Photo Overlay <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
-        <p>Upload match footage and draw plays directly on top, frame by frame — or drop in a screenshot and annotate it instantly. Works on phone and desktop. Export the annotated frame as a PNG to share anywhere.</p>
-      </div>
-      <!-- Community Library — flagship feature, full-width with horizontal layout -->
+      <!-- 1. Community Library — flagship, full-width, top position -->
       <div class="feature-card" style="border-color:rgba(59,130,246,0.45);background:linear-gradient(135deg,rgba(59,130,246,0.12) 0%,rgba(59,130,246,0.04) 100%);grid-column:1/-1;display:flex;align-items:center;gap:32px;position:relative;overflow:hidden;">
-        <div style="position:absolute;top:16px;right:20px;font-size:11px;background:rgba(59,130,246,0.2);color:#60a5fa;border:1px solid rgba(96,165,250,0.4);border-radius:20px;padding:3px 12px;font-weight:700;letter-spacing:.05em;">NEW</div>
         <div style="flex-shrink:0;font-size:52px;line-height:1;">🌐</div>
         <div style="flex:1;min-width:0;">
           <h3 style="margin-bottom:10px;">Community Library <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
@@ -1145,6 +1200,73 @@
           </div>
         </div>
       </div>
+      <!-- 2. Animated Playback -->
+      <div class="feature-card" style="border-color:rgba(147,197,253,0.3);background:linear-gradient(135deg,rgba(147,197,253,0.08) 0%,transparent 100%);">
+        <div class="feature-icon">▶️</div>
+        <h3>Animated Playback <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
+        <p>Hit Play and watch your tactical sequence unfold automatically — phase by phase, at your pace. Perfect for team talks and video analysis sessions.</p>
+      </div>
+      <!-- 3. Training Sessions -->
+      <div class="feature-card" style="border-color:rgba(147,197,253,0.3);background:linear-gradient(135deg,rgba(147,197,253,0.08) 0%,transparent 100%);">
+        <div class="feature-icon">📅</div>
+        <h3>Training Sessions <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
+        <p>Chain 3–8 saved plays into a full training plan. Set drill durations, step through each play on the pitch, and export the whole session as a multi-page PDF — ready to hand to your assistant coaches.</p>
+      </div>
+      <!-- 4. Video & Photo Overlay -->
+      <div class="feature-card" style="border-color:rgba(147,197,253,0.3);background:linear-gradient(135deg,rgba(147,197,253,0.08) 0%,transparent 100%);">
+        <div class="feature-icon">📹</div>
+        <h3>Video &amp; Photo Overlay <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
+        <p>Upload match footage and draw plays directly on top, frame by frame — or drop in a screenshot and annotate it instantly. Works on phone and desktop. Export the annotated frame as a PNG to share anywhere.</p>
+      </div>
+      <!-- 5. 38+ Courts -->
+      <div class="feature-card">
+        <div class="feature-icon">🏟️</div>
+        <h3>38+ Regulation Courts</h3>
+        <p>Every court drawn to correct proportions — full pitch, half-court, or zoomed penalty area. Switch sport in one tap.</p>
+      </div>
+      <!-- 6. Player Tokens -->
+      <div class="feature-card">
+        <div class="feature-icon">🧑‍🤝‍🧑</div>
+        <h3>Draggable Player Tokens</h3>
+        <p>Sport-specific player counts loaded automatically — 11v11 for football, 5v5 for basketball, 6v6 for volleyball, and so on. Add or remove players, drag to any position, and tap a token to rename it.</p>
+      </div>
+      <!-- 7. Drawing Tools -->
+      <div class="feature-card">
+        <div class="feature-icon">✏️</div>
+        <h3>9 Drawing Tools</h3>
+        <p>Solid arrows for runs, dashed arrows for off-ball movement, curve arcs, lines, circles, rectangles, text labels, and an eraser — everything you need for any tactical scenario.</p>
+      </div>
+      <!-- 8. Personal Playbook -->
+      <div class="feature-card" style="border-color:rgba(147,197,253,0.3);background:linear-gradient(135deg,rgba(147,197,253,0.08) 0%,transparent 100%);">
+        <div class="feature-icon">📒</div>
+        <h3>Personal Playbook <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
+        <p>Turn your saved plays into a structured playbook. Add coach notes, tag plays by situation ("set play", "press defense", "U14 session"), rate 1–5 stars, and search your library in seconds.</p>
+      </div>
+      <!-- 9. Works Offline -->
+      <div class="feature-card">
+        <div class="feature-icon">📶</div>
+        <h3>Works Offline</h3>
+        <p>CourtDraw is a Progressive Web App. Install it to your home screen and draw plays pitch-side with zero signal required.</p>
+      </div>
+      <!-- 10. Touch-First -->
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h3>Touch-First on Mobile</h3>
+        <p>Pinch to zoom, two-finger pan, collapsible toolbar, and an immersive landscape mode that hides all chrome so the court fills your screen. Buttery-smooth drawing on iPad and Android tablets.</p>
+      </div>
+      <!-- 11. PNG Export -->
+      <div class="feature-card">
+        <div class="feature-icon">🖼️</div>
+        <h3>PNG Export</h3>
+        <p>Export a high-res 1200×720 PNG of your tactic. Share directly in WhatsApp, Telegram, or paste into a presentation.</p>
+      </div>
+      <!-- 12. Tactic Library -->
+      <div class="feature-card">
+        <div class="feature-icon">📚</div>
+        <h3>Tactic Library</h3>
+        <p>Save any board state — court, players, drawings — as a named tactic. Load it back in one click. Stored locally, no cloud needed.</p>
+      </div>
+      <!-- 13. Club features -->
       <div class="feature-card" style="border-color:rgba(168,85,247,0.3);background:linear-gradient(135deg,rgba(168,85,247,0.08) 0%,transparent 100%);">
         <div class="feature-icon">📺</div>
         <h3>Club Presentation Mode <span style="font-size:11px;background:rgba(168,85,247,.15);color:#a855f7;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">CLUB</span></h3>
@@ -1154,11 +1276,6 @@
         <div class="feature-icon">💬</div>
         <h3>Coach Notes on Tactics <span style="font-size:11px;background:rgba(168,85,247,.15);color:#a855f7;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">CLUB</span></h3>
         <p>Every play in the club library can carry coach notes — situational tips, when to use it, what it counters. Your shared library becomes a living coaching document, not just a folder of diagrams.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📱</div>
-        <h3>Touch-First on Mobile</h3>
-        <p>Pinch to zoom, two-finger pan, collapsible toolbar, and an immersive landscape mode that hides all chrome so the court fills your screen. Buttery-smooth drawing on iPad and Android tablets.</p>
       </div>
     </div>
   </div>
@@ -1435,9 +1552,9 @@
 <section class="section" id="club-features" data-marketing style="background:linear-gradient(135deg,rgba(88,28,135,0.08) 0%,rgba(29,78,216,0.06) 100%);border-top:1px solid rgba(168,85,247,0.2);border-bottom:1px solid rgba(168,85,247,0.2);">
   <div class="container">
     <div class="section-header">
-      <span class="badge" style="background:rgba(168,85,247,0.15);color:#a855f7;border-color:rgba(168,85,247,0.3);">Club Plan</span>
-      <h2>Built for the Whole Coaching Staff</h2>
-      <p>One Club plan covers up to 10 coaches — all sharing the same library, all playing to the same brand.</p>
+      <span class="badge" style="background:rgba(168,85,247,0.15);color:#a855f7;border-color:rgba(168,85,247,0.3);">For Directors of Coaching</span>
+      <h2>Your club's shared playbook.<br/>One tactic, every coach.</h2>
+      <p>One Club plan covers up to 10 coaches — shared library, club branding, aligned tactics. One tool for the whole staff.</p>
     </div>
     <div class="features-grid" style="grid-template-columns:repeat(3,1fr);">
       <div class="feature-card" style="border-color:rgba(168,85,247,0.25);">
