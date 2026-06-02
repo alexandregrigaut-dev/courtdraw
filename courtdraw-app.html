@@ -7393,12 +7393,12 @@ function showToast(msg, ms = 2400) {
           : 'Browse tactics from coaches around the world. Load any play instantly — or <strong>publish your own</strong> with Pro.',
         attach: function(onAdvance) {
           const gen = _tutGen;
-          // Auto-advance after 5s — close community modal first so my-plays step isn't blocked
+          // Auto-advance after 10s — close community modal first so my-plays step isn't blocked
           const t = setTimeout(function() {
             if (_tutGen !== gen) return;
             try { closeModal('community-library-modal'); } catch(e) {}
             setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 300);
-          }, 5000);
+          }, 10000);
           return function() {
             clearTimeout(t);
             try { closeModal('community-library-modal'); } catch(e) {}
