@@ -7421,6 +7421,10 @@ function showToast(msg, ms = 2400) {
             if (label) label.textContent = 'Pinned';
             if (icon)  icon.textContent  = '✓';
             window._tutPinnedToolbar = true;
+          } else {
+            // Desktop: scroll toolbar so Save button is centred and spotlight lands correctly
+            const btn = document.querySelector('.tb-btn[title="Save tactic"]');
+            if (btn) btn.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' });
           }
         },
         onEnterDelay: 300,
