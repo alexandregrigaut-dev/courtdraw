@@ -50,6 +50,11 @@
   to   = "/privacy.html"
   status = 301
 
+[[redirects]]
+  from = "/app"
+  to   = "/courtdraw-app.html"
+  status = 200
+
 [[headers]]
   for = "/*.html"
   [headers.values]
