@@ -7377,7 +7377,36 @@ function showToast(msg, ms = 2400) {
         }
       },
       {
-        // Step 3: save the play
+        // Step 3: Community Library — auto-opens, auto-advances after 5s.
+        // Plants the seed for Pro publishing without requiring any user action.
+        id: 'community',
+        getEl: () => getEl('#btn-pro-library') || getEl('#drawing-canvas'),
+        spotlight: true,
+        mobileCenter: true,
+        onEnter: function() {
+          try { if (typeof openCommunityLibrary === 'function') openCommunityLibrary(); } catch(e) {}
+        },
+        onEnterDelay: 400,
+        title: '200+ plays from coaches worldwide',
+        body: isMobileView()
+          ? 'Browse tactics from coaches around the world. Load any play in one tap — or <strong>publish your own</strong> with Pro.'
+          : 'Browse tactics from coaches around the world. Load any play instantly — or <strong>publish your own</strong> with Pro.',
+        attach: function(onAdvance) {
+          const gen = _tutGen;
+          // Auto-advance after 5s — close community modal first so my-plays step isn't blocked
+          const t = setTimeout(function() {
+            if (_tutGen !== gen) return;
+            try { closeModal('community-library-modal'); } catch(e) {}
+            setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 300);
+          }, 5000);
+          return function() {
+            clearTimeout(t);
+            try { closeModal('community-library-modal'); } catch(e) {}
+          };
+        }
+      },
+      {
+        // Step 4: save the play
         id: 'save',
         getEl: () => getEl('.tb-btn[title="Save tactic"]') || getEl('#drawing-canvas'),
         spotlight: true,   // desktop spotlight; mobile uses mobileCenter (no spotlight)
@@ -7438,7 +7467,7 @@ function showToast(msg, ms = 2400) {
         }
       },
       {
-        // Step 4: open My Plays.
+        // Step 5: open My Plays.
         // Advance after the modal opens (not on button click alone) so the user
         // sees their saved play, then tutComplete fires while the modal is still open.
         // tutComplete's overlay (z-index 10000) renders on top of the modal.
@@ -7473,12 +7502,8 @@ function showToast(msg, ms = 2400) {
             const lib = getEl('#modal-library');
             if (lib && lib.classList.contains('open')) {
               done = true; obs.disconnect();
-              // Give user 1s to see their saved play, then advance to community step
-              setTimeout(function() {
-                if (_tutGen !== gen) return;
-                try { closeModal('modal-library'); } catch(e2) {}
-                setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 300);
-              }, 1000);
+              // Give user 1s to see their saved play, then complete tutorial
+              setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 1000);
             }
           });
           obs.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
@@ -7487,31 +7512,6 @@ function showToast(msg, ms = 2400) {
             // MutationObserver will fire when modal opens
           });
           return function() { done = true; obs.disconnect(); offBtn(); };
-        }
-      },
-      {
-        // Step 5: Community Library — auto-opens, auto-advances after 2s.
-        // Plants the seed for Pro publishing without requiring any user action.
-        id: 'community',
-        getEl: () => getEl('#btn-pro-library') || getEl('#drawing-canvas'),
-        spotlight: true,
-        mobileCenter: true,
-        onEnter: function() {
-          try { if (typeof openCommunityLibrary === 'function') openCommunityLibrary(); } catch(e) {}
-        },
-        onEnterDelay: 400,
-        title: '200+ plays from coaches worldwide',
-        body: isMobileView()
-          ? 'Browse tactics from coaches around the world. Load any play in one tap — or <strong>publish your own</strong> with Pro.'
-          : 'Browse tactics from coaches around the world. Load any play instantly — or <strong>publish your own</strong> with Pro.',
-        attach: function(onAdvance) {
-          const gen = _tutGen;
-          // Auto-advance after 2s — no user action required
-          const t = setTimeout(function() {
-            if (_tutGen !== gen) return;
-            onAdvance();
-          }, 2000);
-          return function() { clearTimeout(t); };
         }
       }
     ];
