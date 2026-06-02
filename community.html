@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community Plays — CourtDraw | Tactics from Coaches Worldwide</title>
+  <meta name="description" content="Browse tactics boards shared by coaches worldwide. Football, basketball, tennis, padel and more — free to explore, one tap to open in CourtDraw." />
+  <link rel="canonical" href="https://courtdraw.app/community" />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://courtdraw.app/community" />
+  <meta property="og:title"       content="Community Plays — CourtDraw" />
+  <meta property="og:description" content="Browse tactics boards shared by coaches worldwide. Football, basketball, tennis, padel and more." />
+  <meta property="og:image"       content="https://courtdraw.app/og-image.png" />
+  <meta name="twitter:card"       content="summary_large_image" />
+
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico" />
+
+  <!-- Fonts (same as main site) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a1628;
+      --bg2:     #0d1f3c;
+      --border:  #1a2d4a;
+      --border2: #2a3f5c;
+      --text:    #f1f5f9;
+      --muted:   #94a3b8;
+      --accent:  #3b82f6;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Nav ── */
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; height: 60px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: rgba(10,22,40,0.92);
+      backdrop-filter: blur(12px); z-index: 100;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+      font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em;
+    }
+    .nav-logo svg { flex-shrink: 0; }
+    .nav-cta {
+      background: var(--accent); color: #fff;
+      padding: 8px 18px; border-radius: 10px;
+      font-size: 0.85rem; font-weight: 700;
+      transition: background .15s;
+    }
+    .nav-cta:hover { background: #60a5fa; }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center; padding: 64px 24px 48px;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3);
+      color: var(--accent); border-radius: 100px; padding: 4px 14px;
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em;
+      text-transform: uppercase; margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+      font-size: clamp(1.9rem, 5vw, 3rem); font-weight: 900;
+      letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 14px;
+    }
+    .hero p {
+      color: var(--muted); font-size: 1rem; max-width: 520px;
+      margin: 0 auto 28px; line-height: 1.6;
+    }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--accent); color: #fff;
+      padding: 13px 28px; border-radius: 12px;
+      font-size: 0.95rem; font-weight: 700;
+      transition: background .15s, transform .12s;
+    }
+    .hero-cta:hover { background: #60a5fa; transform: translateY(-1px); }
+
+    /* ── Filters ── */
+    .filters {
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+      max-width: 1200px; margin: 0 auto;
+    }
+    .filter-pill {
+      padding: 5px 14px; border-radius: 100px; font-size: 0.8rem; font-weight: 600;
+      border: 1px solid var(--border2); color: var(--muted); cursor: pointer;
+      background: transparent; font-family: inherit;
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .filter-pill:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-pill.active { background: rgba(59,130,246,0.15); border-color: var(--accent); color: var(--accent); }
+
+    /* ── Grid ── */
+    .grid-wrap {
+      max-width: 1200px; margin: 0 auto; padding: 32px 24px 64px;
+    }
+    .plays-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .play-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: border-color .15s, transform .15s;
+      cursor: pointer;
+    }
+    .play-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .play-card-sport {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.74rem; font-weight: 600; letter-spacing: 0.04em;
+      text-transform: uppercase; color: var(--accent);
+      background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2);
+      border-radius: 6px; padding: 3px 8px; width: fit-content;
+    }
+    .play-card-name {
+      font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+      font-size: 1rem; font-weight: 700; line-height: 1.3;
+      color: var(--text);
+    }
+    .play-card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: auto; padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .play-card-author { font-size: 0.78rem; color: var(--muted); }
+    .play-card-saves  { font-size: 0.78rem; color: var(--muted); }
+
+    /* ── States ── */
+    .state-msg {
+      text-align: center; padding: 80px 24px; color: var(--muted);
+    }
+    .state-msg .icon { font-size: 40px; margin-bottom: 16px; }
+    .state-msg h3 { font-size: 1.1rem; color: var(--text); margin-bottom: 8px; }
+
+    /* ── Load more ── */
+    .load-more-wrap { text-align: center; margin-top: 32px; }
+    .load-more-btn {
+      padding: 11px 28px; border-radius: 10px; font-size: 0.9rem; font-weight: 600;
+      border: 1px solid var(--border2); color: var(--muted); cursor: pointer;
+      background: transparent; font-family: inherit;
+      transition: border-color .15s, color .15s;
+    }
+    .load-more-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 24px; text-align: center;
+      font-size: 0.82rem; color: var(--muted);
+    }
+    .footer a { color: var(--muted); }
+    .footer a:hover { color: var(--accent); }
+    .footer-links { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="6" fill="#3b82f6"/>
+      <rect x="2" y="8.5" width="24" height="11" rx="1" fill="#1d4ed8"/>
+      <rect x="2" y="8.5" width="24" height="11" rx="1" stroke="white" stroke-width="0.9"/>
+      <line x1="14" y1="8.5" x2="14" y2="19.5" stroke="white" stroke-width="0.9"/>
+      <line x1="7.5" y1="9.8" x2="7.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+      <line x1="20.5" y1="9.8" x2="20.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+      <line x1="2" y1="14" x2="26" y2="14" stroke="white" stroke-width="0.75"/>
+    </svg>
+    CourtDraw
+  </a>
+  <a href="/app" class="nav-cta">Draw a Play →</a>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-badge">Community</div>
+  <h1>Plays from coaches worldwide</h1>
+  <p>Browse tactics shared by coaches across 38 sports. Open any play in CourtDraw and build on it.</p>
+  <a href="/app?community=1" class="hero-cta">Open in CourtDraw →</a>
+</section>
+
+<!-- Filters -->
+<div class="filters" id="filters">
+  <button class="filter-pill active" data-sport="all">All sports</button>
+</div>
+
+<!-- Grid -->
+<div class="grid-wrap">
+  <div id="plays-grid" class="plays-grid">
+    <div class="state-msg" style="grid-column:1/-1">
+      <div class="icon">⏳</div>
+      <h3>Loading plays…</h3>
+    </div>
+  </div>
+  <div class="load-more-wrap" id="load-more-wrap" style="display:none">
+    <button class="load-more-btn" id="load-more-btn">Load more plays</button>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <div>© 2026 CourtDraw. The tactics board for every sport your club runs.</div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/app">Draw a Play</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/terms">Terms</a>
+  </div>
+</footer>
+
+<script>
+  const PAGE_SIZE = 24;
+  let allPlays   = [];
+  let filtered   = [];
+  let shown      = 0;
+  let activeFilter = 'all';
+
+  // Sport → emoji mapping
+  const SPORT_EMOJI = {
+    'football': '⚽', 'soccer': '⚽', 'basketball': '🏀',
+    'tennis': '🎾', 'padel': '🎾', 'squash': '🎾', 'badminton': '🏸',
+    'pickleball': '🏓', 'table tennis': '🏓',
+    'volleyball': '🏐', 'beach volleyball': '🏐',
+    'handball': '🤾', 'futsal': '⚽', 'floorball': '🏑',
+    'hockey': '🏑', 'field hockey': '🏑', 'ice hockey': '🏒',
+    'roller hockey': '🏒', 'indoor hockey': '🏑', 'hurling': '🏑',
+    'rugby': '🏉', 'rugby league': '🏉', 'rugby union': '🏉',
+    'american football': '🏈', 'gaelic football': '⚽',
+    'australian rules': '🏉', 'lacrosse': '🥍',
+    'netball': '🏀', 'baseball': '⚾', 'softball': '⚾',
+    'cricket': '🏏', 'polo': '🐎',
+    'whiteboard': '📋'
+  };
+
+  function sportEmoji(sport) {
+    if (!sport) return '🏟';
+    const s = sport.toLowerCase();
+    for (const [k, v] of Object.entries(SPORT_EMOJI)) {
+      if (s.includes(k)) return v;
+    }
+    return '🏟';
+  }
+
+  function e(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderCard(play) {
+    const sport   = play.sport || play.courtId || '';
+    const emoji   = sportEmoji(sport);
+    const name    = play.name || 'Untitled play';
+    const author  = play.authorName || 'Coach';
+    const saves   = play.saveCount || 0;
+    const sportLabel = sport ? sport.replace(/ \(.*\)/, '') : 'Sport';
+
+    const card = document.createElement('div');
+    card.className = 'play-card';
+    card.innerHTML = `
+      <div class="play-card-sport">${emoji} ${e(sportLabel)}</div>
+      <div class="play-card-name">${e(name)}</div>
+      <div class="play-card-footer">
+        <span class="play-card-author">by @${e(author)}</span>
+        <span class="play-card-saves">${saves > 0 ? saves + ' saves' : ''}</span>
+      </div>
+    `;
+    card.addEventListener('click', () => {
+      window.location.href = '/app?community=1';
+    });
+    return card;
+  }
+
+  function renderGrid() {
+    const grid  = document.getElementById('plays-grid');
+    const batch = filtered.slice(shown, shown + PAGE_SIZE);
+    if (shown === 0) grid.innerHTML = '';
+    batch.forEach(p => grid.appendChild(renderCard(p)));
+    shown += batch.length;
+
+    const loadWrap = document.getElementById('load-more-wrap');
+    loadWrap.style.display = shown < filtered.length ? 'block' : 'none';
+
+    if (shown === 0) {
+      grid.innerHTML = `<div class="state-msg" style="grid-column:1/-1">
+        <div class="icon">🔍</div>
+        <h3>No plays for this sport yet</h3>
+        <p style="color:var(--muted);font-size:.9rem;margin-top:6px">Be the first to publish one.</p>
+      </div>`;
+    }
+  }
+
+  function setFilter(sport) {
+    activeFilter = sport;
+    document.querySelectorAll('.filter-pill').forEach(p => {
+      p.classList.toggle('active', p.dataset.sport === sport);
+    });
+    filtered = sport === 'all'
+      ? allPlays
+      : allPlays.filter(p => {
+          const s = (p.sport || p.courtId || '').toLowerCase();
+          return s.includes(sport.toLowerCase());
+        });
+    shown = 0;
+    renderGrid();
+  }
+
+  function buildFilters(plays) {
+    const sports = [...new Set(
+      plays.map(p => (p.sport || '').replace(/ \(.*\)/, '').trim()).filter(Boolean)
+    )].sort();
+    const bar = document.getElementById('filters');
+    sports.forEach(sport => {
+      const btn = document.createElement('button');
+      btn.className = 'filter-pill';
+      btn.dataset.sport = sport;
+      btn.textContent = sportEmoji(sport) + ' ' + sport;
+      btn.addEventListener('click', () => setFilter(sport));
+      bar.appendChild(btn);
+    });
+  }
+
+  // Fetch and render
+  fetch('/api/get-community-plays')
+    .then(r => r.json())
+    .then(({ plays }) => {
+      // Sort by saveCount desc — most popular first
+      allPlays = (plays || []).sort((a, b) => (b.saveCount || 0) - (a.saveCount || 0));
+      filtered = allPlays;
+
+      if (!allPlays.length) {
+        document.getElementById('plays-grid').innerHTML = `<div class="state-msg" style="grid-column:1/-1">
+          <div class="icon">🌐</div>
+          <h3>No community plays yet</h3>
+          <p style="color:var(--muted);font-size:.9rem;margin-top:6px">Publish the first one from within CourtDraw Pro.</p>
+        </div>`;
+        return;
+      }
+
+      buildFilters(allPlays);
+      renderGrid();
+
+      document.getElementById('load-more-btn').addEventListener('click', renderGrid);
+    })
+    .catch(() => {
+      document.getElementById('plays-grid').innerHTML = `<div class="state-msg" style="grid-column:1/-1">
+        <div class="icon">⚠️</div>
+        <h3>Couldn't load plays</h3>
+        <p style="color:var(--muted);font-size:.9rem;margin-top:6px">Please try refreshing the page.</p>
+      </div>`;
+    });
+</script>
+
+<!-- JSON-LD -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Community Plays — CourtDraw",
+  "description": "Browse tactics boards shared by coaches worldwide across 38 sports.",
+  "url": "https://courtdraw.app/community",
+  "isPartOf": { "@type": "WebSite", "name": "CourtDraw", "url": "https://courtdraw.app" }
+}
+</script>
+
+</body>
+</html>

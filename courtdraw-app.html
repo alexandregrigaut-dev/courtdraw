@@ -8037,6 +8037,10 @@ function init() {
   if (state.teamColorA) document.documentElement.style.setProperty('--team-a-color', state.teamColorA);
   if (state.teamColorB) document.documentElement.style.setProperty('--team-b-color', state.teamColorB);
   // Load court (from share link, ?court= URL param, or default)
+  // Auto-open community library when arriving from courtdraw.app/community
+  if (new URLSearchParams(location.search).get('community') === '1') {
+    window.addEventListener('load', function() { setTimeout(openCommunityLibrary, 1200); });
+  }
   const _urlCourt = new URLSearchParams(location.search).get('court');
   const startCourtId = sharedBoard ? state.courtId : (_urlCourt || state.freeCourt || 'tennis_singles');
   const court = COURTS.find(c => c.id === startCourtId) || COURTS[0];
