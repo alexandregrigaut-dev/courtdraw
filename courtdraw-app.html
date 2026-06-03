@@ -8460,11 +8460,11 @@ function renderCommunityGrid() {
   let plays = _getCommCurrentPlays();
   if (commLibState.sport !== 'All') plays = plays.filter(t => t.sport === commLibState.sport);
   if (commLibState.filter !== 'All') plays = plays.filter(t => (t.category || '') === commLibState.filter);
-  // Trending sort: user-published plays first (by saveCount desc), CourtDraw Team seed plays after
+  // Trending sort: user-published plays first (by saveCount desc), CourtDraw Team plays after
   if (commLibState.sort === 'trending') plays.sort((a, b) => {
-    const aIsSeed = a._source === 'seed';
-    const bIsSeed = b._source === 'seed';
-    if (aIsSeed !== bIsSeed) return aIsSeed ? 1 : -1;
+    const aIsTeam = a._source === 'seed' || a.authorName === 'CourtDraw Team';
+    const bIsTeam = b._source === 'seed' || b.authorName === 'CourtDraw Team';
+    if (aIsTeam !== bIsTeam) return aIsTeam ? 1 : -1;
     return (b.saveCount || 0) - (a.saveCount || 0);
   });
 
