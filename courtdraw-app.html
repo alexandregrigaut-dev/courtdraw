@@ -3594,6 +3594,13 @@ function onDown(e) {
   e.preventDefault();
   // Suppress drawing during pinch-to-zoom
   if (state.pinching) return;
+  // Free users viewing a community play on a locked court: canvas is read-only
+  if (!state.isPro && !state.isClub && state.freeCourt
+      && state.courtId !== state.freeCourt
+      && !COURTS.find(c => c.id === state.courtId)?.free) {
+    openCourtPaywall(COURTS.find(c => c.id === state.freeCourt)?.name?.replace(/ \(.*\)/, '') || 'your sport');
+    return;
+  }
   if (state.tool === 'text') { handleTextTool(e); return; }
   const { nx, ny } = getPos(e);
   if (state.tool === 'select') { handleSelectDown(e, nx, ny); return; }
@@ -4242,7 +4249,24 @@ function updateUndoButtons() {
 }
 
 // ── Clear ──
-function confirmClear() { openModal('modal-confirm'); }
+function confirmClear() {
+  // For free users on a locked court (e.g. loaded a community play): warn that
+  // clearing will return them to their free court, not give them a blank locked canvas.
+  const msgEl = document.querySelector('#modal-confirm .confirm-body p');
+  const isOnLockedCourt = !state.isPro && !state.isClub && state.freeCourt
+    && state.courtId !== state.freeCourt
+    && !COURTS.find(c => c.id === state.courtId)?.free;
+  if (msgEl) {
+    if (isOnLockedCourt) {
+      const freeCourtName = COURTS.find(c => c.id === state.freeCourt)?.name?.replace(/ \(.*\)/, '') || 'your court';
+      msgEl.textContent = `Clear this play? You'll be returned to your free ${freeCourtName} court.`;
+    } else {
+      msgEl.textContent = 'Clear all drawings? Player tokens will stay in place.';
+    }
+  }
+  openModal('modal-confirm');
+}
+
 function clearBoard() {
   closeMedia();
   saveUndo();
@@ -4253,6 +4277,16 @@ function clearBoard() {
   clearAuthorCredit();
   updatePhaseUI();
   redrawAll();
+  // Guard: free users must not end up with a blank canvas on a locked court.
+  // If they cleared a community play that was on a court they don't own,
+  // silently redirect them back to their free court.
+  if (!state.isPro && !state.isClub && state.freeCourt) {
+    const isOnLockedCourt = state.courtId !== state.freeCourt
+      && !COURTS.find(c => c.id === state.courtId)?.free;
+    if (isOnLockedCourt) {
+      switchCourt(state.freeCourt, false); // objects already empty so no confirm prompt fires
+    }
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -4445,6 +4479,13 @@ function makeDraggable(el, idx) {
   let longPressTimer = null;
   function start(e) {
     e.preventDefault(); e.stopPropagation();
+    // Free users on a locked court: token drag is also blocked
+    if (!state.isPro && !state.isClub && state.freeCourt
+        && state.courtId !== state.freeCourt
+        && !COURTS.find(c => c.id === state.courtId)?.free) {
+      openCourtPaywall(COURTS.find(c => c.id === state.freeCourt)?.name?.replace(/ \(.*\)/, '') || 'your sport');
+      return;
+    }
     dragging = true; hasMoved = false;
     ox = e.clientX; oy = e.clientY;
     startL = parseFloat(el.style.left) || 0;
