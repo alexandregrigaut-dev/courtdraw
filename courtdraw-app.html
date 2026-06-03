@@ -213,6 +213,22 @@ button {
 .tb-btn.active { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); }
 .tb-btn.pro-lock { opacity: 0.6; }
 .tb-btn.pro-lock::after { content: '🔒'; font-size: 8px; position: absolute; top: 4px; right: 4px; }
+/* ── Toolbar progressive disclosure ───────────────────── */
+.tb-advanced { display: none !important; }
+#toolbar.tb-expanded .tb-advanced { display: flex !important; }
+#toolbar.tb-expanded .tb-advanced-sep { display: block !important; }
+.tb-advanced-sep { display: none !important; }
+.tb-more-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; min-width: 48px; height: 100%; padding: 6px 8px;
+  background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25);
+  border-radius: 10px; cursor: pointer; color: var(--accent); font-size: 11px;
+  font-weight: 700; font-family: inherit; flex-shrink: 0; transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+.tb-more-btn:hover { background: rgba(59,130,246,0.18); }
+#toolbar.tb-expanded .tb-more-btn { background: rgba(59,130,246,0.2); color: var(--accent2); }
+.tb-more-btn .icon { font-size: 16px; line-height: 1; }
 .color-dot {
   width: 24px; height: 24px; border-radius: 50%;
   border: 2.5px solid transparent; cursor: pointer; flex-shrink: 0;
@@ -1792,25 +1808,25 @@ body.portrait-mode .player-token:active {
   <button class="tb-btn active" data-tool="arrow" title="Arrow" onclick="setTool('arrow')">
     <span class="icon">↗</span><span>Arrow</span>
   </button>
-  <button class="tb-btn" data-tool="dashed-arrow" title="Dashed Arrow" onclick="setTool('dashed-arrow')">
+  <button class="tb-btn tb-advanced" data-tool="dashed-arrow" title="Dashed Arrow" onclick="setTool('dashed-arrow')">
     <span class="icon">⤳</span><span>Dash</span>
   </button>
-  <button class="tb-btn" data-tool="line" title="Line" onclick="setTool('line')">
+  <button class="tb-btn tb-advanced" data-tool="line" title="Line" onclick="setTool('line')">
     <span class="icon">╱</span><span>Line</span>
   </button>
-  <button class="tb-btn" data-tool="arc-left" title="Curve Left" onclick="setTool('arc-left')">
+  <button class="tb-btn tb-advanced" data-tool="arc-left" title="Curve Left" onclick="setTool('arc-left')">
     <span class="icon">↻</span><span>Curve L</span>
   </button>
-  <button class="tb-btn" data-tool="arc-right" title="Curve Right" onclick="setTool('arc-right')">
+  <button class="tb-btn tb-advanced" data-tool="arc-right" title="Curve Right" onclick="setTool('arc-right')">
     <span class="icon">↺</span><span>Curve R</span>
   </button>
-  <button class="tb-btn" data-tool="circle" title="Zone Circle" onclick="setTool('circle')">
+  <button class="tb-btn tb-advanced" data-tool="circle" title="Zone Circle" onclick="setTool('circle')">
     <span class="icon">◯</span><span>Circle</span>
   </button>
-  <button class="tb-btn" data-tool="rect" title="Zone Rectangle" onclick="setTool('rect')">
+  <button class="tb-btn tb-advanced" data-tool="rect" title="Zone Rectangle" onclick="setTool('rect')">
     <span class="icon">▭</span><span>Zone</span>
   </button>
-  <button class="tb-btn" data-tool="text" title="Text Label" onclick="setTool('text')">
+  <button class="tb-btn tb-advanced" data-tool="text" title="Text Label" onclick="setTool('text')">
     <span class="icon">T</span><span>Text</span>
   </button>
   <button class="tb-btn" data-tool="eraser" title="Eraser" onclick="setTool('eraser')">
@@ -1831,15 +1847,15 @@ body.portrait-mode .player-token:active {
   </div>
   <div class="tool-sep"></div>
   <!-- Player controls -->
-  <button class="tb-btn" title="Add player" onclick="addPlayer()">
+  <button class="tb-btn tb-advanced" title="Add player" onclick="addPlayer()">
     <span class="icon">+&#x1F464;</span><span>Add</span>
   </button>
-  <button class="tb-btn" title="Reset player positions" onclick="confirmResetPositions()">
+  <button class="tb-btn tb-advanced" title="Reset player positions" onclick="confirmResetPositions()">
     <span class="icon">&#x27F3;</span><span>Reset</span>
   </button>
-  <div class="tool-sep"></div>
-  <!-- Actions -->
-  <button class="tb-btn" title="Clear board" onclick="confirmClear()">
+  <div class="tool-sep tb-advanced-sep"></div>
+  <!-- Actions — core always visible -->
+  <button class="tb-btn tb-advanced" title="Clear board" onclick="confirmClear()">
     <span class="icon">🗑</span><span>Clear</span>
   </button>
   <button class="tb-btn" title="Court picker" onclick="openCourtPicker()">
@@ -1847,9 +1863,6 @@ body.portrait-mode .player-token:active {
   </button>
   <button class="tb-btn" id="btn-pro-library" title="Community Tactic Library — browse 200+ plays" aria-label="Community Library" onclick="openCommunityLibrary()">
     <span class="icon">🌐</span><span>Community</span>
-  </button>
-  <button class="tb-btn" title="Training Sessions — chain plays into a plan" onclick="openSessionBuilder()">
-    <span class="icon">📅</span><span>Sessions</span>
   </button>
   <button class="tb-btn" title="Save tactic" onclick="openSaveDialog()">
     <span class="icon">💾</span><span>Save</span>
@@ -1859,23 +1872,31 @@ body.portrait-mode .player-token:active {
   </button>
   <!-- Point 1: save counter pill — shown for free users only -->
   <span id="save-counter" role="status" aria-live="polite" title="Upgrade to Pro for unlimited saves"></span>
-  <button class="tb-btn" title="Export PNG" onclick="exportPNG()">
+  <!-- More / Less toggle button -->
+  <button class="tb-more-btn" id="tb-more-toggle" onclick="toggleToolbarExpanded()" title="More drawing tools">
+    <span class="icon" id="tb-more-icon">···</span><span id="tb-more-label">More</span>
+  </button>
+  <!-- Advanced export/share tools — hidden until expanded -->
+  <button class="tb-btn tb-advanced" title="Export PNG" onclick="exportPNG()">
     <span class="icon">🖼</span><span>PNG</span>
   </button>
-  <button class="tb-btn" id="btn-clip" title="Export animated clip (MP4/WebM) — phases as a shareable video" onclick="exportClip()">
+  <button class="tb-btn tb-advanced" id="btn-clip" title="Export animated clip (MP4/WebM) — phases as a shareable video" onclick="exportClip()">
     <span class="icon">🎬</span><span>Clip</span>
   </button>
-  <button class="tb-btn" id="btn-print" title="Print / Export PDF" onclick="exportPDF()">
+  <button class="tb-btn tb-advanced" id="btn-print" title="Print / Export PDF" onclick="exportPDF()">
     <span class="icon">🖨</span><span>Print</span>
   </button>
-  <button class="tb-btn" id="btn-present" title="Club Presentation Mode" onclick="enterPresentation()" style="display:none">
+  <button class="tb-btn tb-advanced" id="btn-present" title="Club Presentation Mode" onclick="enterPresentation()" style="display:none">
     <span class="icon">⛶</span><span>Present</span>
   </button>
-  <button class="tb-btn" id="btn-share" title="Copy share link" onclick="shareBoard()">
+  <button class="tb-btn tb-advanced" id="btn-share" title="Copy share link" onclick="shareBoard()">
     <span class="icon">🔗</span><span>Share</span>
   </button>
-  <button class="tb-btn" id="btn-video" title="Video / Photo overlay — draw on match footage or screenshots (Pro/Club)" onclick="openMediaUpload()">
+  <button class="tb-btn tb-advanced" id="btn-video" title="Video / Photo overlay — draw on match footage or screenshots (Pro/Club)" onclick="openMediaUpload()">
     <span class="icon">📹</span><span>Media</span>
+  </button>
+  <button class="tb-btn tb-advanced" title="Training Sessions — chain plays into a plan" onclick="openSessionBuilder()">
+    <span class="icon">📅</span><span>Sessions</span>
   </button>
 </div>
 
@@ -2128,7 +2149,7 @@ body.portrait-mode .player-token:active {
           <span class="pw-check" style="background:rgba(59,130,246,0.25);border-color:rgba(96,165,250,0.5);">✓</span>
           <div>
             <div class="pw-feat">🌐 Community Library</div>
-            <div class="pw-feat-sub">Browse 200+ plays from coaches worldwide · Publish plays · Build your coaching reputation</div>
+            <div class="pw-feat-sub">Publish your plays · Build your coaching reputation · Browse 200+ tactics from coaches worldwide</div>
           </div>
         </div>
         <div class="pw-cell">
@@ -4527,6 +4548,12 @@ function setTool(t) {
   state.tool = t;
   document.querySelectorAll('.tb-btn[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
   canvas.style.cursor = t === 'eraser' ? 'cell' : t === 'text' ? 'text' : t === 'select' ? 'default' : 'crosshair';
+  // If the selected tool is an advanced (hidden) one, auto-expand the toolbar so it's visible
+  const toolbar = document.getElementById('toolbar');
+  if (toolbar && !toolbar.classList.contains('tb-expanded')) {
+    const activeBtn = toolbar.querySelector(`.tb-btn.tb-advanced[data-tool="${t}"]`);
+    if (activeBtn) toggleToolbarExpanded();
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -4649,6 +4676,12 @@ function switchCourt(id, locked, skipReset) {
   if (!state.isPro && !state.isClub && !state.freeCourt && !courtDef?.free) {
     state.freeCourt = id;
     saveToStorage();
+    // Gift framing: make the free court feel like something given, not taken away
+    const _freeCourtName = courtDef?.name?.replace(/ \(.*\)/, '') || 'this court';
+    setTimeout(() => showToast(
+      `🎁 Your ${_freeCourtName} court is yours — free, forever. Want all 38 sports? Upgrade anytime.`,
+      5000
+    ), 800);
   }
   const court = COURTS.find(c => c.id === id);
   if (!court) return;
@@ -4956,7 +4989,17 @@ function saveTactic() {
   state.savedTactics.push(tactic);
   // Don't fire the first-save upsell for the tutorial play
   const nonTutorialCount = state.savedTactics.filter(function(t) { return !t._tutorial; }).length;
-  if (nonTutorialCount === 1) successMomentUpsell('firstSave', "Your first play is saved. Build an unlimited library with Pro.");
+  // Progressive save countdown for free users — makes the limit visible and upgrade intent gradual
+  if (!state.isPro && !state.isClub && !window._tutorialSaveActive) {
+    const remaining = FREE_SAVES - nonTutorialCount;
+    if (nonTutorialCount === 1) {
+      setTimeout(() => showToast(`1 / ${FREE_SAVES} free saves used · ${remaining} remaining`, 3500), 1200);
+    } else if (nonTutorialCount === 2) {
+      setTimeout(() => showToast(`2 / ${FREE_SAVES} free saves used · 1 remaining — upgrade for unlimited →`, 4500), 1200);
+    }
+  } else if (nonTutorialCount === 1 && !window._tutorialSaveActive) {
+    successMomentUpsell('firstSave', "Your first play is saved. Build an unlimited library with Pro.");
+  }
   saveToStorage();
   // Firestore write — fire-and-forget; localStorage already saved it so UI is never blocked
   const _saveUid = window.__currentUser && window.__currentUser.uid;
@@ -8117,6 +8160,24 @@ function init() {
   if (new URLSearchParams(location.search).get('community') === '1') {
     window.addEventListener('load', function() { setTimeout(openCommunityLibrary, 1200); });
   }
+  // Deep-link: load a specific play queued from the /community public page
+  if (new URLSearchParams(location.search).get('loadplay') === '1') {
+    try {
+      const _queuedPlay = JSON.parse(sessionStorage.getItem('courtdraw_queued_play') || 'null');
+      if (_queuedPlay) {
+        sessionStorage.removeItem('courtdraw_queued_play');
+        // Defer until the app is fully initialised so the court SVG and tokens are ready
+        window.addEventListener('load', function() {
+          setTimeout(function() {
+            loadCommunityPlay(_queuedPlay);
+            // Clean URL without reload
+            const _clean = location.pathname;
+            history.replaceState(null, '', _clean);
+          }, 1400);
+        });
+      }
+    } catch(e) {}
+  }
   const _urlCourt = new URLSearchParams(location.search).get('court');
   const startCourtId = sharedBoard ? state.courtId : (_urlCourt || state.freeCourt || 'tennis_singles');
   const court = COURTS.find(c => c.id === startCourtId) || COURTS[0];
@@ -9024,6 +9085,39 @@ function toggleToolbar() {
   const btn = document.getElementById('toolbar-toggle-btn');
   btn.textContent = document.body.classList.contains('toolbar-collapsed') ? '⋯' : '✕';
 }
+
+// ── Toolbar progressive disclosure ────────────────────────────────────────────
+function toggleToolbarExpanded() {
+  const toolbar = document.getElementById('toolbar');
+  const expanded = toolbar.classList.toggle('tb-expanded');
+  localStorage.setItem('tb_expanded', expanded ? '1' : '0');
+  const icon  = document.getElementById('tb-more-icon');
+  const label = document.getElementById('tb-more-label');
+  if (icon)  icon.textContent  = expanded ? '←' : '···';
+  if (label) label.textContent = expanded ? 'Less' : 'More';
+  // If an advanced tool is currently active and user collapses, switch back to arrow
+  if (!expanded) {
+    const activeTool = document.querySelector('#toolbar .tb-btn.active[data-tool]');
+    if (activeTool && activeTool.classList.contains('tb-advanced')) {
+      setTool('arrow');
+    }
+  }
+}
+// Restore toolbar expanded state on load
+(function() {
+  if (localStorage.getItem('tb_expanded') === '1') {
+    document.addEventListener('DOMContentLoaded', function() {
+      const toolbar = document.getElementById('toolbar');
+      if (toolbar) {
+        toolbar.classList.add('tb-expanded');
+        const icon  = document.getElementById('tb-more-icon');
+        const label = document.getElementById('tb-more-label');
+        if (icon)  icon.textContent  = '←';
+        if (label) label.textContent = 'Less';
+      }
+    });
+  }
+})();
 
 function toggleToolbarPin() {
   const isPinned = document.body.classList.toggle('toolbar-pinned');

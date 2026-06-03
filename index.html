@@ -248,6 +248,39 @@
     .hero-fine { font-size: 0.82rem; color: var(--muted); }
     .hero-fine span { color: var(--accent); font-weight: 600; }
 
+    /* ── Hero phone video ── */
+    .hero-video-wrap {
+      display: flex; justify-content: center; margin: 40px auto 0; max-width: 900px;
+    }
+    .hero-phone-mockup {
+      position: relative; width: 200px; flex-shrink: 0;
+      background: #0a0a0a; border-radius: 36px;
+      border: 3px solid rgba(255,255,255,0.12);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+      overflow: hidden; aspect-ratio: 390/844;
+    }
+    .hero-phone-mockup video {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .hero-phone-notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 80px; height: 22px; background: #0a0a0a; border-radius: 0 0 14px 14px; z-index: 2;
+    }
+    .hero-video-caption {
+      display: flex; flex-direction: column; justify-content: center; gap: 16px;
+      padding: 0 0 0 32px; max-width: 280px;
+    }
+    .hero-video-caption .vc-item { display: flex; align-items: flex-start; gap: 10px; }
+    .hero-video-caption .vc-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+    .hero-video-caption .vc-text { font-size: 0.9rem; color: var(--muted); line-height: 1.5; }
+    .hero-video-caption .vc-text strong { color: var(--text2); }
+    @media (max-width: 580px) {
+      .hero-video-wrap { flex-direction: column; align-items: center; gap: 24px; }
+      .hero-video-caption { padding: 0; text-align: center; }
+      .hero-video-caption .vc-item { justify-content: center; }
+      .hero-phone-mockup { width: 160px; }
+    }
+
     /* Hero court preview */
     .hero-preview {
       margin: 56px auto 0;
@@ -912,17 +945,42 @@
     <div class="hero-badge fade-up">
       <span class="badge"><span class="badge-dot"></span>38 sports · Free to start · No download</span>
     </div>
-    <h1 class="fade-up fade-up-1">38 sports.<br /><span class="gradient-text">One tactics board.</span></h1>
+    <h1 class="fade-up fade-up-1">Draw any play<br /><span class="gradient-text">in 30 seconds.</span></h1>
     <p class="hero-sub fade-up fade-up-2">
       Football, basketball, tennis, padel — and 34 more.<br />
-      Draw on your phone. Show your team in 30 seconds.
+      On your phone. Share instantly. No install needed.
     </p>
     <div class="hero-actions fade-up fade-up-3">
       <a href="courtdraw-app.html" class="btn btn-primary btn-lg">Start Drawing Free →</a>
       <a href="#features" class="btn btn-ghost btn-lg">See How It Works</a>
     </div>
     <p class="hero-fine fade-up fade-up-3"><span>No download.</span> No account. Works on iPad, phone, and desktop.</p>
-    <p class="hero-stat fade-up fade-up-3">Used by <strong>500+ coaches</strong> across <strong>10+ countries</strong></p>
+    <p class="hero-stat fade-up fade-up-3">Used by <strong>500+ coaches</strong> across <strong>10+ countries</strong> · including <strong>Muskétás Racket Club, Budapest</strong></p>
+
+    <!-- Hero phone video demo -->
+    <div class="hero-video-wrap fade-up" style="animation-delay:.35s">
+      <div class="hero-phone-mockup">
+        <div class="hero-phone-notch"></div>
+        <video autoplay muted loop playsinline preload="metadata"
+               src="/assets/video/hero-coach-demo.mp4"
+               aria-label="CourtDraw demo: drawing a tactic on a phone in seconds">
+        </video>
+      </div>
+      <div class="hero-video-caption">
+        <div class="vc-item">
+          <span class="vc-icon">✏️</span>
+          <div class="vc-text"><strong>Draw in seconds</strong><br/>Drag arrows, place players, sketch formations instantly.</div>
+        </div>
+        <div class="vc-item">
+          <span class="vc-icon">📱</span>
+          <div class="vc-text"><strong>On any device</strong><br/>Phone, tablet, or laptop — no install, no account needed.</div>
+        </div>
+        <div class="vc-item">
+          <span class="vc-icon">🔗</span>
+          <div class="vc-text"><strong>Share instantly</strong><br/>One tap to share your play to the group chat.</div>
+        </div>
+      </div>
+    </div>
 
     <div class="hero-preview fade-up" style="animation-delay:.4s">
       <div class="hero-preview-inner">

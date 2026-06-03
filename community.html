@@ -368,7 +368,23 @@
       </div>
     `;
     card.addEventListener('click', () => {
-      window.location.href = '/app?community=1';
+      // Store the specific play in sessionStorage so the app loads it directly
+      try {
+        sessionStorage.setItem('courtdraw_queued_play', JSON.stringify({
+          id:           play.id,
+          name:         play.name,
+          courtId:      play.courtId,
+          sport:        play.sport,
+          objects:      play.objects,
+          tokens:       play.tokens,
+          phases:       play.phases,
+          currentPhase: play.currentPhase || 0,
+          authorName:   play.authorName,
+          saveCount:    play.saveCount,
+          _source:      'published',
+        }));
+      } catch(e) {}
+      window.location.href = '/app?loadplay=1';
     });
     return card;
   }
