@@ -1981,6 +1981,7 @@ body.portrait-mode .player-token:active {
     </div>
     </div><!-- /#library-scroll -->
     <div class="modal-footer">
+      <div id="pro-fields-label" style="display:none;font-size:11px;font-weight:700;color:var(--accent);letter-spacing:0.04em;margin-bottom:6px;cursor:pointer;" onclick="openPaywall('Unlock notes, tags and ratings with Pro — keep every play organised and searchable.')">🔒 PRO FEATURES — tap to unlock</div>
       <textarea id="tactic-notes-input" rows="2" maxlength="400"
         placeholder="📝 Coach notes — e.g. 'Works vs high press, use in final third'"
         onfocus="onNotesFocus()"></textarea>
@@ -4830,6 +4831,8 @@ function openSaveDialogFull() {
   if (state.isClub) loadClubLibrary();
   openModal('modal-library');
   const isPro = state.isPro || state.isClub;
+  const proLabel = document.getElementById('pro-fields-label');
+  if (proLabel) proLabel.style.display = isPro ? 'none' : 'block';
   const notesEl = document.getElementById('tactic-notes-input');
   const tagsEl  = document.getElementById('tactic-tags-input');
   const rateLabel = document.querySelector('.save-rating-label');
@@ -5454,6 +5457,9 @@ function updateSaveCounter() {
   } else if (used === max - 1) {
     el.textContent = `${used}/${max} saves used`;
     el.classList.add('warn');
+    el.onclick = null;
+  } else if (used === 0) {
+    el.textContent = `${max} free saves`;
     el.onclick = null;
   } else {
     el.textContent = `${used}/${max} saves used`;
@@ -7476,10 +7482,10 @@ function showToast(msg, ms = 2400) {
           try { if (typeof openCommunityLibrary === 'function') openCommunityLibrary(); } catch(e) {}
         },
         onEnterDelay: 400,
-        title: '200+ plays from coaches worldwide',
+        title: 'Load a play from the library',
         body: isMobileView()
-          ? 'Browse tactics from coaches around the world. Load any play in one tap — or <strong>publish your own</strong> with Pro.'
-          : 'Browse tactics from coaches around the world. Load any play instantly — or <strong>publish your own</strong> with Pro.',
+          ? 'The Community Library has 200+ ready-made plays. Pick one and load it onto your board — then make it yours.'
+          : 'The Community Library has 200+ ready-made plays across every sport. Pick one and load it onto your board — then make it yours.',
         attach: function(onAdvance) {
           const gen = _tutGen;
           // Auto-advance after 10s — close community modal first so my-plays step isn't blocked
