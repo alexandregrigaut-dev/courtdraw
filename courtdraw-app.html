@@ -1908,6 +1908,32 @@ body.portrait-mode .player-token:active {
   </div>
 </div>
 
+<!-- Modal: Quick Save -->
+<div class="modal-backdrop" id="modal-save-quick">
+  <div class="modal-sheet" style="max-width:360px;">
+    <div class="modal-header">
+      <span class="modal-title">💾 Save Play</span>
+      <button class="modal-close" aria-label="Close" onclick="closeModal('modal-save-quick')">✕</button>
+    </div>
+    <div style="padding:4px 20px 20px;">
+      <input type="text" id="tactic-name-quick"
+             placeholder="Name this play…"
+             autocomplete="off"
+             style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:0.9375rem;font-family:inherit;outline:none;"
+             onkeydown="if(event.key==='Enter')quickSaveTactic()">
+      <div id="save-quick-counter" style="font-size:0.8rem;color:var(--muted);margin-top:6px;text-align:right;"></div>
+      <button onclick="quickSaveTactic()"
+              style="width:100%;margin-top:10px;padding:11px;border-radius:8px;background:var(--accent);color:#fff;font-weight:700;font-size:0.9375rem;border:none;cursor:pointer;font-family:inherit;">
+        Save Play
+      </button>
+      <button onclick="closeModal('modal-save-quick');openSaveDialogFull();"
+              style="width:100%;margin-top:8px;padding:8px;border-radius:8px;background:none;border:1px solid var(--border2);color:var(--muted);font-size:0.8125rem;cursor:pointer;font-family:inherit;">
+        + Add notes, tags &amp; rating
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Tactic Library -->
 <div class="modal-backdrop" id="modal-library">
   <div class="modal-sheet">
@@ -4763,10 +4789,46 @@ function filterClubLibraryDisplay() {
 }
 
 function openSaveDialog() {
+  const court = COURTS.find(c => c.id === state.courtId);
+  const sportName = court ? court.name.replace(/ \(.*\)/, '') : 'Tactic';
+  const now = new Date();
+  let baseName = `${sportName} — ${now.getDate()} ${now.toLocaleDateString('en-GB', { month: 'long' })}`;
+  const existing = state.savedTactics.map(t => t.name);
+  if (existing.includes(baseName)) {
+    let n = 2;
+    while (existing.includes(`${baseName} (${n})`)) n++;
+    baseName = `${baseName} (${n})`;
+  }
+  const quickInp = document.getElementById('tactic-name-quick');
+  if (quickInp) { quickInp.value = baseName; }
+  const counter = document.getElementById('save-quick-counter');
+  if (counter) {
+    if (!state.isPro && !state.isClub) {
+      const used = state.savedTactics.filter(t => !t._tutorial).length;
+      counter.textContent = `${used} / ${FREE_SAVES} free saves used`;
+      counter.style.display = 'block';
+    } else {
+      counter.style.display = 'none';
+    }
+  }
+  openModal('modal-save-quick');
+  setTimeout(() => { quickInp && quickInp.select(); quickInp && quickInp.focus(); }, 80);
+}
+
+function quickSaveTactic() {
+  const quickInp = document.getElementById('tactic-name-quick');
+  const name = quickInp ? quickInp.value.trim() : '';
+  // Sync name to the main input so saveTactic() reads it
+  const mainInp = document.getElementById('tactic-name-input');
+  if (mainInp) mainInp.value = name;
+  closeModal('modal-save-quick');
+  saveTactic();
+}
+
+function openSaveDialogFull() {
   renderLibrary();
   if (state.isClub) loadClubLibrary();
   openModal('modal-library');
-  // Remove "(Pro)" labels for Pro/Club users — they already have access
   const isPro = state.isPro || state.isClub;
   const notesEl = document.getElementById('tactic-notes-input');
   const tagsEl  = document.getElementById('tactic-tags-input');
