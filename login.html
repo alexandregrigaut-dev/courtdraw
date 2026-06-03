@@ -225,6 +225,19 @@
   </a>
 
   <div class="card">
+    <!-- Quick escape for users who just want to draw — shown before the sign-in form -->
+    <a href="/courtdraw-app.html"
+       onclick="localStorage.removeItem('courtdraw_pending_checkout')"
+       style="display:flex;align-items:center;justify-content:space-between;
+              padding:10px 14px;margin-bottom:20px;
+              background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);
+              border-radius:10px;text-decoration:none;
+              font-size:0.82rem;color:var(--muted);transition:background .15s,border-color .15s;"
+       onmouseover="this.style.background='rgba(59,130,246,0.14)';this.style.borderColor='rgba(59,130,246,0.4)'"
+       onmouseout="this.style.background='rgba(59,130,246,0.08)';this.style.borderColor='rgba(59,130,246,0.2)'">
+      <span>✏️ &nbsp;Just want to draw? <strong style="color:var(--text)">Continue without account →</strong></span>
+    </a>
+
     <div class="card-header">
       <h1>Welcome back</h1>
       <p>Sign in to access your tactics library and Pro features.</p>
@@ -297,7 +310,7 @@
       Continue with Google
     </button>
     <div class="divider">or</div>
-    <a href="/courtdraw-app.html" class="btn-guest">Continue without account</a>
+    <a href="/courtdraw-app.html" class="btn-guest" onclick="localStorage.removeItem('courtdraw_pending_checkout')">Continue without account</a>
 
     <div style="text-align:center;margin-top:20px;">
       <a href="/join-club.html" style="font-size:0.82rem;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:color .15s;"

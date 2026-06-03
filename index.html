@@ -188,7 +188,35 @@
     .nav-links a { color: var(--muted); font-size: 0.9rem; font-weight: 500; padding: 6px 12px; border-radius: 8px; transition: color .15s; }
     .nav-links a:hover { color: var(--text); }
     .nav-cta { display: flex; align-items: center; gap: 10px; }
-    @media (max-width: 680px) { .nav-links { display: none; } }
+    /* ── Hamburger ── */
+    .nav-hamburger {
+      display: none; background: none; border: none; cursor: pointer;
+      padding: 6px; color: var(--text); flex-shrink: 0;
+    }
+    .nav-hamburger svg { display: block; }
+    /* Mobile drawer */
+    .nav-mobile-menu {
+      display: none; flex-direction: column;
+      background: rgba(10,22,40,0.97); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px 24px;
+      position: absolute; top: 64px; left: 0; right: 0; z-index: 99;
+    }
+    .nav-mobile-menu.open { display: flex; }
+    .nav-mobile-menu a, .nav-mobile-menu button.mob-link {
+      color: var(--muted); font-size: 1rem; font-weight: 500;
+      padding: 12px 4px; border-bottom: 1px solid var(--border);
+      text-decoration: none; display: block; background: none; border-left: none; border-right: none; border-top: none; cursor: pointer; font-family: inherit; text-align: left; width: 100%;
+      transition: color .15s;
+    }
+    .nav-mobile-menu a:hover, .nav-mobile-menu button.mob-link:hover { color: var(--text); }
+    .nav-mobile-menu .mob-cta { margin-top: 16px; display: flex; gap: 10px; }
+    .nav-mobile-menu .mob-cta a { flex: 1; text-align: center; padding: 12px; border-radius: 10px; font-weight: 700; }
+    @media (max-width: 680px) {
+      .nav-links { display: none; }
+      .nav-hamburger { display: flex; align-items: center; justify-content: center; }
+      nav { position: sticky; }
+    }
 
     /* ── Hero ── */
     .hero {
@@ -759,8 +787,64 @@
         <button class="ndd-btn danger" onclick="landingSignOut()" role="menuitem">Sign out</button>
       </div>
     </div>
+
+    <!-- Hamburger button — visible only on mobile -->
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Open menu" aria-expanded="false" onclick="toggleMobileNav()">
+      <svg id="hamburger-icon" width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="3" y1="6"  x2="19" y2="6"  stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="3" y1="11" x2="19" y2="11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="3" y1="16" x2="19" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <svg id="close-icon" width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none">
+        <line x1="4" y1="4" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="18" y1="4" x2="4"  y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Mobile drawer — sits inside <nav> so it inherits sticky positioning -->
+  <div class="nav-mobile-menu" id="nav-mobile-menu">
+    <a href="/sports/" onclick="closeMobileNav()">All Sports</a>
+    <a href="#features" onclick="closeMobileNav()">Features</a>
+    <a href="#how" onclick="closeMobileNav()">How It Works</a>
+    <a href="#pricing" onclick="closeMobileNav()">Pricing</a>
+    <a href="#faq" onclick="closeMobileNav()">FAQ</a>
+    <div class="mob-cta">
+      <a href="login.html" class="btn btn-ghost" style="padding:11px;font-size:.9rem;">Sign in</a>
+      <a href="courtdraw-app.html" class="btn btn-primary" style="padding:11px;font-size:.9rem;">Try Free</a>
+    </div>
   </div>
 </nav>
+
+<script>
+  function toggleMobileNav() {
+    const menu = document.getElementById('nav-mobile-menu');
+    const btn  = document.getElementById('nav-hamburger');
+    const open = menu.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open);
+    document.getElementById('hamburger-icon').style.display = open ? 'none'  : 'block';
+    document.getElementById('close-icon').style.display     = open ? 'block' : 'none';
+    // Prevent body scroll when drawer is open
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+  function closeMobileNav() {
+    const menu = document.getElementById('nav-mobile-menu');
+    const btn  = document.getElementById('nav-hamburger');
+    menu.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+    document.getElementById('hamburger-icon').style.display = 'block';
+    document.getElementById('close-icon').style.display     = 'none';
+    document.body.style.overflow = '';
+  }
+  // Close drawer when clicking outside
+  document.addEventListener('click', function(e) {
+    const menu = document.getElementById('nav-mobile-menu');
+    const btn  = document.getElementById('nav-hamburger');
+    if (menu && menu.classList.contains('open') && !menu.contains(e.target) && !btn.contains(e.target)) {
+      closeMobileNav();
+    }
+  });
+</script>
 
 <!-- ════ ACCOUNT (logged-in only — first thing visible after nav) ════ -->
 <section id="acct-section" aria-label="Your account">
@@ -839,14 +923,6 @@
     </div>
     <p class="hero-fine fade-up fade-up-3"><span>No download.</span> No account. Works on iPad, phone, and desktop.</p>
     <p class="hero-stat fade-up fade-up-3">Used by <strong>500+ coaches</strong> across <strong>10+ countries</strong></p>
-
-    <div class="fade-up fade-up-3" style="display:flex;justify-content:center;margin-top:20px;">
-      <a href="https://www.producthunt.com/products/courtdraw?embed=true&utm_source=badge-upcoming&utm_medium=badge&utm_campaign=badge-courtdraw" target="_blank" rel="noopener noreferrer">
-        <img alt="CourtDraw - Draw plays for any sports - Share in seconds | Product Hunt"
-             width="250" height="54"
-             src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1157993&theme=dark" />
-      </a>
-    </div>
 
     <div class="hero-preview fade-up" style="animation-delay:.4s">
       <div class="hero-preview-inner">
@@ -1022,53 +1098,51 @@
       <p>From football to futsal, padel to polo — CourtDraw ships with 38 precisely drawn courts. Pick one free, unlock all with Pro.</p>
     </div>
     <div class="sports-grid">
-      <!-- Racket Sports -->
-      <a href="/tennis-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis (Singles)</div></a>
-      <a href="/tennis-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis (Doubles)</div></a>
+      <a href="/football-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Football / Soccer</div></a>
+      <a href="/basketball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏀</div><div class="sport-card-name">Basketball</div></a>
+      <a href="/tennis-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis</div></a>
       <a href="/padel-tactics-board/" class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Padel</div></a>
       <a href="/pickleball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏓</div><div class="sport-card-name">Pickleball</div></a>
-      <a href="/badminton-tactics-board/" class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton (Singles)</div></a>
-      <a href="/badminton-tactics-board/" class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton (Doubles)</div></a>
-      <a href="/squash-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Squash</div></a>
-      <a href="/table-tennis-tactics-board/" class="sport-card"><div class="sport-card-icon">🏓</div><div class="sport-card-name">Table Tennis</div></a>
-      <a href="/racquetball-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Racquetball</div></a>
-      <a href="/beach-tennis-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Beach Tennis</div></a>
-      <!-- Indoor Team Sports -->
-      <a href="/handball-tactics-board/" class="sport-card"><div class="sport-card-icon">🤾</div><div class="sport-card-name">Handball</div></a>
-      <a href="/futsal-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Futsal</div></a>
-      <a href="/futsal-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Futsal Mini / 5-a-side</div></a>
-      <a href="/basketball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏀</div><div class="sport-card-name">Basketball (Full)</div></a>
-      <a href="/basketball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏀</div><div class="sport-card-name">Basketball (Half)</div></a>
       <a href="/volleyball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Volleyball</div></a>
-      <a href="/floorball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Floorball</div></a>
-      <a href="/korfball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Korfball</div></a>
-      <a href="/netball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Netball</div></a>
-      <!-- Field Sports -->
-      <a href="/football-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Football / Soccer (Full)</div></a>
-      <a href="/football-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Football / Soccer (Half)</div></a>
-      <a href="/rugby-union-tactics-board/" class="sport-card"><div class="sport-card-icon">🏉</div><div class="sport-card-name">Rugby Union</div></a>
-      <a href="/rugby-league-tactics-board/" class="sport-card"><div class="sport-card-icon">🏉</div><div class="sport-card-name">Rugby League</div></a>
-      <a href="/field-hockey-tactics-board/" class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Field Hockey</div></a>
-      <a href="/gaelic-football-tactics-board/" class="sport-card"><div class="sport-card-icon">⛳</div><div class="sport-card-name">Gaelic Football</div></a>
-      <a href="/hurling-tactics-board/" class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Hurling / Camogie</div></a>
-      <a href="/american-football-tactics-board/" class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">American Football</div></a>
-      <a href="/australian-rules-tactics-board/" class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">Australian Rules Football</div></a>
-      <!-- Ice & Roller -->
+      <a href="/handball-tactics-board/" class="sport-card"><div class="sport-card-icon">🤾</div><div class="sport-card-name">Handball</div></a>
+      <a href="/rugby-union-tactics-board/" class="sport-card"><div class="sport-card-icon">🏉</div><div class="sport-card-name">Rugby</div></a>
       <a href="/ice-hockey-tactics-board/" class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Ice Hockey</div></a>
-      <a href="/roller-hockey-tactics-board/" class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Roller Hockey</div></a>
-      <!-- Beach Sports -->
-      <a href="/beach-volleyball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Beach Volleyball</div></a>
-      <a href="/beach-handball-tactics-board/" class="sport-card"><div class="sport-card-icon">🤾</div><div class="sport-card-name">Beach Handball</div></a>
-      <a href="/beach-soccer-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Beach Soccer</div></a>
-      <!-- Other -->
-      <a href="/padbol-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Padbol</div></a>
-      <a href="/indoor-hockey-tactics-board/" class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Indoor Hockey</div></a>
+      <a href="/american-football-tactics-board/" class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">American Football</div></a>
+      <a href="/field-hockey-tactics-board/" class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Field Hockey</div></a>
+      <a href="/badminton-tactics-board/" class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton</div></a>
+      <a href="/futsal-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Futsal</div></a>
+      <a href="/squash-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Squash</div></a>
       <a href="/lacrosse-tactics-board/" class="sport-card"><div class="sport-card-icon">🥍</div><div class="sport-card-name">Lacrosse</div></a>
       <a href="/water-polo-tactics-board/" class="sport-card"><div class="sport-card-icon">🏊</div><div class="sport-card-name">Water Polo</div></a>
-      <a href="/fistball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Fistball</div></a>
+      <!-- Extra sports — hidden until "Show all" is toggled -->
+      <div id="sports-extra" style="display:contents;display:none">
+        <a href="/tennis-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Tennis (Doubles)</div></a>
+        <a href="/badminton-tactics-board/" class="sport-card"><div class="sport-card-icon">🏸</div><div class="sport-card-name">Badminton (Doubles)</div></a>
+        <a href="/basketball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏀</div><div class="sport-card-name">Basketball (Half)</div></a>
+        <a href="/football-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Football (Half Court)</div></a>
+        <a href="/futsal-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Futsal Mini / 5-a-side</div></a>
+        <a href="/rugby-league-tactics-board/" class="sport-card"><div class="sport-card-icon">🏉</div><div class="sport-card-name">Rugby League</div></a>
+        <a href="/gaelic-football-tactics-board/" class="sport-card"><div class="sport-card-icon">⛳</div><div class="sport-card-name">Gaelic Football</div></a>
+        <a href="/hurling-tactics-board/" class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Hurling / Camogie</div></a>
+        <a href="/australian-rules-tactics-board/" class="sport-card"><div class="sport-card-icon">🏈</div><div class="sport-card-name">Australian Rules</div></a>
+        <a href="/roller-hockey-tactics-board/" class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Roller Hockey</div></a>
+        <a href="/floorball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏒</div><div class="sport-card-name">Floorball</div></a>
+        <a href="/korfball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Korfball</div></a>
+        <a href="/netball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Netball</div></a>
+        <a href="/table-tennis-tactics-board/" class="sport-card"><div class="sport-card-icon">🏓</div><div class="sport-card-name">Table Tennis</div></a>
+        <a href="/racquetball-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Racquetball</div></a>
+        <a href="/beach-tennis-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Beach Tennis</div></a>
+        <a href="/beach-volleyball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Beach Volleyball</div></a>
+        <a href="/beach-handball-tactics-board/" class="sport-card"><div class="sport-card-icon">🤾</div><div class="sport-card-name">Beach Handball</div></a>
+        <a href="/beach-soccer-tactics-board/" class="sport-card"><div class="sport-card-icon">⚽</div><div class="sport-card-name">Beach Soccer</div></a>
+        <a href="/padbol-tactics-board/" class="sport-card"><div class="sport-card-icon">🎾</div><div class="sport-card-name">Padbol</div></a>
+        <a href="/indoor-hockey-tactics-board/" class="sport-card"><div class="sport-card-icon">🏑</div><div class="sport-card-name">Indoor Hockey</div></a>
+        <a href="/fistball-tactics-board/" class="sport-card"><div class="sport-card-icon">🏐</div><div class="sport-card-name">Fistball</div></a>
+      </div>
     </div>
-    <p style="text-align:center;margin-top:28px;color:var(--muted);font-size:0.85rem;">
-      Can't find your sport? <a href="mailto:hello@courtdraw.app" style="color:var(--accent);text-decoration:underline;">Request a court</a> — we add new sports regularly.
+    <p style="text-align:center;margin-top:24px;">
+      <button id="sports-toggle-btn" onclick="(function(){var el=document.getElementById('sports-extra');var btn=document.getElementById('sports-toggle-btn');var open=el.style.display!=='none';el.style.display=open?'none':'contents';btn.textContent=open?'Show all 38 sports ↓':'Show fewer ↑';})()" style="background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:inherit;font-size:0.85rem;font-weight:600;padding:8px 20px;border-radius:20px;cursor:pointer;transition:border-color .15s,color .15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">Show all 38 sports ↓</button>
+      <span style="display:block;margin-top:10px;color:var(--muted);font-size:0.82rem;">Can't find your sport? <a href="mailto:hello@courtdraw.app" style="color:var(--accent);text-decoration:underline;">Request a court</a> — we add new sports regularly.</span>
     </p>
   </div>
 </section>
@@ -1426,60 +1500,7 @@
       </div>
     </div>
 
-    <a href="login.html?checkout=pro" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;">Unlock Full Library →</a>
-  </div>
-</section>
-
-<!-- ════ COMMUNITY LIBRARY ════ -->
-<section id="community-library" data-marketing style="padding:88px 24px;background:linear-gradient(135deg,rgba(29,78,216,0.08) 0%,rgba(59,130,246,0.04) 100%);border-top:1px solid rgba(59,130,246,0.2);border-bottom:1px solid rgba(59,130,246,0.2);">
-  <div style="max-width:900px;margin:0 auto;">
-    <div style="text-align:center;margin-bottom:52px;">
-      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(59,130,246,0.15);border:1px solid rgba(96,165,250,0.35);border-radius:20px;padding:5px 16px;font-size:13px;font-weight:700;color:#60a5fa;letter-spacing:.04em;margin-bottom:20px;">🌐 NEW — Community Library</div>
-      <h2 style="font-family:'Cabinet Grotesk',system-ui,sans-serif;font-size:clamp(28px,4.5vw,44px);font-weight:900;letter-spacing:-.025em;margin-bottom:16px;line-height:1.15;">Thousands of plays.<br>Shared by coaches, for coaches.</h2>
-      <p style="color:var(--muted);max-width:540px;margin:0 auto;font-size:1.05rem;line-height:1.7;">The Community Library is CourtDraw's shared coaching resource — 200+ expert plays ready to load, and a growing collection published by coaches just like you. Browse, steal ideas, publish your own plays, and build your coaching reputation.</p>
-    </div>
-
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:44px;">
-      <!-- Browse -->
-      <div style="background:var(--surface,rgba(255,255,255,0.06));border:1px solid var(--border,rgba(255,255,255,0.1));border-radius:16px;padding:28px 24px;text-align:center;">
-        <div style="font-size:36px;margin-bottom:14px;">🔍</div>
-        <h3 style="font-size:1rem;font-weight:800;margin-bottom:10px;">Browse &amp; Discover</h3>
-        <p style="font-size:0.875rem;color:var(--muted);line-height:1.6;">Filter by sport, category, or tactic type. Every play previews with a live court thumbnail — load any onto your board in one click. <strong style="color:var(--text)">Free for everyone.</strong></p>
-      </div>
-      <!-- Load -->
-      <div style="background:var(--surface,rgba(255,255,255,0.06));border:1px solid rgba(59,130,246,0.35);border-radius:16px;padding:28px 24px;text-align:center;background:linear-gradient(135deg,rgba(29,78,216,0.12),rgba(59,130,246,0.06));">
-        <div style="font-size:36px;margin-bottom:14px;">⚡</div>
-        <h3 style="font-size:1rem;font-weight:800;margin-bottom:10px;">Load &amp; Customise</h3>
-        <p style="font-size:0.875rem;color:var(--muted);line-height:1.6;">Open any community play on your board, adjust player positions, change arrows, add phases — make it yours in seconds. Save to your private library.</p>
-      </div>
-      <!-- Publish -->
-      <div style="background:var(--surface,rgba(255,255,255,0.06));border:1px solid var(--border,rgba(255,255,255,0.1));border-radius:16px;padding:28px 24px;text-align:center;">
-        <div style="font-size:36px;margin-bottom:14px;">📢</div>
-        <h3 style="font-size:1rem;font-weight:800;margin-bottom:10px;">Publish Your Best <span style="font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">PRO</span></h3>
-        <p style="font-size:0.875rem;color:var(--muted);line-height:1.6;">Pro coaches can publish their plays to the community. Tag by sport and tactic type — your play appears for coaches worldwide the moment you save.</p>
-      </div>
-    </div>
-
-    <!-- Tier summary bar -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:660px;margin:0 auto 40px;font-size:0.85rem;">
-      <div style="background:var(--surface,rgba(255,255,255,0.04));border:1px solid var(--border,rgba(255,255,255,0.08));border-radius:10px;padding:14px 16px;text-align:center;">
-        <div style="font-weight:800;margin-bottom:6px;">Free</div>
-        <div style="color:var(--muted);line-height:1.5;">✓ Browse all plays<br>✓ Load to board<br>✗ Can't publish</div>
-      </div>
-      <div style="background:linear-gradient(135deg,rgba(29,78,216,0.2),rgba(59,130,246,0.1));border:1px solid rgba(96,165,250,0.4);border-radius:10px;padding:14px 16px;text-align:center;">
-        <div style="font-weight:800;margin-bottom:6px;color:#60a5fa;">Pro ✦</div>
-        <div style="color:var(--muted);line-height:1.5;">✓ Browse all plays<br>✓ Load to board<br>✓ Publish plays</div>
-      </div>
-      <div style="background:linear-gradient(135deg,rgba(88,28,135,0.2),rgba(168,85,247,0.1));border:1px solid rgba(168,85,247,0.4);border-radius:10px;padding:14px 16px;text-align:center;">
-        <div style="font-weight:800;margin-bottom:6px;color:#a855f7;">Club ✦</div>
-        <div style="color:var(--muted);line-height:1.5;">✓ Browse all plays<br>✓ Load to board<br>✓ Publish plays</div>
-      </div>
-    </div>
-
-    <div style="text-align:center;">
-      <a href="courtdraw-app.html" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent,#3b82f6);color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;">Open Community Library →</a>
-      <p style="margin-top:14px;font-size:0.83rem;color:var(--muted);">No account needed to browse. Publishing requires a Pro or Club plan.</p>
-    </div>
+    <a href="login.html?checkout=pro" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;font-weight:700;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none;">Publish Your Plays →</a>
   </div>
 </section>
 
@@ -1908,13 +1929,27 @@
           io.unobserve(e.target);
         }
       });
-    }, { threshold: 0.08 });
+    // threshold:0 fires as soon as 1px enters viewport; 150px rootMargin pre-loads
+    // elements before they're fully in view so fast scrollers never see blank sections.
+    }, { threshold: 0, rootMargin: '0px 0px 150px 0px' });
     els.forEach(el => {
       el.style.opacity = '0';
       el.style.transform = 'translateY(16px)';
       el.style.transition = 'opacity .5s ease, transform .5s ease';
       io.observe(el);
     });
+    // Safety net: after 3 s force-reveal anything the observer missed (e.g. already
+    // in view on load, or rapid programmatic scrolls on slow devices).
+    setTimeout(() => {
+      els.forEach(el => {
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      });
+    }, 3000);
+  } else {
+    // No IntersectionObserver — just show everything immediately.
+    document.querySelectorAll('.feature-card, .sport-card, .testi-card, .pricing-card, .how-step, .ps-card')
+      .forEach(el => { el.style.opacity = '1'; el.style.transform = 'none'; });
   }
 </script>
 

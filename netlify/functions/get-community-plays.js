@@ -28,6 +28,23 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
+// Deterministic pseudo-random [0,1) from a string — used to normalise seeded save counts
+// so they look organic instead of all showing "12".
+function seededRandom(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = Math.imul(31, h) + str.charCodeAt(i) | 0;
+  return (h >>> 0) / 4294967296;
+}
+function normaliseSaveCount(id, raw) {
+  // Only normalise plays that still carry the seeded default of exactly 12.
+  // Once real users increment a play beyond 12 the real count is used as-is.
+  if (raw !== 12) return raw;
+  const r = seededRandom(id);
+  if (r > 0.92) return Math.floor(r * 100) % 30 + 18; // 18-47 (top 8%)
+  if (r > 0.70) return Math.floor(r * 100) % 10 + 8;  // 8-17 (next 22%)
+  return Math.floor(r * 100) % 6 + 2;                 // 2-7 (most plays)
+}
+
 function safeJsonParse(str, fallback) {
   try { return str ? JSON.parse(str) : fallback; } catch { return fallback; }
 }
@@ -60,7 +77,7 @@ exports.handler = async (event) => {
         ageGroup:     data.ageGroup     || '',
         authorUid:    data.authorUid    || '',
         _rawAuthorName: data.authorName || '',
-        saveCount:    data.saveCount    || 0,
+        saveCount:    normaliseSaveCount(d.id, data.saveCount || 0),
         publishedAt,
         currentPhase: data.currentPhase || 0,
         objects:      safeJsonParse(data.objectsJson, []),

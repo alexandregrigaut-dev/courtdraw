@@ -122,12 +122,19 @@
     }
     .play-card {
       background: var(--bg2); border: 1px solid var(--border);
-      border-radius: 14px; padding: 20px;
-      display: flex; flex-direction: column; gap: 10px;
+      border-radius: 14px; padding: 0;
+      display: flex; flex-direction: column;
+      overflow: hidden;
       transition: border-color .15s, transform .15s;
       cursor: pointer;
     }
     .play-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .play-card-thumb {
+      width: 100%; aspect-ratio: 5/3; overflow: hidden; border-radius: 12px 12px 0 0;
+      background: #0f172a;
+    }
+    .play-card-thumb svg { width: 100%; height: 100%; display: block; }
+    .play-card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
     .play-card-sport {
       display: inline-flex; align-items: center; gap: 5px;
       font-size: 0.74rem; font-weight: 600; letter-spacing: 0.04em;
@@ -270,6 +277,70 @@
     return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  // Court background colours keyed by courtId — used for thumbnail SVG
+  const COURT_BG = {
+    tennis_singles:'#1d4ed8', tennis_doubles:'#1d4ed8',
+    padel:'#1a4a6e', pickleball:'#1a4a6e', squash:'#c2410c',
+    badminton_singles:'#0891b2', badminton_doubles:'#0891b2',
+    table_tennis:'#166534', racquetball:'#b45309', beach_tennis:'#d97706',
+    football_full:'#15803d', football_half:'#15803d',
+    futsal:'#065f46', futsal_mini:'#065f46',
+    basketball_full:'#92400e', basketball_half:'#92400e',
+    volleyball:'#1e40af', floorball:'#374151',
+    korfball:'#166534', netball:'#7c3aed',
+    rugby_union:'#15803d', rugby_league:'#15803d',
+    field_hockey:'#166534', gaelic_football:'#15803d',
+    hurling:'#166534', american_football:'#14532d',
+    australian_rules:'#1a3a2a', ice_hockey:'#1e3a5f',
+    roller_hockey:'#374151', beach_volleyball:'#b45309',
+    beach_handball:'#b45309', beach_soccer:'#0369a1',
+    padbol:'#0c4a6e', indoor_hockey:'#065f46',
+    lacrosse:'#166534', water_polo:'#1e40af',
+    fistball:'#166534', handball:'#0284c7',
+    whiteboard:'#1e293b',
+  };
+
+  function courtBg(courtId) {
+    if (!courtId) return '#1e293b';
+    const key = courtId.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    return COURT_BG[key] || COURT_BG[courtId] || '#1e293b';
+  }
+
+  function renderThumbSvg(play) {
+    const bg = courtBg(play.courtId);
+    const tokens = Array.isArray(play.tokens) ? play.tokens : [];
+    const objects = Array.isArray(play.objects) ? play.objects : [];
+
+    // Draw objects (arrows/lines) as simple path strokes
+    const objSvgs = objects.map(o => {
+      const pts = o.points || (o.x1 !== undefined ? [[o.x1,o.y1],[o.x2,o.y2]] : null);
+      if (!pts || pts.length < 2) return '';
+      const color = o.color || '#fff';
+      const w = (o.lineWidth || 3) * 0.5;
+      const dashed = (o.type === 'dashed-arrow' || o.type === 'dash') ? 'stroke-dasharray="8,5"' : '';
+      let d = `M${pts[0][0]},${pts[0][1]}`;
+      for (let i = 1; i < pts.length; i++) d += ` L${pts[i][0]},${pts[i][1]}`;
+      return `<path d="${d}" stroke="${color}" stroke-width="${w}" fill="none" ${dashed} stroke-linecap="round" opacity="0.85"/>`;
+    }).join('');
+
+    // Draw player tokens
+    const tokenSvgs = tokens.map(tk => {
+      if (!tk.pct || tk.pct.length < 2) return '';
+      const cx = tk.pct[0] * 1000;
+      const cy = tk.pct[1] * 600;
+      const fill = tk.team === 'red' ? '#ef4444' : '#60a5fa';
+      const lbl = (tk.label || '').slice(0, 4);
+      return `<circle cx="${cx}" cy="${cy}" r="26" fill="${fill}" stroke="#fff" stroke-width="5"/>
+              <text x="${cx}" y="${cy+9}" text-anchor="middle" fill="#fff" font-size="20" font-weight="700" font-family="system-ui">${lbl}</text>`;
+    }).join('');
+
+    return `<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1000" height="600" fill="${bg}"/>
+      ${objSvgs}
+      ${tokenSvgs}
+    </svg>`;
+  }
+
   function renderCard(play) {
     const sport   = play.sport || play.courtId || '';
     const emoji   = sportEmoji(sport);
@@ -281,11 +352,14 @@
     const card = document.createElement('div');
     card.className = 'play-card';
     card.innerHTML = `
-      <div class="play-card-sport">${emoji} ${e(sportLabel)}</div>
-      <div class="play-card-name">${e(name)}</div>
-      <div class="play-card-footer">
-        <span class="play-card-author">by @${e(author)}</span>
-        <span class="play-card-saves">${saves > 0 ? saves + ' saves' : ''}</span>
+      <div class="play-card-thumb">${renderThumbSvg(play)}</div>
+      <div class="play-card-body">
+        <div class="play-card-sport">${emoji} ${e(sportLabel)}</div>
+        <div class="play-card-name">${e(name)}</div>
+        <div class="play-card-footer">
+          <span class="play-card-author">by @${e(author)}</span>
+          <span class="play-card-saves">${saves > 0 ? saves + ' saves' : ''}</span>
+        </div>
       </div>
     `;
     card.addEventListener('click', () => {

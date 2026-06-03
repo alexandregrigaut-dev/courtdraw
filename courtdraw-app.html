@@ -3209,15 +3209,23 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
   }
   // Auto-trigger checkout if user was redirected here from the paywall.
   // Also allow Pro → Club upgrade: if user is Pro (not Club) and pending is 'club', still proceed.
+  // Guard: only fire when the user is actually logged in — without this guard, a free/anonymous
+  // user who previously clicked Upgrade ends up in an infinite login redirect loop.
   const pending = localStorage.getItem('courtdraw_pending_checkout');
   if (pending) {
-    const isClubUpgrade = isPro && !isClub && pending === 'club';
-    if (!isPro && !isClub || isClubUpgrade) {
+    if (!window.__currentUser) {
+      // Not logged in — clear the stale intent silently. The user chose to continue without
+      // an account, so there is nothing to auto-trigger.
       localStorage.removeItem('courtdraw_pending_checkout');
-      setTimeout(() => startCheckout(pending), 800);
     } else {
-      // Already on the target plan or higher — clear stale pending checkout
-      localStorage.removeItem('courtdraw_pending_checkout');
+      const isClubUpgrade = isPro && !isClub && pending === 'club';
+      if (!isPro && !isClub || isClubUpgrade) {
+        localStorage.removeItem('courtdraw_pending_checkout');
+        setTimeout(() => startCheckout(pending), 800);
+      } else {
+        // Already on the target plan or higher — clear stale pending checkout
+        localStorage.removeItem('courtdraw_pending_checkout');
+      }
     }
   }
   // Point 1: update save counter now that plan is known
