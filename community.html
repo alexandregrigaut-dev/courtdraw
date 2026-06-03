@@ -182,6 +182,8 @@
     .footer a:hover { color: var(--accent); }
     .footer-links { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
   </style>
+  <!-- Court SVG definitions for thumbnail rendering -->
+  <script src="/src/court-svgs.js"></script>
 </head>
 <body>
 
@@ -307,11 +309,14 @@
   }
 
   function renderThumbSvg(play) {
-    const bg = courtBg(play.courtId);
     const tokens = Array.isArray(play.tokens) ? play.tokens : [];
     const objects = Array.isArray(play.objects) ? play.objects : [];
 
-    // Draw objects (arrows/lines) as simple path strokes
+    // Use the real court SVG (lines, markings, colours) if available; fall back to flat colour
+    const courtSvgInner = (window.COURT_SVGS && window.COURT_SVGS[play.courtId])
+      || `<rect width="1000" height="600" fill="${courtBg(play.courtId)}"/>`;
+
+    // Draw objects (arrows/lines)
     const objSvgs = objects.map(o => {
       const pts = o.points || (o.x1 !== undefined ? [[o.x1,o.y1],[o.x2,o.y2]] : null);
       if (!pts || pts.length < 2) return '';
@@ -335,7 +340,7 @@
     }).join('');
 
     return `<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
-      <rect width="1000" height="600" fill="${bg}"/>
+      ${courtSvgInner}
       ${objSvgs}
       ${tokenSvgs}
     </svg>`;
