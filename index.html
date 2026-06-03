@@ -1108,6 +1108,56 @@
   </div>
 </section>
 
+<!-- ════ SCREENSHOTS ════ -->
+<style>
+  .screenshots-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+  .ss-card{display:flex;flex-direction:column}
+  .ss-card img{width:100%;border-radius:10px;border:1px solid rgba(255,255,255,0.08);box-shadow:0 8px 32px rgba(0,0,0,0.4);display:block;transition:transform .25s,box-shadow .25s}
+  .ss-card:hover img{transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,0.5)}
+  .ss-caption{margin-top:18px}
+  .ss-caption h3{font-size:16px;font-weight:700;color:var(--text);margin:0 0 6px;letter-spacing:-.01em}
+  .ss-caption p{font-size:14px;color:var(--muted);margin:0;line-height:1.6}
+  @media(max-width:900px){.screenshots-grid{grid-template-columns:1fr;gap:40px}}
+</style>
+<section class="section" id="screenshots" data-marketing style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="container">
+    <div class="section-header">
+      <span class="badge">See It In Action</span>
+      <h2>The app coaches actually open at training.</h2>
+      <p>Real screenshots. No mockups, no stock photos — this is exactly what you get on day one.</p>
+    </div>
+    <div class="screenshots-grid">
+      <div class="ss-card">
+        <img src="/assets/screenshots/cd-screenshot-1-drawing.jpg"
+             alt="CourtDraw drawing interface — football tactics board with 11v11 player tokens and movement arrows"
+             loading="lazy" width="1430" height="698">
+        <div class="ss-caption">
+          <h3>✏️ Draw tactics in seconds</h3>
+          <p>11v11 football (or any of 38 sports). Drag players into position, draw arrows for runs, add phases — all from your phone.</p>
+        </div>
+      </div>
+      <div class="ss-card">
+        <img src="/assets/screenshots/cd-screenshot-2-myplays.jpg"
+             alt="CourtDraw My Saved Plays panel — search bar, sport filter pills, saved play cards with ratings"
+             loading="lazy" width="1430" height="698">
+        <div class="ss-caption">
+          <h3>📚 Your personal playbook</h3>
+          <p>Every play saved with a name, tags, and a 5-star rating. Search your library and load any tactic in one tap — even mid-session.</p>
+        </div>
+      </div>
+      <div class="ss-card">
+        <img src="/assets/screenshots/cd-screenshot-3-community.jpg"
+             alt="CourtDraw Community Library showing football plays: Tiki-Taka Possession, High Press (Gegenpressing), Counter Attack"
+             loading="lazy" width="1430" height="698">
+        <div class="ss-caption">
+          <h3>🌍 200+ plays from coaches worldwide</h3>
+          <p>Browse the community library — Tiki-Taka, Gegenpressing, Counter Attack, Corner Kicks — and load any play onto your board instantly.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ════ FEATURES ════ -->
 <section class="section" id="features" data-marketing>
   <div class="container">
