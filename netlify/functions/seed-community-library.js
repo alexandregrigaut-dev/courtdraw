@@ -7,12 +7,7 @@
  * Delete this file after the seed is confirmed.
  */
 
-const path = require('path');
-
-// Mock browser global so tactics-library.js can be required in Node
-global.window = global.window || {};
-require(path.join(__dirname, '../../tactics-library.js'));
-const tactics = global.window.TACTICS_LIBRARY;
+const tactics = require('./_tactics-data');
 
 const { db } = require('./_admin-init');
 const admin   = require('firebase-admin');
