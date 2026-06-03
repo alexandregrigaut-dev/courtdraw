@@ -426,8 +426,13 @@
   fetch('/api/get-community-plays')
     .then(r => r.json())
     .then(({ plays }) => {
-      // Sort by saveCount desc — most popular first
-      allPlays = (plays || []).sort((a, b) => (b.saveCount || 0) - (a.saveCount || 0));
+      // User plays first (by saveCount desc), CourtDraw Team plays after
+      allPlays = (plays || []).sort((a, b) => {
+        const aIsTeam = (a.authorName || '') === 'CourtDraw Team';
+        const bIsTeam = (b.authorName || '') === 'CourtDraw Team';
+        if (aIsTeam !== bIsTeam) return aIsTeam ? 1 : -1;
+        return (b.saveCount || 0) - (a.saveCount || 0);
+      });
       filtered = allPlays;
 
       if (!allPlays.length) {

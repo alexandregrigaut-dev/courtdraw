@@ -8460,8 +8460,13 @@ function renderCommunityGrid() {
   let plays = _getCommCurrentPlays();
   if (commLibState.sport !== 'All') plays = plays.filter(t => t.sport === commLibState.sport);
   if (commLibState.filter !== 'All') plays = plays.filter(t => (t.category || '') === commLibState.filter);
-  // Trending sort: most-loaded plays first (saveCount desc); seed plays without saveCount sink to bottom
-  if (commLibState.sort === 'trending') plays.sort((a, b) => (b.saveCount || 0) - (a.saveCount || 0));
+  // Trending sort: user-published plays first (by saveCount desc), CourtDraw Team seed plays after
+  if (commLibState.sort === 'trending') plays.sort((a, b) => {
+    const aIsSeed = a._source === 'seed';
+    const bIsSeed = b._source === 'seed';
+    if (aIsSeed !== bIsSeed) return aIsSeed ? 1 : -1;
+    return (b.saveCount || 0) - (a.saveCount || 0);
+  });
 
   // Loading state — seed data always available for community tab
   if (notLoaded && !plays.length) {
@@ -8519,9 +8524,8 @@ function renderCommunityGrid() {
     const unpubBtn    = isMyPlay
       ? `<button class="comm-unpub-btn" onclick="event.stopPropagation();unpublishCommunityPlay('${t.id}',this)" title="Remove from Community Library">Unpublish</button>`
       : '';
-    // Show save count only on the author's own cards (gives authors visibility into reach)
     const sc = t.saveCount || 0;
-    const saveCountBadge = isMyPlay && sc > 0
+    const saveCountBadge = sc > 0
       ? `<div class="comm-save-count">Loaded by ${sc} coach${sc === 1 ? '' : 'es'}</div>`
       : '';
     return `<div class="comm-card" onclick="handleCommPlayClick(${idx})" role="button" tabindex="0"
