@@ -416,8 +416,8 @@
     filtered = sport === 'all'
       ? allPlays
       : allPlays.filter(p => {
-          const s = (p.sport || p.courtId || '').toLowerCase();
-          return s.includes(sport.toLowerCase());
+          const s = (p.sport || '').toLowerCase();
+          return s === sport.toLowerCase();
         });
     shown = 0;
     renderGrid();

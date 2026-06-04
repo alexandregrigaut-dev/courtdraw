@@ -20,8 +20,8 @@ const PLAN_BY_PRICE = {
 
 // EUR value for each price — used by success.html to fire an accurate Meta Pixel Purchase event
 const VALUE_BY_PRICE = {
-  [process.env.STRIPE_PRICE_ID_PRO_MONTHLY]: 4.99,
-  [process.env.STRIPE_PRICE_ID_PRO_YEARLY]:  39.99,
+  [process.env.STRIPE_PRICE_ID_PRO_MONTHLY]: 6,
+  [process.env.STRIPE_PRICE_ID_PRO_YEARLY]:  49,
   [process.env.STRIPE_PRICE_ID_CLUB]:        99
 };
 
