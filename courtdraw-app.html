@@ -7270,17 +7270,17 @@ function showToast(msg, ms = 2400) {
     const vh  = window.innerHeight;
     const M   = 12;
     if (isMobileView()) {
-      // Mobile: bottom-anchored, full-width card above browser chrome.
-      // Keeps the court fully visible and follows the standard mobile onboarding
-      // pattern (tooltip at the bottom, court unobscured above).
-      const cardW = vw - 2 * M;
-      _tooltip.style.width    = cardW + 'px';
-      _tooltip.style.maxWidth = cardW + 'px';
-      _tooltip.style.padding  = '10px 14px 10px';
+      // Compact mobile tooltip: smaller font/padding, anchored top-right
+      _tooltip.style.maxWidth = '200px';
+      _tooltip.style.padding  = '10px 12px 8px';
+      _tooltip.style.fontSize = '12px';
+      // Tighten inner elements via class (applied once)
       _tooltip.classList.add('tut-tooltip-compact');
-      _tooltip.style.bottom = '80px'; // clears ··· button (bottom: 4px) + browser chrome
-      _tooltip.style.top    = '';     // clear any stale top from previous render
-      _tooltip.style.left   = M + 'px';
+      const tw2 = _tooltip.offsetWidth || 200;
+      const top  = 58;
+      const left = vw - tw2 - M;
+      _tooltip.style.top  = top + 'px';
+      _tooltip.style.left = Math.max(M, left) + 'px';
       return;
     }
     const r   = el.getBoundingClientRect();
@@ -7787,9 +7787,8 @@ function showToast(msg, ms = 2400) {
         return;
       }
 
-      // On mobile, never show the spotlight ring — the dark overlay covers too
-      // much of a small screen and makes the court / toolbar hard to use.
-      const useMobileCenter = isMobileView() || step.mobileCenter;
+      // On mobile, mobileCenter steps skip spotlight and center the tooltip
+      const useMobileCenter = isMobileView() && step.mobileCenter;
       if (step.spotlight && !useMobileCenter) { spotlightEl(el); }
       else { if (_ring) _ring.style.display = 'none'; }
 
