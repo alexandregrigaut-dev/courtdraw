@@ -24,8 +24,8 @@
   <!-- End Meta Pixel -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CourtDraw — Tactics Board for Multi-Sport Clubs | 38 Sports, One Tool</title>
-  <meta name="description" content="38 sports. One tactics board. Football, basketball, tennis, padel and 34 more — draw plays, share strategy, animate formations. Free, no install, works on any device." />
+  <title>CourtDraw — The Tactics Board for Every Coach | 38 Sports, Draw in 30 Seconds</title>
+  <meta name="description" content="The tactics board for every coach. 38 sports — football, basketball, tennis, padel and 34 more. Draw plays and share strategy in 30 seconds. Free, no install, works on any device." />
   <meta name="keywords" content="tactics board, football tactics board, basketball playbook, coach drawing tool, play designer, formation builder, sports strategy app, online whiteboard for coaches" />
   <link rel="canonical" href="https://courtdraw.app/" />
 
@@ -395,7 +395,37 @@
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
     }
     @media (max-width: 900px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 580px) { .features-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 580px) {
+      .features-scroll-wrap { position: relative; }
+      .features-scroll-wrap::after {
+        content: '';
+        position: absolute; right: 0; top: 0; bottom: 16px;
+        width: 56px;
+        background: linear-gradient(to right, transparent, var(--bg1, #0f172a));
+        pointer-events: none; z-index: 2;
+      }
+      .features-grid {
+        display: flex; flex-wrap: nowrap;
+        overflow-x: auto; scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        gap: 14px; padding-bottom: 16px;
+        scrollbar-width: none;
+      }
+      .features-grid::-webkit-scrollbar { display: none; }
+      .features-grid .feature-card {
+        min-width: calc(100vw - 96px); flex-shrink: 0; scroll-snap-align: start;
+      }
+      .features-swipe-hint {
+        display: flex; align-items: center; justify-content: center;
+        gap: 6px; font-size: 12px; color: var(--muted); margin-top: 4px;
+        animation: swipeHintBounce 1.6s ease-in-out 0.6s 3;
+      }
+      @keyframes swipeHintBounce {
+        0%,100% { transform: translateX(0); opacity: 0.6; }
+        50% { transform: translateX(6px); opacity: 1; }
+      }
+    }
+    @media (min-width: 581px) { .features-swipe-hint { display: none; } }
     /* Community Library flagship card: collapse to column layout on tablet/mobile */
     @media (max-width: 760px) { .feature-card[style*="grid-column:1/-1"] { flex-direction: column; } }
     .feature-card {
@@ -1248,6 +1278,7 @@
       <h2>Everything a Coach Needs. Nothing They Don't.</h2>
       <p>Purpose-built for coaching, not graphic design. Fast, focused, and frustration-free.</p>
     </div>
+    <div class="features-scroll-wrap">
     <div class="features-grid">
       <!-- 1. Community Library — flagship, full-width, top position -->
       <div class="feature-card" style="border-color:rgba(59,130,246,0.45);background:linear-gradient(135deg,rgba(59,130,246,0.12) 0%,rgba(59,130,246,0.04) 100%);grid-column:1/-1;display:flex;align-items:center;gap:32px;position:relative;overflow:hidden;">
@@ -1344,6 +1375,8 @@
         <h3>Coach Notes on Tactics <span style="font-size:11px;background:rgba(168,85,247,.15);color:#a855f7;border-radius:4px;padding:1px 6px;font-weight:700;vertical-align:middle;">CLUB</span></h3>
         <p>Every play in the club library can carry coach notes — situational tips, when to use it, what it counters. Your shared library becomes a living coaching document, not just a folder of diagrams.</p>
       </div>
+    </div>
+    <div class="features-swipe-hint">Swipe for more →</div>
     </div>
   </div>
 </section>

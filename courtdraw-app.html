@@ -830,6 +830,24 @@ body.share-view #share-footer { display: flex; }
 @media (max-width: 767px) {
   #toast { white-space: normal; max-width: calc(100vw - 32px); text-align: center; }
 }
+#export-share-banner {
+  display: none; position: fixed;
+  bottom: calc(var(--toolbar-h) + var(--phase-bar-h) + env(safe-area-inset-bottom) + 12px);
+  left: 50%; transform: translateX(-50%);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 6px 6px 6px 14px;
+  font-size: 13px; font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  z-index: 301; white-space: nowrap; align-items: center; gap: 10px;
+  animation: fadein 0.2s ease; max-width: calc(100vw - 32px);
+}
+#export-share-banner.show { display: flex; }
+#export-share-btn {
+  background: #3b82f6; color: white; border: none;
+  border-radius: 14px; padding: 6px 14px;
+  font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0;
+}
+#export-share-btn:active { background: #2563eb; }
 /* Pro-lock glow on hover */
 .pro-gate { position: relative; }
 /* Phase bar */
@@ -2280,6 +2298,12 @@ body.portrait-mode .player-token:active {
 
 <!-- Toast -->
 <div id="toast"></div>
+
+<!-- Export share banner (mobile) -->
+<div id="export-share-banner">
+  <span>✓ PNG saved</span>
+  <button id="export-share-btn" onclick="doExportShare()">📤 Share</button>
+</div>
 
 <!-- Point 6: Return visitor banner -->
 <div id="return-visitor-banner" role="alert" aria-live="polite">
@@ -4660,7 +4684,7 @@ function renderCourtGrid(filter) {
     if (!grouped[c.category]) grouped[c.category] = [];
     grouped[c.category].push(c);
   }
-  const catOrder = ['racket','indoor','field','ice','beach','other'];
+  const catOrder = ['field','indoor','ice','beach','other','racket'];
   let total = 0;
   for (const cat of catOrder) {
     if (!grouped[cat] || !grouped[cat].length) continue;
@@ -5870,29 +5894,14 @@ function exportPNG() {
     const finalizePng = () => {
       const filename = `courtdraw-${state.courtId}.png`;
       off.toBlob(blob => {
-        const file = new File([blob], filename, { type: 'image/png' });
-        let canShare = false;
-        try { canShare = !!navigator.canShare && navigator.canShare({ files: [file] }); } catch {}
-        if (canShare) {
-          navigator.share({ files: [file], title: 'Tactic from CourtDraw' })
-            .then(() => {
-              gtag('event', 'share_play_native', { event_category: 'engagement', court_id: state.courtId });
-              showToast('Shared!');
-            })
-            .catch(err => {
-              if (err.name !== 'AbortError') {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.download = filename; a.href = url; a.click();
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
-                showToast('Play exported!');
-              }
-            });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.download = filename; a.href = url; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        // On mobile with Web Share API: show share button instead of plain toast
+        if (window.innerWidth < 768 && navigator.share) {
+          _showExportShareBanner(blob, filename);
         } else {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.download = filename; a.href = url; a.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
           showToast('Play exported!');
         }
       }, 'image/png');
@@ -7080,6 +7089,33 @@ function showToast(msg, ms = 2400) {
   t.textContent = msg;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+let _exportShareBlob = null, _exportShareFilename = null, _exportShareTimer = null;
+function _showExportShareBanner(blob, filename) {
+  _exportShareBlob = blob; _exportShareFilename = filename;
+  const b = document.getElementById('export-share-banner');
+  if (b) b.classList.add('show');
+  clearTimeout(_exportShareTimer);
+  _exportShareTimer = setTimeout(_dismissExportShareBanner, 7000);
+}
+function _dismissExportShareBanner() {
+  const b = document.getElementById('export-share-banner');
+  if (b) b.classList.remove('show');
+  _exportShareBlob = null; _exportShareFilename = null;
+}
+function doExportShare() {
+  const blob = _exportShareBlob, filename = _exportShareFilename;
+  _dismissExportShareBanner();
+  if (!blob || !navigator.share) return;
+  gtag('event', 'share_play_native', { event_category: 'engagement', court_id: state.courtId });
+  const file = new File([blob], filename, { type: 'image/png' });
+  let canShare = false;
+  try { canShare = !!navigator.canShare && navigator.canShare({ files: [file] }); } catch {}
+  (canShare
+    ? navigator.share({ files: [file], title: 'Tactic from CourtDraw' })
+    : navigator.share({ title: 'Tactic from CourtDraw', url: 'https://courtdraw.app' })
+  ).catch(() => {});
 }
 
 // ══════════════════════════════════════════════
@@ -8414,6 +8450,11 @@ function openCommunityLibrary() {
   const modal = document.getElementById('community-library-modal');
   if (!modal) return;
   modal.classList.add('open');
+  // Pre-filter to the user's free court sport so they see relevant plays immediately
+  if (state.freeCourt && !state.isPro && !state.isClub) {
+    const fc = COURTS.find(c => c.id === state.freeCourt);
+    if (fc) commLibState.sport = fc.name.replace(/ \(.*\)/, '');
+  }
   _renderCommTabs();
   _renderCommSportTabs();
   _renderCommFilterBar();
