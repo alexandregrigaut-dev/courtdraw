@@ -1,12 +1,12 @@
 /**
  * admin-randomize-saves.js — One-time admin utility
  * Assigns realistic, varied saveCount values to all seeded @CourtDraw Team plays.
- * Protected by ADMIN_SECRET env var. Call once after deploy, then this function
+ * Protected by INTERNAL_SECRET env var. Call once after deploy, then this function
  * can be left in place (it's idempotent and does nothing without the secret).
  *
  * Usage:
  *   POST /api/admin-randomize-saves
- *   Body: { "secret": "<ADMIN_SECRET env var value>" }
+ *   Body: { "secret": "<INTERNAL_SECRET env var value>" }
  *
  * After running, delete or disable this function.
  */
@@ -39,7 +39,7 @@ exports.handler = async (event) => {
 
   try {
     const body = JSON.parse(event.body || '{}');
-    const secret = process.env.ADMIN_SECRET;
+    const secret = process.env.INTERNAL_SECRET;
     if (!secret || body.secret !== secret) {
       return { statusCode: 403, body: 'Forbidden' };
     }
