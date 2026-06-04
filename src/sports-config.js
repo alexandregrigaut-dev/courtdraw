@@ -709,6 +709,513 @@ export const SPORT_TOKENS = {
 
 };
 
+// ─── FORMATION PRESETS ────────────────────────────────────────────────────────
+// Each entry: { id, name, desc, tokens } where tokens is the FULL array for
+// BOTH teams (same format as SPORT_TOKENS). Use _m(blueArray) to auto-mirror.
+
+function _m(blue) {
+  return [...blue, ...blue.map(t => ({
+    team: 'red', label: t.label,
+    pct: [+(1 - t.pct[0]).toFixed(2), +(1 - t.pct[1]).toFixed(2)]
+  }))];
+}
+
+// Fixed red-team shape for football_half (GK visible, outfield off-screen)
+const _FH_RED = [
+  { team:'red', label:'GK', pct:[0.14,0.50] },
+  { team:'red', label:'LB', pct:[0.80,0.18] }, { team:'red', label:'CB', pct:[0.78,0.38] },
+  { team:'red', label:'CB', pct:[0.78,0.62] }, { team:'red', label:'RB', pct:[0.80,0.82] },
+  { team:'red', label:'LM', pct:[0.68,0.28] }, { team:'red', label:'CM', pct:[0.68,0.50] },
+  { team:'red', label:'RM', pct:[0.68,0.72] },
+  { team:'red', label:'LW', pct:[0.60,0.18] }, { team:'red', label:'ST', pct:[0.60,0.50] },
+  { team:'red', label:'RW', pct:[0.60,0.82] },
+];
+
+export const FORMATIONS = {
+
+  // ── FOOTBALL / SOCCER (FULL) ───────────────────────────────────────────────
+  // Field x=0.13–0.87, y=0.10–0.90. GK blue (0.14,0.50), red (0.86,0.50).
+  football_full: [
+    { id:'4-3-3',   name:'4-3-3',   desc:'Classic / Pressing', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.14,0.50]},
+      {team:'blue',label:'RB', pct:[0.18,0.18]}, {team:'blue',label:'CB', pct:[0.18,0.38]},
+      {team:'blue',label:'CB', pct:[0.18,0.62]}, {team:'blue',label:'LB', pct:[0.18,0.82]},
+      {team:'blue',label:'RM', pct:[0.30,0.28]}, {team:'blue',label:'CM', pct:[0.30,0.50]},
+      {team:'blue',label:'LM', pct:[0.30,0.72]},
+      {team:'blue',label:'RW', pct:[0.40,0.18]}, {team:'blue',label:'ST', pct:[0.40,0.50]},
+      {team:'blue',label:'LW', pct:[0.40,0.82]},
+    ])},
+    { id:'4-4-2',   name:'4-4-2',   desc:'Flat Midfield', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.14,0.50]},
+      {team:'blue',label:'RB', pct:[0.18,0.18]}, {team:'blue',label:'CB', pct:[0.18,0.38]},
+      {team:'blue',label:'CB', pct:[0.18,0.62]}, {team:'blue',label:'LB', pct:[0.18,0.82]},
+      {team:'blue',label:'RM', pct:[0.30,0.18]}, {team:'blue',label:'CM', pct:[0.30,0.38]},
+      {team:'blue',label:'CM', pct:[0.30,0.62]}, {team:'blue',label:'LM', pct:[0.30,0.82]},
+      {team:'blue',label:'ST', pct:[0.40,0.38]}, {team:'blue',label:'ST', pct:[0.40,0.62]},
+    ])},
+    { id:'4-2-3-1', name:'4-2-3-1', desc:'Double Pivot', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.14,0.50]},
+      {team:'blue',label:'RB', pct:[0.18,0.18]}, {team:'blue',label:'CB', pct:[0.18,0.38]},
+      {team:'blue',label:'CB', pct:[0.18,0.62]}, {team:'blue',label:'LB', pct:[0.18,0.82]},
+      {team:'blue',label:'DM', pct:[0.27,0.40]}, {team:'blue',label:'DM', pct:[0.27,0.60]},
+      {team:'blue',label:'RM', pct:[0.36,0.18]}, {team:'blue',label:'AM', pct:[0.36,0.50]},
+      {team:'blue',label:'LM', pct:[0.36,0.82]}, {team:'blue',label:'ST', pct:[0.44,0.50]},
+    ])},
+    { id:'3-5-2',   name:'3-5-2',   desc:'Wing-Backs', tokens: _m([
+      {team:'blue',label:'GK',  pct:[0.14,0.50]},
+      {team:'blue',label:'CB',  pct:[0.18,0.28]}, {team:'blue',label:'CB',  pct:[0.18,0.50]},
+      {team:'blue',label:'CB',  pct:[0.18,0.72]},
+      {team:'blue',label:'RWB', pct:[0.28,0.14]}, {team:'blue',label:'CM',  pct:[0.30,0.35]},
+      {team:'blue',label:'CM',  pct:[0.30,0.50]}, {team:'blue',label:'CM',  pct:[0.30,0.65]},
+      {team:'blue',label:'LWB', pct:[0.28,0.86]},
+      {team:'blue',label:'ST',  pct:[0.40,0.38]}, {team:'blue',label:'ST',  pct:[0.40,0.62]},
+    ])},
+    { id:'4-1-4-1', name:'4-1-4-1', desc:'Low Block', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.14,0.50]},
+      {team:'blue',label:'RB', pct:[0.18,0.18]}, {team:'blue',label:'CB', pct:[0.18,0.38]},
+      {team:'blue',label:'CB', pct:[0.18,0.62]}, {team:'blue',label:'LB', pct:[0.18,0.82]},
+      {team:'blue',label:'DM', pct:[0.27,0.50]},
+      {team:'blue',label:'RM', pct:[0.36,0.18]}, {team:'blue',label:'CM', pct:[0.36,0.38]},
+      {team:'blue',label:'CM', pct:[0.36,0.62]}, {team:'blue',label:'LM', pct:[0.36,0.82]},
+      {team:'blue',label:'ST', pct:[0.44,0.50]},
+    ])},
+    { id:'5-3-2',   name:'5-3-2',   desc:'Defensive', tokens: _m([
+      {team:'blue',label:'GK',  pct:[0.14,0.50]},
+      {team:'blue',label:'RWB', pct:[0.18,0.12]}, {team:'blue',label:'CB', pct:[0.20,0.32]},
+      {team:'blue',label:'CB',  pct:[0.20,0.50]}, {team:'blue',label:'CB', pct:[0.20,0.68]},
+      {team:'blue',label:'LWB', pct:[0.18,0.88]},
+      {team:'blue',label:'RM',  pct:[0.30,0.28]}, {team:'blue',label:'CM', pct:[0.30,0.50]},
+      {team:'blue',label:'LM',  pct:[0.30,0.72]},
+      {team:'blue',label:'ST',  pct:[0.40,0.38]}, {team:'blue',label:'ST', pct:[0.40,0.62]},
+    ])},
+  ],
+
+  // ── FOOTBALL / SOCCER (HALF) ───────────────────────────────────────────────
+  // Shows LEFT half: goal at x≈0.13 (red GK visible). Blue attacks toward goal.
+  // Blue = 10 outfield (no GK — off-screen). Red = GK(0.14)+10 outfield(off-screen).
+  football_half: [
+    { id:'4-3-3',   name:'4-3-3',   desc:'Classic / Pressing', tokens: [
+      {team:'blue',label:'RB', pct:[0.38,0.18]}, {team:'blue',label:'CB', pct:[0.36,0.38]},
+      {team:'blue',label:'CB', pct:[0.36,0.62]}, {team:'blue',label:'LB', pct:[0.38,0.82]},
+      {team:'blue',label:'RM', pct:[0.44,0.28]}, {team:'blue',label:'CM', pct:[0.44,0.50]},
+      {team:'blue',label:'LM', pct:[0.44,0.72]},
+      {team:'blue',label:'RW', pct:[0.48,0.18]}, {team:'blue',label:'ST', pct:[0.48,0.50]},
+      {team:'blue',label:'LW', pct:[0.48,0.82]},
+      ..._FH_RED,
+    ]},
+    { id:'4-4-2',   name:'4-4-2',   desc:'Flat Midfield', tokens: [
+      {team:'blue',label:'RB', pct:[0.38,0.18]}, {team:'blue',label:'CB', pct:[0.36,0.38]},
+      {team:'blue',label:'CB', pct:[0.36,0.62]}, {team:'blue',label:'LB', pct:[0.38,0.82]},
+      {team:'blue',label:'RM', pct:[0.44,0.18]}, {team:'blue',label:'CM', pct:[0.44,0.38]},
+      {team:'blue',label:'CM', pct:[0.44,0.62]}, {team:'blue',label:'LM', pct:[0.44,0.82]},
+      {team:'blue',label:'ST', pct:[0.48,0.38]}, {team:'blue',label:'ST', pct:[0.48,0.62]},
+      ..._FH_RED,
+    ]},
+    { id:'4-2-3-1', name:'4-2-3-1', desc:'Double Pivot', tokens: [
+      {team:'blue',label:'RB', pct:[0.37,0.18]}, {team:'blue',label:'CB', pct:[0.36,0.38]},
+      {team:'blue',label:'CB', pct:[0.36,0.62]}, {team:'blue',label:'LB', pct:[0.37,0.82]},
+      {team:'blue',label:'DM', pct:[0.42,0.40]}, {team:'blue',label:'DM', pct:[0.42,0.60]},
+      {team:'blue',label:'RM', pct:[0.45,0.18]}, {team:'blue',label:'AM', pct:[0.45,0.50]},
+      {team:'blue',label:'LM', pct:[0.45,0.82]}, {team:'blue',label:'ST', pct:[0.49,0.50]},
+      ..._FH_RED,
+    ]},
+    { id:'3-5-2',   name:'3-5-2',   desc:'Wing-Backs', tokens: [
+      {team:'blue',label:'CB',  pct:[0.36,0.28]}, {team:'blue',label:'CB',  pct:[0.36,0.50]},
+      {team:'blue',label:'CB',  pct:[0.36,0.72]},
+      {team:'blue',label:'RWB', pct:[0.40,0.14]}, {team:'blue',label:'CM',  pct:[0.43,0.35]},
+      {team:'blue',label:'CM',  pct:[0.43,0.50]}, {team:'blue',label:'CM',  pct:[0.43,0.65]},
+      {team:'blue',label:'LWB', pct:[0.40,0.86]},
+      {team:'blue',label:'ST',  pct:[0.48,0.38]}, {team:'blue',label:'ST',  pct:[0.48,0.62]},
+      ..._FH_RED,
+    ]},
+    { id:'4-1-4-1', name:'4-1-4-1', desc:'Low Block', tokens: [
+      {team:'blue',label:'RB', pct:[0.37,0.18]}, {team:'blue',label:'CB', pct:[0.36,0.38]},
+      {team:'blue',label:'CB', pct:[0.36,0.62]}, {team:'blue',label:'LB', pct:[0.37,0.82]},
+      {team:'blue',label:'DM', pct:[0.42,0.50]},
+      {team:'blue',label:'RM', pct:[0.45,0.18]}, {team:'blue',label:'CM', pct:[0.45,0.38]},
+      {team:'blue',label:'CM', pct:[0.45,0.62]}, {team:'blue',label:'LM', pct:[0.45,0.82]},
+      {team:'blue',label:'ST', pct:[0.49,0.50]},
+      ..._FH_RED,
+    ]},
+    { id:'5-3-2',   name:'5-3-2',   desc:'Defensive', tokens: [
+      {team:'blue',label:'RWB', pct:[0.37,0.12]}, {team:'blue',label:'CB', pct:[0.36,0.32]},
+      {team:'blue',label:'CB',  pct:[0.36,0.50]}, {team:'blue',label:'CB', pct:[0.36,0.68]},
+      {team:'blue',label:'LWB', pct:[0.37,0.88]},
+      {team:'blue',label:'RM',  pct:[0.43,0.28]}, {team:'blue',label:'CM', pct:[0.43,0.50]},
+      {team:'blue',label:'LM',  pct:[0.43,0.72]},
+      {team:'blue',label:'ST',  pct:[0.48,0.38]}, {team:'blue',label:'ST', pct:[0.48,0.62]},
+      ..._FH_RED,
+    ]},
+  ],
+
+  // ── BASKETBALL (FULL) ──────────────────────────────────────────────────────
+  // Blue attacks LEFT basket (x≈0.118). Key: x=0.07–0.25. 3pt arc top: x≈0.277.
+  // No GK — 5 players each. Mirror: x_r=1-x_b, y_r=1-y_b.
+  basketball_full: [
+    { id:'man',   name:'Man-to-Man', desc:'Standard 5v5', tokens: _m([
+      {team:'blue',label:'PG', pct:[0.30,0.50]},
+      {team:'blue',label:'SG', pct:[0.36,0.22]}, {team:'blue',label:'SF', pct:[0.36,0.78]},
+      {team:'blue',label:'PF', pct:[0.43,0.30]}, {team:'blue',label:'C',  pct:[0.43,0.70]},
+    ])},
+    { id:'2-3',   name:'2-3 Zone',   desc:'Paint Protection', tokens: _m([
+      {team:'blue',label:'G',  pct:[0.27,0.36]}, {team:'blue',label:'G',  pct:[0.27,0.64]},
+      {team:'blue',label:'F',  pct:[0.18,0.18]}, {team:'blue',label:'C',  pct:[0.14,0.50]},
+      {team:'blue',label:'F',  pct:[0.18,0.82]},
+    ])},
+    { id:'1-3-1', name:'1-3-1 Zone', desc:'Trapping', tokens: _m([
+      {team:'blue',label:'G',  pct:[0.30,0.50]},
+      {team:'blue',label:'W',  pct:[0.22,0.22]}, {team:'blue',label:'H',  pct:[0.20,0.50]},
+      {team:'blue',label:'W',  pct:[0.22,0.78]}, {team:'blue',label:'C',  pct:[0.13,0.50]},
+    ])},
+    { id:'5-out', name:'5-Out',      desc:'Perimeter Spacing', tokens: _m([
+      {team:'blue',label:'PG', pct:[0.28,0.50]},
+      {team:'blue',label:'SG', pct:[0.25,0.25]}, {team:'blue',label:'SF', pct:[0.25,0.75]},
+      {team:'blue',label:'PF', pct:[0.15,0.12]}, {team:'blue',label:'C',  pct:[0.15,0.88]},
+    ])},
+    { id:'horns', name:'Horns',      desc:'Pick & Roll', tokens: _m([
+      {team:'blue',label:'PG', pct:[0.28,0.50]},
+      {team:'blue',label:'SG', pct:[0.24,0.25]}, {team:'blue',label:'SF', pct:[0.24,0.75]},
+      {team:'blue',label:'PF', pct:[0.22,0.36]}, {team:'blue',label:'C',  pct:[0.22,0.64]},
+    ])},
+  ],
+
+  // ── BASKETBALL (HALF) ──────────────────────────────────────────────────────
+  // Court x=0.276–0.724. Basket at (0.324,0.50). FT line x=0.454. 3pt top x=0.483.
+  // Blue attacks basket (left of view). Red defends.
+  basketball_half: [
+    { id:'man',   name:'Man-to-Man', desc:'Standard', tokens: [
+      {team:'blue',label:'PG', pct:[0.48,0.50]},
+      {team:'blue',label:'SG', pct:[0.44,0.22]}, {team:'blue',label:'SF', pct:[0.44,0.78]},
+      {team:'blue',label:'PF', pct:[0.38,0.32]}, {team:'blue',label:'C',  pct:[0.35,0.50]},
+      {team:'red', label:'G',  pct:[0.46,0.50]},
+      {team:'red', label:'G',  pct:[0.42,0.22]}, {team:'red', label:'F',  pct:[0.42,0.78]},
+      {team:'red', label:'F',  pct:[0.38,0.38]}, {team:'red', label:'C',  pct:[0.34,0.50]},
+    ]},
+    { id:'2-3',   name:'2-3 Zone',   desc:'Paint Protection', tokens: [
+      {team:'blue',label:'PG', pct:[0.48,0.50]},
+      {team:'blue',label:'SG', pct:[0.44,0.22]}, {team:'blue',label:'SF', pct:[0.44,0.78]},
+      {team:'blue',label:'PF', pct:[0.35,0.14]}, {team:'blue',label:'C',  pct:[0.36,0.50]},
+      {team:'red', label:'G',  pct:[0.44,0.36]}, {team:'red', label:'G',  pct:[0.44,0.64]},
+      {team:'red', label:'F',  pct:[0.36,0.20]}, {team:'red', label:'C',  pct:[0.33,0.50]},
+      {team:'red', label:'F',  pct:[0.36,0.80]},
+    ]},
+    { id:'1-3-1', name:'1-3-1 Zone', desc:'Trapping', tokens: [
+      {team:'blue',label:'PG', pct:[0.48,0.50]},
+      {team:'blue',label:'SG', pct:[0.42,0.22]}, {team:'blue',label:'SF', pct:[0.42,0.78]},
+      {team:'blue',label:'PF', pct:[0.38,0.50]}, {team:'blue',label:'C',  pct:[0.32,0.50]},
+      {team:'red', label:'G',  pct:[0.46,0.50]},
+      {team:'red', label:'W',  pct:[0.40,0.25]}, {team:'red', label:'H',  pct:[0.38,0.50]},
+      {team:'red', label:'W',  pct:[0.40,0.75]}, {team:'red', label:'C',  pct:[0.32,0.50]},
+    ]},
+    { id:'5-out', name:'5-Out',      desc:'Perimeter Spacing', tokens: [
+      {team:'blue',label:'PG', pct:[0.48,0.50]},
+      {team:'blue',label:'SG', pct:[0.45,0.22]}, {team:'blue',label:'SF', pct:[0.45,0.78]},
+      {team:'blue',label:'PF', pct:[0.35,0.13]}, {team:'blue',label:'C',  pct:[0.35,0.87]},
+      {team:'red', label:'G',  pct:[0.46,0.50]},
+      {team:'red', label:'G',  pct:[0.43,0.25]}, {team:'red', label:'F',  pct:[0.43,0.75]},
+      {team:'red', label:'F',  pct:[0.36,0.20]}, {team:'red', label:'C',  pct:[0.34,0.50]},
+    ]},
+    { id:'horns', name:'Horns',      desc:'Pick & Roll', tokens: [
+      {team:'blue',label:'PG', pct:[0.48,0.50]},
+      {team:'blue',label:'SG', pct:[0.44,0.22]}, {team:'blue',label:'SF', pct:[0.44,0.78]},
+      {team:'blue',label:'PF', pct:[0.40,0.35]}, {team:'blue',label:'C',  pct:[0.40,0.65]},
+      {team:'red', label:'G',  pct:[0.46,0.50]},
+      {team:'red', label:'G',  pct:[0.42,0.25]}, {team:'red', label:'F',  pct:[0.42,0.75]},
+      {team:'red', label:'F',  pct:[0.38,0.38]}, {team:'red', label:'C',  pct:[0.36,0.50]},
+    ]},
+  ],
+
+  // ── VOLLEYBALL ─────────────────────────────────────────────────────────────
+  // Court x=0.07–0.93, y=0.14–0.86. Net x=0.50. Attack line left x=0.357.
+  // 6 players each side. P1=back-right, P2=front-right … P6=back-center.
+  volleyball: [
+    { id:'5-1', name:'5-1', desc:'One Setter System', tokens: _m([
+      {team:'blue',label:'OPP', pct:[0.28,0.25]}, {team:'blue',label:'MB',  pct:[0.28,0.50]},
+      {team:'blue',label:'OH',  pct:[0.28,0.75]},
+      {team:'blue',label:'S',   pct:[0.15,0.25]}, {team:'blue',label:'MB',  pct:[0.15,0.50]},
+      {team:'blue',label:'OH',  pct:[0.15,0.75]},
+    ])},
+    { id:'6-2', name:'6-2', desc:'Two Setter System', tokens: _m([
+      {team:'blue',label:'OH',  pct:[0.28,0.25]}, {team:'blue',label:'MB',  pct:[0.28,0.50]},
+      {team:'blue',label:'S',   pct:[0.28,0.75]},
+      {team:'blue',label:'S',   pct:[0.15,0.25]}, {team:'blue',label:'MB',  pct:[0.15,0.50]},
+      {team:'blue',label:'OH',  pct:[0.15,0.75]},
+    ])},
+    { id:'4-2', name:'4-2', desc:'Four Hitters', tokens: _m([
+      {team:'blue',label:'OH',  pct:[0.28,0.25]}, {team:'blue',label:'S',   pct:[0.28,0.50]},
+      {team:'blue',label:'OH',  pct:[0.28,0.75]},
+      {team:'blue',label:'OH',  pct:[0.15,0.25]}, {team:'blue',label:'S',   pct:[0.15,0.50]},
+      {team:'blue',label:'OH',  pct:[0.15,0.75]},
+    ])},
+    { id:'recv', name:'Receive (W)', desc:'Serve Receive', tokens: _m([
+      {team:'blue',label:'MB',  pct:[0.28,0.25]}, {team:'blue',label:'MB',  pct:[0.28,0.50]},
+      {team:'blue',label:'OH',  pct:[0.28,0.75]},
+      {team:'blue',label:'L',   pct:[0.14,0.25]}, {team:'blue',label:'S',   pct:[0.12,0.50]},
+      {team:'blue',label:'OH',  pct:[0.14,0.75]},
+    ])},
+  ],
+
+  // ── HANDBALL ───────────────────────────────────────────────────────────────
+  // Court x=0.07–0.93, y=0.085–0.858. GK blue (0.08,0.50). 6m arc x≈0.20.
+  handball: [
+    { id:'atk-42pv', name:'Attack 4-2',  desc:'Standard Attack', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.08,0.50]},
+      {team:'blue',label:'LW', pct:[0.25,0.14]}, {team:'blue',label:'LB', pct:[0.30,0.35]},
+      {team:'blue',label:'CB', pct:[0.32,0.50]}, {team:'blue',label:'RB', pct:[0.30,0.65]},
+      {team:'blue',label:'RW', pct:[0.25,0.86]}, {team:'blue',label:'PV', pct:[0.40,0.50]},
+    ])},
+    { id:'atk-33',   name:'Attack 3-3',  desc:'3 Back, 3 Front', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.08,0.50]},
+      {team:'blue',label:'LW', pct:[0.26,0.14]}, {team:'blue',label:'PV', pct:[0.28,0.50]},
+      {team:'blue',label:'RW', pct:[0.26,0.86]},
+      {team:'blue',label:'LB', pct:[0.36,0.28]}, {team:'blue',label:'CB', pct:[0.36,0.50]},
+      {team:'blue',label:'RB', pct:[0.36,0.72]},
+    ])},
+    { id:'def-60',   name:'Def 6-0',     desc:'Flat Defense', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.08,0.50]},
+      {team:'blue',label:'LW', pct:[0.20,0.14]}, {team:'blue',label:'LB', pct:[0.21,0.30]},
+      {team:'blue',label:'CB', pct:[0.21,0.42]}, {team:'blue',label:'CB', pct:[0.21,0.58]},
+      {team:'blue',label:'RB', pct:[0.21,0.70]}, {team:'blue',label:'RW', pct:[0.20,0.86]},
+    ])},
+    { id:'def-51',   name:'Def 5-1',     desc:'One Floater', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.08,0.50]},
+      {team:'blue',label:'LW', pct:[0.20,0.14]}, {team:'blue',label:'LB', pct:[0.21,0.33]},
+      {team:'blue',label:'CB', pct:[0.21,0.50]},
+      {team:'blue',label:'RB', pct:[0.21,0.67]}, {team:'blue',label:'RW', pct:[0.20,0.86]},
+      {team:'blue',label:'CB', pct:[0.30,0.50]},
+    ])},
+    { id:'def-42',   name:'Def 4-2',     desc:'Two Advanced', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.08,0.50]},
+      {team:'blue',label:'LW', pct:[0.20,0.14]}, {team:'blue',label:'CB', pct:[0.21,0.38]},
+      {team:'blue',label:'CB', pct:[0.21,0.62]}, {team:'blue',label:'RW', pct:[0.20,0.86]},
+      {team:'blue',label:'LB', pct:[0.30,0.32]}, {team:'blue',label:'RB', pct:[0.30,0.68]},
+    ])},
+  ],
+
+  // ── ICE HOCKEY ─────────────────────────────────────────────────────────────
+  // Rink x=0.07–0.93, y=0.085–0.858. GK blue (0.15,0.50). Blue lines x=0.374/0.626.
+  // Goal lines x=0.127/0.873. Face-off dots: (0.223,0.333), (0.223,0.667).
+  ice_hockey: [
+    { id:'2-1-2',   name:'2-1-2',         desc:'Standard 5v5', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.15,0.50]},
+      {team:'blue',label:'LD', pct:[0.22,0.30]}, {team:'blue',label:'RD', pct:[0.22,0.70]},
+      {team:'blue',label:'C',  pct:[0.32,0.50]},
+      {team:'blue',label:'LW', pct:[0.38,0.25]}, {team:'blue',label:'RW', pct:[0.38,0.75]},
+    ])},
+    { id:'1-2-2',   name:'1-2-2 Trap',     desc:'Neutral Zone Trap', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.15,0.50]},
+      {team:'blue',label:'D',  pct:[0.26,0.50]},
+      {team:'blue',label:'LW', pct:[0.32,0.28]}, {team:'blue',label:'RW', pct:[0.32,0.72]},
+      {team:'blue',label:'C',  pct:[0.38,0.38]}, {team:'blue',label:'F',  pct:[0.38,0.62]},
+    ])},
+    { id:'pp-umb',  name:'Umbrella PP',    desc:'Power Play 5v4', tokens: [
+      // Blue (5 skaters) in offensive zone (right side)
+      {team:'blue',label:'GK', pct:[0.15,0.50]},
+      {team:'blue',label:'D',  pct:[0.63,0.50]},
+      {team:'blue',label:'LW', pct:[0.68,0.20]}, {team:'blue',label:'C',  pct:[0.72,0.50]},
+      {team:'blue',label:'RW', pct:[0.68,0.80]}, {team:'blue',label:'F',  pct:[0.80,0.50]},
+      // Red (4 skaters) penalty kill box in their defensive zone
+      {team:'red', label:'GK', pct:[0.85,0.50]},
+      {team:'red', label:'F',  pct:[0.72,0.32]}, {team:'red', label:'F',  pct:[0.72,0.68]},
+      {team:'red', label:'D',  pct:[0.78,0.32]}, {team:'red', label:'D',  pct:[0.78,0.68]},
+      // 6th red token (serving penalty) placed aside
+      {team:'red', label:'P',  pct:[0.50,0.12]},
+    ]},
+    { id:'pk-box',  name:'Box PK',         desc:'Penalty Kill 4v5', tokens: [
+      // Blue (5 skaters) power play in offensive zone
+      {team:'blue',label:'GK', pct:[0.15,0.50]},
+      {team:'blue',label:'D',  pct:[0.63,0.50]},
+      {team:'blue',label:'LW', pct:[0.68,0.22]}, {team:'blue',label:'RW', pct:[0.68,0.78]},
+      {team:'blue',label:'F',  pct:[0.75,0.38]}, {team:'blue',label:'F',  pct:[0.75,0.62]},
+      // Red (4 PK skaters) in defensive box
+      {team:'red', label:'GK', pct:[0.85,0.50]},
+      {team:'red', label:'F',  pct:[0.70,0.35]}, {team:'red', label:'F',  pct:[0.70,0.65]},
+      {team:'red', label:'D',  pct:[0.77,0.35]}, {team:'red', label:'D',  pct:[0.77,0.65]},
+      {team:'red', label:'P',  pct:[0.50,0.12]},
+    ]},
+  ],
+
+  // ── FIELD HOCKEY ───────────────────────────────────────────────────────────
+  // Court x=0.101–0.899, y=0.10–0.90. GK blue (0.11,0.50). 11v11.
+  field_hockey: [
+    { id:'4-3-3',   name:'4-3-3',   desc:'Classic', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.11,0.50]},
+      {team:'blue',label:'RB', pct:[0.18,0.20]}, {team:'blue',label:'CB', pct:[0.18,0.40]},
+      {team:'blue',label:'CB', pct:[0.18,0.60]}, {team:'blue',label:'LB', pct:[0.18,0.80]},
+      {team:'blue',label:'RM', pct:[0.30,0.28]}, {team:'blue',label:'CM', pct:[0.30,0.50]},
+      {team:'blue',label:'LM', pct:[0.30,0.72]},
+      {team:'blue',label:'RF', pct:[0.40,0.20]}, {team:'blue',label:'CF', pct:[0.40,0.50]},
+      {team:'blue',label:'LF', pct:[0.40,0.80]},
+    ])},
+    { id:'4-4-2',   name:'4-4-2',   desc:'Flat Midfield', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.11,0.50]},
+      {team:'blue',label:'RB', pct:[0.18,0.20]}, {team:'blue',label:'CB', pct:[0.18,0.40]},
+      {team:'blue',label:'CB', pct:[0.18,0.60]}, {team:'blue',label:'LB', pct:[0.18,0.80]},
+      {team:'blue',label:'RM', pct:[0.30,0.20]}, {team:'blue',label:'CM', pct:[0.30,0.38]},
+      {team:'blue',label:'CM', pct:[0.30,0.62]}, {team:'blue',label:'LM', pct:[0.30,0.80]},
+      {team:'blue',label:'ST', pct:[0.40,0.38]}, {team:'blue',label:'ST', pct:[0.40,0.62]},
+    ])},
+    { id:'3-4-3',   name:'3-4-3',   desc:'Attacking', tokens: _m([
+      {team:'blue',label:'GK',  pct:[0.11,0.50]},
+      {team:'blue',label:'CB',  pct:[0.18,0.28]}, {team:'blue',label:'CB',  pct:[0.18,0.50]},
+      {team:'blue',label:'CB',  pct:[0.18,0.72]},
+      {team:'blue',label:'RWB', pct:[0.25,0.14]}, {team:'blue',label:'RM',  pct:[0.30,0.35]},
+      {team:'blue',label:'LM',  pct:[0.30,0.65]}, {team:'blue',label:'LWB', pct:[0.25,0.86]},
+      {team:'blue',label:'RF',  pct:[0.40,0.20]}, {team:'blue',label:'CF',  pct:[0.40,0.50]},
+      {team:'blue',label:'LF',  pct:[0.40,0.80]},
+    ])},
+    { id:'3-3-3-1', name:'3-3-3-1', desc:'Diamond Attack', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.11,0.50]},
+      {team:'blue',label:'CB', pct:[0.16,0.28]}, {team:'blue',label:'CB', pct:[0.16,0.50]},
+      {team:'blue',label:'CB', pct:[0.16,0.72]},
+      {team:'blue',label:'LM', pct:[0.26,0.22]}, {team:'blue',label:'CM', pct:[0.26,0.50]},
+      {team:'blue',label:'RM', pct:[0.26,0.78]},
+      {team:'blue',label:'LF', pct:[0.35,0.28]}, {team:'blue',label:'CF', pct:[0.35,0.50]},
+      {team:'blue',label:'RF', pct:[0.35,0.72]},
+      {team:'blue',label:'ST', pct:[0.43,0.50]},
+    ])},
+  ],
+
+  // ── AMERICAN FOOTBALL ─────────────────────────────────────────────────────
+  // Both teams near line of scrimmage. Blue=offense (left), Red=defense (right).
+  american_football: [
+    { id:'shotgun-43', name:'Shotgun vs 4-3', desc:'Spread Offense', tokens: [
+      {team:'blue',label:'QB', pct:[0.36,0.50]},
+      {team:'blue',label:'LT', pct:[0.40,0.40]}, {team:'blue',label:'LG', pct:[0.40,0.45]},
+      {team:'blue',label:'C',  pct:[0.40,0.50]}, {team:'blue',label:'RG', pct:[0.40,0.55]},
+      {team:'blue',label:'RT', pct:[0.40,0.60]}, {team:'blue',label:'TE', pct:[0.40,0.65]},
+      {team:'blue',label:'WR', pct:[0.34,0.20]}, {team:'blue',label:'WR', pct:[0.34,0.80]},
+      {team:'blue',label:'RB', pct:[0.32,0.50]}, {team:'blue',label:'FB', pct:[0.30,0.50]},
+      {team:'red', label:'DE', pct:[0.44,0.35]}, {team:'red', label:'DT', pct:[0.44,0.44]},
+      {team:'red', label:'DT', pct:[0.44,0.56]}, {team:'red', label:'DE', pct:[0.44,0.65]},
+      {team:'red', label:'LB', pct:[0.50,0.38]}, {team:'red', label:'LB', pct:[0.50,0.50]},
+      {team:'red', label:'LB', pct:[0.50,0.62]},
+      {team:'red', label:'CB', pct:[0.55,0.20]}, {team:'red', label:'CB', pct:[0.55,0.80]},
+      {team:'red', label:'SS', pct:[0.58,0.38]}, {team:'red', label:'FS', pct:[0.62,0.62]},
+    ]},
+    { id:'i-form-43',  name:'I-Form vs 4-3',  desc:'Power Run', tokens: [
+      {team:'blue',label:'QB', pct:[0.38,0.50]},
+      {team:'blue',label:'LT', pct:[0.40,0.40]}, {team:'blue',label:'LG', pct:[0.40,0.45]},
+      {team:'blue',label:'C',  pct:[0.40,0.50]}, {team:'blue',label:'RG', pct:[0.40,0.55]},
+      {team:'blue',label:'RT', pct:[0.40,0.60]}, {team:'blue',label:'TE', pct:[0.40,0.65]},
+      {team:'blue',label:'WR', pct:[0.34,0.20]}, {team:'blue',label:'WR', pct:[0.34,0.80]},
+      {team:'blue',label:'FB', pct:[0.35,0.50]}, {team:'blue',label:'HB', pct:[0.31,0.50]},
+      {team:'red', label:'DE', pct:[0.44,0.35]}, {team:'red', label:'DT', pct:[0.44,0.44]},
+      {team:'red', label:'DT', pct:[0.44,0.56]}, {team:'red', label:'DE', pct:[0.44,0.65]},
+      {team:'red', label:'LB', pct:[0.50,0.38]}, {team:'red', label:'LB', pct:[0.50,0.50]},
+      {team:'red', label:'LB', pct:[0.50,0.62]},
+      {team:'red', label:'CB', pct:[0.55,0.20]}, {team:'red', label:'CB', pct:[0.55,0.80]},
+      {team:'red', label:'SS', pct:[0.58,0.38]}, {team:'red', label:'FS', pct:[0.62,0.62]},
+    ]},
+    { id:'trips-nic',  name:'Trips vs Nickel', desc:'3-Wide Receiver', tokens: [
+      {team:'blue',label:'QB', pct:[0.36,0.50]},
+      {team:'blue',label:'LT', pct:[0.40,0.40]}, {team:'blue',label:'LG', pct:[0.40,0.45]},
+      {team:'blue',label:'C',  pct:[0.40,0.50]}, {team:'blue',label:'RG', pct:[0.40,0.55]},
+      {team:'blue',label:'RT', pct:[0.40,0.60]},
+      {team:'blue',label:'WR', pct:[0.32,0.18]}, {team:'blue',label:'WR', pct:[0.34,0.24]},
+      {team:'blue',label:'WR', pct:[0.36,0.30]},
+      {team:'blue',label:'WR', pct:[0.34,0.80]}, {team:'blue',label:'RB', pct:[0.34,0.50]},
+      {team:'red', label:'DE', pct:[0.44,0.38]}, {team:'red', label:'DT', pct:[0.44,0.48]},
+      {team:'red', label:'DT', pct:[0.44,0.55]}, {team:'red', label:'DE', pct:[0.44,0.65]},
+      {team:'red', label:'LB', pct:[0.49,0.42]}, {team:'red', label:'LB', pct:[0.49,0.58]},
+      {team:'red', label:'NB', pct:[0.54,0.30]},
+      {team:'red', label:'CB', pct:[0.54,0.20]}, {team:'red', label:'CB', pct:[0.54,0.80]},
+      {team:'red', label:'SS', pct:[0.58,0.42]}, {team:'red', label:'FS', pct:[0.60,0.58]},
+    ]},
+    { id:'pistol-34',  name:'Pistol vs 3-4',  desc:'Option Play', tokens: [
+      {team:'blue',label:'QB', pct:[0.37,0.50]},
+      {team:'blue',label:'LT', pct:[0.40,0.40]}, {team:'blue',label:'LG', pct:[0.40,0.45]},
+      {team:'blue',label:'C',  pct:[0.40,0.50]}, {team:'blue',label:'RG', pct:[0.40,0.55]},
+      {team:'blue',label:'RT', pct:[0.40,0.60]}, {team:'blue',label:'TE', pct:[0.40,0.66]},
+      {team:'blue',label:'WR', pct:[0.34,0.20]}, {team:'blue',label:'WR', pct:[0.34,0.80]},
+      {team:'blue',label:'RB', pct:[0.34,0.50]}, {team:'blue',label:'FB', pct:[0.31,0.44]},
+      {team:'red', label:'DE', pct:[0.44,0.36]}, {team:'red', label:'NT', pct:[0.44,0.50]},
+      {team:'red', label:'DE', pct:[0.44,0.64]},
+      {team:'red', label:'OLB', pct:[0.48,0.28]}, {team:'red', label:'ILB', pct:[0.49,0.43]},
+      {team:'red', label:'ILB', pct:[0.49,0.57]}, {team:'red', label:'OLB', pct:[0.48,0.72]},
+      {team:'red', label:'CB', pct:[0.55,0.20]}, {team:'red', label:'CB', pct:[0.55,0.80]},
+      {team:'red', label:'FS', pct:[0.60,0.50]}, {team:'red', label:'SS', pct:[0.56,0.36]},
+    ]},
+  ],
+
+  // ── FUTSAL ─────────────────────────────────────────────────────────────────
+  // Court x=0.07–0.93, y=0.085–0.858. GK blue (0.08,0.50). 5v5.
+  futsal: [
+    { id:'1-2-1', name:'1-2-1 Diamond', desc:'Balanced', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.08,0.50]},
+      {team:'blue',label:'FX', pct:[0.20,0.50]},
+      {team:'blue',label:'AL', pct:[0.30,0.28]}, {team:'blue',label:'AR', pct:[0.30,0.72]},
+      {team:'blue',label:'PI', pct:[0.42,0.50]},
+    ])},
+    { id:'2-2',   name:'2-2 Flat',     desc:'Balanced Attack', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.08,0.50]},
+      {team:'blue',label:'FL', pct:[0.20,0.35]}, {team:'blue',label:'FR', pct:[0.20,0.65]},
+      {team:'blue',label:'AL', pct:[0.36,0.35]}, {team:'blue',label:'AR', pct:[0.36,0.65]},
+    ])},
+    { id:'1-3',   name:'1-3 Press',    desc:'High Pressure', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.08,0.50]},
+      {team:'blue',label:'FX', pct:[0.18,0.50]},
+      {team:'blue',label:'AL', pct:[0.28,0.25]}, {team:'blue',label:'PI', pct:[0.32,0.50]},
+      {team:'blue',label:'AR', pct:[0.28,0.75]},
+    ])},
+    { id:'3-1',   name:'3-1 Defend',   desc:'Defensive Shape', tokens: _m([
+      {team:'blue',label:'GK', pct:[0.08,0.50]},
+      {team:'blue',label:'FL', pct:[0.20,0.30]}, {team:'blue',label:'FC', pct:[0.20,0.50]},
+      {team:'blue',label:'FR', pct:[0.20,0.70]}, {team:'blue',label:'PI', pct:[0.38,0.50]},
+    ])},
+  ],
+
+  // ── RUGBY UNION ────────────────────────────────────────────────────────────
+  // Field x=0.07–0.93, y=0.10–0.90. 15v15. Numbered positions 1–15.
+  rugby_union: [
+    { id:'open-play', name:'Open Play',  desc:'Attacking Spread', tokens: _m([
+      {team:'blue',label:'15', pct:[0.08,0.50]},
+      {team:'blue',label:'11', pct:[0.12,0.88]}, {team:'blue',label:'12', pct:[0.16,0.65]},
+      {team:'blue',label:'13', pct:[0.16,0.35]}, {team:'blue',label:'14', pct:[0.12,0.12]},
+      {team:'blue',label:'10', pct:[0.22,0.55]}, {team:'blue',label:'9',  pct:[0.26,0.45]},
+      {team:'blue',label:'8',  pct:[0.30,0.50]},
+      {team:'blue',label:'7',  pct:[0.30,0.30]}, {team:'blue',label:'6',  pct:[0.30,0.70]},
+      {team:'blue',label:'5',  pct:[0.35,0.38]}, {team:'blue',label:'4',  pct:[0.35,0.62]},
+      {team:'blue',label:'3',  pct:[0.40,0.28]}, {team:'blue',label:'2',  pct:[0.40,0.50]},
+      {team:'blue',label:'1',  pct:[0.40,0.72]},
+    ])},
+    { id:'def-line',  name:'Def Line',   desc:'Flat Line Defense', tokens: _m([
+      {team:'blue',label:'15', pct:[0.08,0.50]},
+      {team:'blue',label:'11', pct:[0.14,0.88]}, {team:'blue',label:'12', pct:[0.18,0.65]},
+      {team:'blue',label:'13', pct:[0.18,0.35]}, {team:'blue',label:'14', pct:[0.14,0.12]},
+      {team:'blue',label:'10', pct:[0.22,0.52]}, {team:'blue',label:'9',  pct:[0.26,0.48]},
+      {team:'blue',label:'8',  pct:[0.28,0.50]},
+      {team:'blue',label:'7',  pct:[0.28,0.32]}, {team:'blue',label:'6',  pct:[0.28,0.68]},
+      {team:'blue',label:'5',  pct:[0.32,0.40]}, {team:'blue',label:'4',  pct:[0.32,0.60]},
+      {team:'blue',label:'3',  pct:[0.35,0.30]}, {team:'blue',label:'2',  pct:[0.35,0.50]},
+      {team:'blue',label:'1',  pct:[0.35,0.70]},
+    ])},
+    { id:'scrum',     name:'Scrum',      desc:'Set Piece', tokens: [
+      // Blue scrum (attacking right, packing left of scrum point at x=0.50)
+      {team:'blue',label:'15', pct:[0.08,0.50]},
+      {team:'blue',label:'11', pct:[0.14,0.88]}, {team:'blue',label:'14', pct:[0.14,0.12]},
+      {team:'blue',label:'13', pct:[0.20,0.35]}, {team:'blue',label:'12', pct:[0.20,0.62]},
+      {team:'blue',label:'10', pct:[0.26,0.38]}, {team:'blue',label:'9',  pct:[0.40,0.55]},
+      {team:'blue',label:'8',  pct:[0.43,0.50]},
+      {team:'blue',label:'7',  pct:[0.43,0.40]}, {team:'blue',label:'6',  pct:[0.43,0.60]},
+      {team:'blue',label:'5',  pct:[0.45,0.44]}, {team:'blue',label:'4',  pct:[0.45,0.56]},
+      {team:'blue',label:'3',  pct:[0.47,0.40]}, {team:'blue',label:'2',  pct:[0.47,0.50]},
+      {team:'blue',label:'1',  pct:[0.47,0.60]},
+      // Red team (defending side, packing right of scrum point)
+      {team:'red', label:'15', pct:[0.92,0.50]},
+      {team:'red', label:'11', pct:[0.86,0.12]}, {team:'red', label:'14', pct:[0.86,0.88]},
+      {team:'red', label:'13', pct:[0.80,0.65]}, {team:'red', label:'12', pct:[0.80,0.38]},
+      {team:'red', label:'10', pct:[0.74,0.62]}, {team:'red', label:'9',  pct:[0.60,0.45]},
+      {team:'red', label:'8',  pct:[0.57,0.50]},
+      {team:'red', label:'7',  pct:[0.57,0.60]}, {team:'red', label:'6',  pct:[0.57,0.40]},
+      {team:'red', label:'5',  pct:[0.55,0.56]}, {team:'red', label:'4',  pct:[0.55,0.44]},
+      {team:'red', label:'3',  pct:[0.53,0.60]}, {team:'red', label:'2',  pct:[0.53,0.50]},
+      {team:'red', label:'1',  pct:[0.53,0.40]},
+    ]},
+  ],
+
+};
+
 /**
  * Returns a deep copy of the default token list for the given court ID.
  * Falls back to basketball_full if the courtId is not recognised.
@@ -728,6 +1235,21 @@ const BALL_SPORTS = new Set([
   'ice_hockey','roller_hockey','beach_volleyball','beach_handball','beach_soccer','padbol',
   'lacrosse','water_polo','fistball',
 ]);
+
+/**
+ * Returns the formation presets for the given court ID, or null if none defined.
+ * Tokens in each formation are deep copies so callers can mutate safely.
+ * @param {string} courtId
+ * @returns {Array|null}
+ */
+export function getFormations(courtId) {
+  const list = FORMATIONS[courtId];
+  if (!list) return null;
+  return list.map(f => ({
+    ...f,
+    tokens: f.tokens.map(t => ({ ...t, pct: [...t.pct] })),
+  }));
+}
 
 export function getDefaultTokens(courtId) {
   if (courtId === 'whiteboard') return [];

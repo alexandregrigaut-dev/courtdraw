@@ -830,6 +830,46 @@ body.share-view #share-footer { display: flex; }
 @media (max-width: 767px) {
   #toast { white-space: normal; max-width: calc(100vw - 32px); text-align: center; }
 }
+/* ── Formations panel ───────────────────────────────────────────────── */
+#formations-panel {
+  display: none; position: fixed;
+  bottom: calc(var(--toolbar-h) + var(--phase-bar-h) + env(safe-area-inset-bottom) + 10px);
+  left: 50%; transform: translateX(-50%);
+  background: #1e293b; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px; padding: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  z-index: 280; max-width: calc(100vw - 24px);
+  animation: fadein 0.15s ease;
+}
+#formations-panel.open { display: block; }
+.fp-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; gap: 12px;
+}
+.fp-title { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; }
+.fp-close {
+  background: none; border: none; color: #64748b; cursor: pointer;
+  font-size: 14px; padding: 2px 6px; border-radius: 6px; line-height: 1;
+}
+.fp-close:hover { background: rgba(255,255,255,0.08); color: #e2e8f0; }
+.fp-list {
+  display: flex; flex-wrap: wrap; gap: 6px; max-width: 480px;
+}
+.fp-chip {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 10px; padding: 7px 14px; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: #cbd5e1;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.fp-chip:hover { background: rgba(59,130,246,0.18); border-color: rgba(59,130,246,0.5); color: #93c5fd; }
+.fp-chip.active { background: rgba(59,130,246,0.25); border-color: #3b82f6; color: #60a5fa; }
+.fp-chip-desc { font-size: 10px; font-weight: 400; color: #64748b; display: block; margin-top: 1px; }
+@media (max-width: 600px) {
+  .fp-list { max-width: calc(100vw - 48px); }
+  .fp-chip { padding: 6px 12px; font-size: 12px; }
+}
+
 #export-share-banner {
   display: none; position: fixed;
   bottom: calc(var(--toolbar-h) + var(--phase-bar-h) + env(safe-area-inset-bottom) + 12px);
@@ -1882,6 +1922,9 @@ body.portrait-mode .player-token:active {
   <button class="tb-btn" title="Court picker" onclick="openCourtPicker()">
     <span class="icon">🏟</span><span>Courts</span>
   </button>
+  <button class="tb-btn" id="btn-formations" title="Formation presets" onclick="toggleFormationsPanel()" aria-label="Formations" style="display:none">
+    <span class="icon">⬡</span><span>Formations</span>
+  </button>
   <button class="tb-btn" id="btn-pro-library" title="Community Tactic Library — browse 200+ plays" aria-label="Community Library" onclick="openCommunityLibrary()">
     <span class="icon">🌐</span><span>Community</span>
   </button>
@@ -2298,6 +2341,15 @@ body.portrait-mode .player-token:active {
 
 <!-- Toast -->
 <div id="toast"></div>
+
+<!-- Formations panel -->
+<div id="formations-panel" role="dialog" aria-label="Formation presets">
+  <div class="fp-header">
+    <span class="fp-title">Formations</span>
+    <button class="fp-close" onclick="closeFormationsPanel()" aria-label="Close">✕</button>
+  </div>
+  <div id="fp-list" class="fp-list"></div>
+</div>
 
 <!-- Export share banner (mobile) -->
 <div id="export-share-banner">
@@ -4573,6 +4625,8 @@ function makeDraggable(el, idx) {
     if (!hasMoved) {
       const tok = state.tokenPositions[idx];
       if (tok && tok.team !== 'ball') renameToken(idx, el);
+    } else {
+      _resetActiveFormation(); // user dragged a token — formation is now custom
     }
   }
   el.addEventListener('pointerdown', start, { passive: false });
@@ -4774,6 +4828,8 @@ function switchCourt(id, locked, skipReset) {
     }, 80);
   }, 150);
   closeModal('modal-court-picker');
+  _resetActiveFormation();
+  _updateFormationsButton();
 }
 
 // ══════════════════════════════════════════════
@@ -7091,6 +7147,89 @@ function showToast(msg, ms = 2400) {
   toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 }
 
+// ── Formation Presets ────────────────────────────────────────────────────────
+let _formationsPanelOpen = false;
+let _activeFormationId   = null;
+
+function _getFormationsForCourt(courtId) {
+  if (typeof window.__getFormations !== 'function') return null;
+  return window.__getFormations(courtId);
+}
+
+function _updateFormationsButton() {
+  const btn = document.getElementById('btn-formations');
+  if (!btn) return;
+  const fms = _getFormationsForCourt(state.courtId);
+  btn.style.display = fms && fms.length ? '' : 'none';
+  if (!fms || !fms.length) closeFormationsPanel();
+}
+
+function toggleFormationsPanel() {
+  if (_formationsPanelOpen) { closeFormationsPanel(); return; }
+  openFormationsPanel();
+}
+
+function openFormationsPanel() {
+  const panel = document.getElementById('formations-panel');
+  if (!panel) return;
+  _renderFormationChips();
+  panel.classList.add('open');
+  _formationsPanelOpen = true;
+  document.getElementById('btn-formations')?.classList.add('active');
+}
+
+function closeFormationsPanel() {
+  const panel = document.getElementById('formations-panel');
+  if (panel) panel.classList.remove('open');
+  _formationsPanelOpen = false;
+  document.getElementById('btn-formations')?.classList.remove('active');
+}
+
+function _renderFormationChips() {
+  const list = document.getElementById('fp-list');
+  if (!list) return;
+  const fms = _getFormationsForCourt(state.courtId);
+  if (!fms || !fms.length) { list.innerHTML = ''; return; }
+  list.innerHTML = fms.map(f => `
+    <button class="fp-chip${_activeFormationId === f.id ? ' active' : ''}"
+      onclick="applyFormation('${f.id}')" title="${f.desc}">
+      ${f.name}<span class="fp-chip-desc">${f.desc}</span>
+    </button>`).join('');
+}
+
+function applyFormation(formationId) {
+  const fms = _getFormationsForCourt(state.courtId);
+  if (!fms) return;
+  const formation = fms.find(f => f.id === formationId);
+  if (!formation) return;
+
+  // Rebuild token layer with formation positions and labels
+  const layer = document.getElementById('token-layer');
+  if (!layer) return;
+  layer.innerHTML = '';
+  // Keep ball token if present (formations don't include ball token)
+  const ballToken = state.tokenPositions.find(t => t.team === 'ball');
+  state.tokenPositions = formation.tokens.map(t => ({ ...t, pct: [...t.pct] }));
+  if (ballToken) state.tokenPositions.push({ ...ballToken, pct: [...ballToken.pct] });
+
+  for (let i = 0; i < state.tokenPositions.length; i++) createTokenEl(i);
+  repositionTokens();
+
+  // Persist to current phase
+  if (state.phases && state.currentPhase < state.phases.length) {
+    state.phases[state.currentPhase].tokens = JSON.parse(JSON.stringify(state.tokenPositions));
+  }
+
+  _activeFormationId = formationId;
+  _renderFormationChips(); // refresh active highlight
+
+  gtag('event', 'apply_formation', { event_category: 'engagement', formation_id: formationId, court_id: state.courtId });
+  showToast(`Formation: ${formation.name}`);
+}
+
+// Reset formation tracking when court changes or tokens are dragged
+function _resetActiveFormation() { _activeFormationId = null; }
+
 let _exportShareBlob = null, _exportShareFilename = null, _exportShareTimer = null;
 function _showExportShareBanner(blob, filename) {
   _exportShareBlob = blob; _exportShareFilename = filename;
@@ -8324,6 +8463,9 @@ function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   }
+  // Show formations button if the starting court has presets
+  // Delay slightly to let the sports-config module bridge initialise
+  setTimeout(_updateFormationsButton, 800);
 }
 
 // ══════════════════════════════════════════════
@@ -8340,8 +8482,11 @@ function closeAccountMenu() {
 document.addEventListener('click', e => {
   const menu = document.getElementById('account-menu');
   const btn  = document.getElementById('btn-account');
-  if (!menu.classList.contains('open')) return;
-  if (!menu.contains(e.target) && !btn.contains(e.target)) closeAccountMenu();
+  if (menu?.classList.contains('open') && !menu.contains(e.target) && !btn?.contains(e.target)) closeAccountMenu();
+  // Close formations panel when clicking outside
+  const fp    = document.getElementById('formations-panel');
+  const fpBtn = document.getElementById('btn-formations');
+  if (fp?.classList.contains('open') && !fp.contains(e.target) && !fpBtn?.contains(e.target)) closeFormationsPanel();
 });
 function signOutUser() {
   closeAccountMenu();
@@ -9282,8 +9427,9 @@ document.addEventListener('DOMContentLoaded', init);
 
 <!-- Expose sport token config to the non-module main script -->
 <script type="module">
-  import { getDefaultTokens } from '/src/sports-config.js';
+  import { getDefaultTokens, getFormations } from '/src/sports-config.js';
   window.__getDefaultTokens = getDefaultTokens;
+  window.__getFormations    = getFormations;
 </script>
 
 <!-- Presentation Mode Overlay -->
