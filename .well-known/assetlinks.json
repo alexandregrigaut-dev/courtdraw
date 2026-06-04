@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.courtdraw.twa",
+        "sha256_cert_fingerprints": ["CD:64:16:32:42:D6:40:57:D8:17:95:B8:01:A7:15:63:52:59:13:D9:A4:A9:11:A5:C6:9E:8F:48:BC:70:3D:62"]
+      }
+    }]

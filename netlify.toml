@@ -66,6 +66,11 @@
     Cache-Control = "no-cache"
 
 [[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json"
+
+[[headers]]
   for = "/*"
   [headers.values]
     X-Frame-Options = "DENY"
