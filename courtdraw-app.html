@@ -4684,7 +4684,7 @@ function renderCourtGrid(filter) {
     if (!grouped[c.category]) grouped[c.category] = [];
     grouped[c.category].push(c);
   }
-  const catOrder = ['field','indoor','ice','beach','other','racket'];
+  const catOrder = ['field','racket','indoor','beach','ice','other'];
   let total = 0;
   for (const cat of catOrder) {
     if (!grouped[cat] || !grouped[cat].length) continue;
