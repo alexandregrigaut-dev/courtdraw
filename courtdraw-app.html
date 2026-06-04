@@ -8453,7 +8453,12 @@ function openCommunityLibrary() {
   // Pre-filter to the user's free court sport so they see relevant plays immediately
   if (state.freeCourt && !state.isPro && !state.isClub) {
     const fc = COURTS.find(c => c.id === state.freeCourt);
-    if (fc) commLibState.sport = fc.name.replace(/ \(.*\)/, '');
+    if (fc) {
+      const sportGuess = fc.name.replace(/ \(.*\)/, '').split(' / ')[0];
+      const plays = window.__communityPlays;
+      // If plays loaded, only filter if the sport actually exists (avoids empty state)
+      commLibState.sport = (!plays || plays.some(p => p.sport === sportGuess)) ? sportGuess : 'All';
+    }
   }
   _renderCommTabs();
   _renderCommSportTabs();
