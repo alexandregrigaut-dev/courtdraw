@@ -8025,6 +8025,16 @@ function doExportShare() {
       state.currentPhase = 0;
       if (typeof updatePhaseUI === 'function') updatePhaseUI();
       if (typeof redrawAll === 'function') redrawAll();
+      // Guard: if the tutorial left the user on a locked court (e.g. a community play
+      // from a different sport was loaded during the tutorial's community step),
+      // silently redirect them back to their free court so drawing works immediately.
+      if (!state.isPro && !state.isClub && state.freeCourt) {
+        const isOnLockedCourt = state.courtId !== state.freeCourt
+          && !COURTS.find(function(c) { return c.id === state.courtId; })?.free;
+        if (isOnLockedCourt && typeof switchCourt === 'function') {
+          switchCourt(state.freeCourt, false); // objects already empty — no confirm prompt fires
+        }
+      }
     } catch(e) {}
     // Unpin toolbar and retract it (mobile only — no-op on desktop)
     try {
