@@ -3,6 +3,6 @@
       "target": {
         "namespace": "android_app",
         "package_name": "app.courtdraw.twa",
-        "sha256_cert_fingerprints": ["CD:64:16:32:42:D6:40:57:D8:17:95:B8:01:A7:15:63:52:59:13:D9:A4:A9:11:A5:C6:9E:8F:48:BC:70:3D:62"]
+        "sha256_cert_fingerprints": ["EF:2F:E5:C2:AE:08:78:06:C4:F6:69:CF:26:4D:3D:0A:C6:14:E6:30:1C:A0:6C:26:EE:9F:62:63:A6:FF:10:44"]
       }
     }]

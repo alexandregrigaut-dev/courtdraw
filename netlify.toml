@@ -61,6 +61,12 @@
   status = 200
 
 [[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json"
+    Cache-Control = "no-cache"
+
+[[headers]]
   for = "/*.html"
   [headers.values]
     Cache-Control = "no-cache"
