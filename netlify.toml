@@ -35,6 +35,23 @@
   status = 301
   force = true
 
+# Redirect direct .html access to canonical clean URLs (prevents duplicate indexing)
+[[redirects]]
+  from = "/community.html"
+  to   = "/community"
+  status = 301
+
+[[redirects]]
+  from = "/privacy.html"
+  to   = "/privacy"
+  status = 301
+
+[[redirects]]
+  from = "/terms.html"
+  to   = "/terms"
+  status = 301
+
+# Clean URL rewrites (serve .html files at clean paths)
 [[redirects]]
   from = "/privacy"
   to   = "/privacy.html"
@@ -47,7 +64,7 @@
 
 [[redirects]]
   from = "/cookies"
-  to   = "/privacy.html"
+  to   = "/privacy"
   status = 301
 
 [[redirects]]
@@ -70,11 +87,6 @@
   for = "/*.html"
   [headers.values]
     Cache-Control = "no-cache"
-
-[[headers]]
-  for = "/.well-known/assetlinks.json"
-  [headers.values]
-    Content-Type = "application/json"
 
 [[headers]]
   for = "/*"

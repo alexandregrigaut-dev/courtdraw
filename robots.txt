@@ -6,8 +6,11 @@ Disallow: /api/
 Disallow: /.netlify/
 
 # Block app, auth, and club-management pages — not useful in search results
+Disallow: /app
 Disallow: /courtdraw-app.html
+Disallow: /login
 Disallow: /login.html
+Disallow: /success
 Disallow: /success.html
 Disallow: /club-admin.html
 Disallow: /join-club.html
