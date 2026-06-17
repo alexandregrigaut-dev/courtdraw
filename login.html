@@ -342,7 +342,7 @@
     if (pendingPlan) localStorage.setItem('courtdraw_pending_checkout', pendingPlan);
 
     // Show trial-specific heading when arriving from a pricing CTA
-    if (pendingPlan === 'pro' || pendingPlan === 'proYearly' || pendingPlan === 'club') {
+    if (pendingPlan === 'pro' || pendingPlan === 'proMonthly' || pendingPlan === 'proYearly' || pendingPlan === 'club') {
       const isClub = pendingPlan === 'club';
       const h1 = document.querySelector('.card-header h1');
       const sub = document.querySelector('.card-header p');
