@@ -105,7 +105,9 @@
     if (typeof fbq === 'function') {
       if (isTrial) {
         const trialName = plan === 'club' ? 'Club Trial' : 'Pro Trial';
-        fbq('track', 'StartTrial', { content_name: trialName, currency: 'EUR', value: 0 });
+        // value = predicted first charge after trial (helps Meta optimize for high-intent users)
+        const trialValue = plan === 'club' ? 99.00 : (value > 0 ? value : 6.00);
+        fbq('track', 'StartTrial', { content_name: trialName, currency: 'EUR', value: trialValue, predicted_ltv: trialValue * 12 });
       } else {
         const contentName = plan === 'club' ? 'Club Plan' : 'Pro Plan';
         fbq('track', 'Purchase', { content_name: contentName, currency: 'EUR', value });
