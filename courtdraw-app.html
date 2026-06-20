@@ -8315,11 +8315,11 @@ function toggleToolbarExpanded() {
 }
 // Restore toolbar expanded state on load.
 // First-time mobile users default to the fully-expanded toolbar (showing every tool)
-// since there's no tutorial anymore to teach them about the "More" button — landing
-// on a stripped-down toolbar with no guidance would be a worse first impression than
-// showing everything and letting them tap "Less" if it's too much. Desktop keeps its
-// existing collapsed-by-default behavior. Once the user has explicitly toggled the
-// button themselves (saved value is '0' or '1'), that choice is always respected.
+// so that when they tap the three-dot to reveal it (see the pinned-preference block
+// below — the toolbar itself is hidden by default on mobile), everything is already
+// there with no extra "More" tap needed. Desktop keeps its existing collapsed-by-default
+// behavior. Once the user has explicitly toggled the button themselves (saved value is
+// '0' or '1'), that choice is always respected.
 (function() {
   const saved = localStorage.getItem('tb_expanded');
   const isMobile = window.innerWidth < 900;
@@ -8778,13 +8778,11 @@ document.addEventListener('DOMContentLoaded', init);
     });
 
     // Restore pinned preference from localStorage and sync button label.
-    // First-time mobile users default to pinned (toolbar stays visible, doesn't
-    // auto-hide) — there's no tutorial anymore to teach the tap-to-reveal gesture,
-    // so starting with everything visible is the safer first impression. Once the
-    // user has explicitly pinned/unpinned themselves, that choice is always respected.
-    const savedPinned = localStorage.getItem('toolbar_pinned');
-    const shouldPin = savedPinned === '1' || (savedPinned === null && window.innerWidth < 900);
-    if (shouldPin) {
+    // First-time mobile users are NOT pinned by default — the toolbar stays hidden
+    // behind the three-dot reveal (tap to open), matching the clean first view of
+    // the court. tb-expanded (below) is still defaulted on, so once they DO tap the
+    // three-dot, every tool shows immediately with no extra "More" tap needed.
+    if (localStorage.getItem('toolbar_pinned') === '1') {
       document.body.classList.add('toolbar-pinned');
       const label = document.getElementById('toolbar-pin-label');
       const icon  = document.getElementById('toolbar-pin-icon');
