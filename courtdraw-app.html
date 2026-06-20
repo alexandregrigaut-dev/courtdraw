@@ -83,7 +83,9 @@
   --accent: #1d4ed8; --accent-dim: rgba(29,78,216,0.12);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; overflow: hidden; }
+/* overscroll-behavior:none kills pull-to-refresh/rubber-band bounce at the document
+   level — doesn't affect scrolling inside modals, which manage their own overflow. */
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 @supports (height: 100dvh) { html, body { height: 100dvh; } }
 body {
   font-family: 'Satoshi', system-ui, sans-serif;
@@ -152,12 +154,20 @@ button {
 }
 [data-theme="light"] #pro-badge.free-badge { color: white; }
 /* ── Board area ── */
+/* touch-action:none is declared on the whole ancestor chain down to the canvas, not
+   just the canvas itself — #court-container carries a CSS rotate(90deg) transform in
+   portrait mode (see applyZoom()), and WebKit/Chromium have long-standing bugs where
+   touch-action on a descendant of a rotated element doesn't reliably suppress native
+   gesture recognition for swipes along the screen's vertical axis. Symptom seen live:
+   drawing strokes dragged "upward" on screen (the same direction as the browser's
+   default scroll-the-page gesture) intermittently failed to register, while downward
+   strokes worked fine. Declaring it redundantly on every ancestor removes the ambiguity. */
 #board-area {
-  flex: 1; overflow: hidden; position: relative;
+  flex: 1; overflow: hidden; position: relative; touch-action: none;
   display: flex; align-items: center; justify-content: center;
 }
 #court-container {
-  position: relative; width: 100%; height: 100%;
+  position: relative; width: 100%; height: 100%; touch-action: none;
 }
 #court-svg {
   position: absolute; top: 0; left: 0;
@@ -8241,8 +8251,18 @@ function applyZoom() {
         return;
       }
       lastTapTime = now;
-      // Single finger — drawing is handled entirely by pointer events on the
-      // canvas; no panning logic needed here so pointer events flow through.
+      // Single finger on the board — always preventDefault here too, not just on the
+      // canvas's own pointerdown. touch-action:none on the canvas should be enough on
+      // its own, but it sits inside a CSS rotate(90deg) ancestor in portrait mode (see
+      // applyZoom()), and WebKit/Chromium have long-standing bugs where touch-action
+      // doesn't reliably suppress native scroll-gesture recognition across a rotated
+      // transform boundary — seen live as upward drag strokes (the same direction as
+      // the browser's default "scroll the page" gesture) intermittently failing to
+      // register while downward strokes worked fine. This is a hard guarantee that
+      // doesn't depend on touch-action working correctly through the rotation.
+      // (container only ever holds the court/canvas/tokens, nothing that needs native
+      // touch scrolling preserved, so this is safe to apply unconditionally.)
+      e.preventDefault();
     }
   }, { passive: false });
 
@@ -8270,8 +8290,16 @@ function applyZoom() {
       }
       state.zoom = newZoom;
       applyZoom();
+    } else if (ts.length === 1) {
+      // Single-finger move on the board — same defensive preventDefault as touchstart
+      // above, for the same rotated-touch-action reason. Deliberately NOT gated on
+      // state.isDrawing: the Select tool's token-drag path (handleSelectMove) never
+      // sets isDrawing true, so gating on it would leave token dragging exposed to the
+      // exact same directional bug. Pointer events on the canvas still handle the
+      // actual drawing/dragging; this only blocks the browser's native scroll/bounce
+      // from hijacking the gesture mid-stroke.
+      e.preventDefault();
     }
-    // Single-finger move: do NOT preventDefault here — let pointer events reach canvas
   }, { passive: false });
 
   container.addEventListener('touchend', (e) => {
