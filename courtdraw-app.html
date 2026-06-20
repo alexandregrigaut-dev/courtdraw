@@ -7971,7 +7971,10 @@ function doExportShare() {
       if (_cleanup) { _cleanup(); _cleanup = null; }
       localStorage.setItem(KEY_DONE, '1');
       buildDOM();
-      if (_ring) _ring.style.display = 'none';
+      // Hide the last step's tooltip+ring now, not just the ring — otherwise it sits
+      // unchanged (display:block) underneath the full-screen overlay (z-index 10000 >
+      // 9999) and reappears, stale and non-functional, the moment the overlay is dismissed.
+      hideAll();
 
       // Inject overlay CSS once (shared by mobile and desktop)
       if (!document.getElementById('tut-complete-style')) {
