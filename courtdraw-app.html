@@ -7571,10 +7571,12 @@ function doExportShare() {
   // ══════════════════════════════════════════════════════════════════════════
 
   function buildNewUserSteps() {
-    // Mobile prepends 2 extra steps: three-dot → pin toolbar
-    // Desktop: Draw → Select → Save → My Plays (4 steps)
-    // Mobile:  Three-dot → Pin → Draw → Select → Save → My Plays (6 steps)
-    // Mobile prepends 2 steps: three-dot → pin toolbar (auto-pins after 1.5s)
+    // Desktop: Draw → Select (2 steps)
+    // Mobile:  Three-dot → Pin → Retract → Draw → Select (5 steps)
+    // Community library, save, and my-plays were cut (2026-06-20) — the tutorial now
+    // ends right after select-and-move so it actually matches the "draw your first
+    // play in 30 seconds" promise. See the trailing comment in the returned array.
+    // Mobile prepends 3 steps: three-dot → pin → retract toolbar (pin auto-advances after 1.5s)
     const mobileSteps = isMobileView() ? [
       {
         id: 'three-dot',
@@ -7753,152 +7755,12 @@ function doExportShare() {
             document.removeEventListener('pointerdown', onDocPointerdown, { capture: true });
           };
         }
-      },
-      {
-        // Step 3: Community Library — auto-opens, auto-advances after 5s.
-        // Plants the seed for Pro publishing without requiring any user action.
-        id: 'community',
-        getEl: () => getEl('#btn-pro-library') || getEl('#drawing-canvas'),
-        spotlight: true,
-        mobileCenter: true,
-        fixedCorner: true, // desktop: pin near the modal's close button instead of overlapping the card grid
-        onEnter: function() {
-          try { if (typeof openCommunityLibrary === 'function') openCommunityLibrary(); } catch(e) {}
-        },
-        onEnterDelay: 400,
-        title: 'Load a play from the library',
-        body: isMobileView()
-          ? 'The Community Library has 200+ ready-made plays. Pick one and load it onto your board — then make it yours.'
-          : 'The Community Library has 200+ ready-made plays across every sport. Pick one and load it onto your board — then make it yours.',
-        attach: function(onAdvance) {
-          const gen = _tutGen;
-          // Auto-advance after 16s — close community modal first so my-plays step isn't blocked.
-          // (Was 10s — too tight for a first-time user to read the copy, switch the sport
-          // filter, and pick a play before being cut off.)
-          const t = setTimeout(function() {
-            if (_tutGen !== gen) return;
-            try { closeModal('community-library-modal'); } catch(e) {}
-            setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 300);
-          }, 16000);
-          return function() {
-            clearTimeout(t);
-            try { closeModal('community-library-modal'); } catch(e) {}
-          };
-        }
-      },
-      {
-        // Step 4: save the play
-        id: 'save',
-        getEl: () => getEl('.tb-btn[title="Save tactic"]') || getEl('#drawing-canvas'),
-        spotlight: true,   // desktop spotlight; mobile uses mobileCenter (no spotlight)
-        mobileCenter: true, // mobile: center tooltip, no ring, no scroll manipulation
-        onEnter: function() {
-          if (isMobileView()) {
-            // Pin toolbar so it can't retract while user scrolls to find Save
-            document.body.classList.add('toolbar-pinned');
-            document.body.classList.add('pt-chrome-visible');
-            const label = document.getElementById('toolbar-pin-label');
-            const icon  = document.getElementById('toolbar-pin-icon');
-            if (label) label.textContent = 'Pinned';
-            if (icon)  icon.textContent  = '✓';
-            window._tutPinnedToolbar = true;
-          } else {
-            // Desktop: scroll toolbar so Save button is centred and spotlight lands correctly
-            const btn = document.querySelector('.tb-btn[title="Save tactic"]');
-            if (btn) btn.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' });
-          }
-        },
-        onEnterDelay: 300,
-        title: 'Save your play',
-        body: isMobileView()
-          ? 'Scroll the toolbar to the right and tap <strong>Save</strong>. This one\'s on us — it won\'t count against your free saves.'
-          : 'Tap <strong>Save</strong> to name and store your play. This one\'s on us — it won\'t count against your free saves.',
-        attach: function(onAdvance) {
-          // On mobile, just add the scroll-hint class (tooltip is centered, no spotlight)
-          if (isMobileView()) {
-            const toolbar = getEl('#toolbar');
-            if (toolbar) toolbar.classList.add('tut-save-step');
-          }
-          const prev = state.savedTactics.length;
-          const gen  = _tutGen;
-          let done = false;
-          window._tutorialSaveActive = true; // bypass free-tier limit for this save
-          const iv = setInterval(function() {
-            if (done || _tutGen !== gen) {
-              done = true; window._tutorialSaveActive = false; clearInterval(iv); return;
-            }
-            if (state.savedTactics.length > prev) {
-              done = true;
-              window._tutorialSaveActive = false;
-              clearInterval(iv);
-              // Close the save dialog (modal-library) — it stays open after saving.
-              // We must close it before advancing so Step 4's tutShowStep
-              // doesn't see anyModalOpen() and block indefinitely.
-              setTimeout(function() {
-                if (_tutGen !== gen) return;
-                try { if (typeof closeModal === 'function') closeModal('modal-library'); } catch(e2) {}
-                setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 250);
-              }, 400);
-            }
-          }, 300);
-          return function() {
-            done = true;
-            window._tutorialSaveActive = false;
-            clearInterval(iv);
-            // Remove mobile scroll hint
-            const toolbar = getEl('#toolbar');
-            if (toolbar) toolbar.classList.remove('tut-save-step');
-          };
-        }
-      },
-      {
-        // Step 5: open My Plays.
-        // Advance after the modal opens (not on button click alone) so the user
-        // sees their saved play, then tutComplete fires while the modal is still open.
-        // tutComplete's overlay (z-index 10000) renders on top of the modal.
-        id: 'my-plays',
-        getEl: () => getEl('.tb-btn[title="My saved tactics"]') || getEl('#drawing-canvas'),
-        spotlight: true,    // desktop spotlight; mobile uses mobileCenter (no spotlight)
-        mobileCenter: true, // mobile: center tooltip, buttons display normally
-        // Re-pin toolbar so it can't auto-retract while user looks for My Plays
-        onEnter: function() {
-          if (isMobileView()) {
-            document.body.classList.add('toolbar-pinned');
-            document.body.classList.add('pt-chrome-visible');
-            const label = document.getElementById('toolbar-pin-label');
-            const icon  = document.getElementById('toolbar-pin-icon');
-            if (label) label.textContent = 'Pinned';
-            if (icon)  icon.textContent  = '✓';
-            window._tutPinnedToolbar = true;
-          }
-        },
-        onEnterDelay: 350,
-        title: 'View your playbook',
-        body: isMobileView()
-          ? 'Tap <strong>My Plays</strong> to find all your saved plays anytime.'
-          : 'Click <strong>My Plays</strong> to find all your saved plays anytime.',
-        attach: function(onAdvance) {
-          const btn = getEl('.tb-btn[title="My saved tactics"]');
-          const gen = _tutGen;
-          // Watch for modal-library to open (the My Plays modal)
-          let done = false;
-          const obs = new MutationObserver(function() {
-            if (done || _tutGen !== gen) { obs.disconnect(); return; }
-            const lib = getEl('#modal-library');
-            if (lib && lib.classList.contains('open')) {
-              done = true; obs.disconnect();
-              // Give user 1s to see their saved play, then complete tutorial
-              setTimeout(function() { if (_tutGen === gen) onAdvance(); }, 1000);
-            }
-          });
-          obs.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
-          // Also listen for button click as primary trigger
-          const offBtn = once(btn, 'click', function() {
-            // MutationObserver will fire when modal opens
-          });
-          return function() { done = true; obs.disconnect(); offBtn(); };
-        }
       }
+      // Tutorial intentionally ends here, right after select-and-move. The community
+      // library, save, and my-plays steps were cut (2026-06-20) to make the tutorial
+      // match the "draw your first play in 30 seconds" promise — tutAdvance() calls
+      // tutComplete() automatically once _tutIdx reaches the end of this array, so no
+      // other change is needed to make the success overlay fire right after this step.
     ];
   }
 
