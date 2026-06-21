@@ -1637,7 +1637,7 @@
     </div>
     <div style="text-align:center;margin-top:40px;">
       <a href="login.html?checkout=club" class="btn btn-primary">Start 7-Day Free Trial →</a>
-      <p style="margin-top:12px;font-size:0.85rem;color:var(--muted);">7-day free trial, then €99/yr. Up to 10 coaches. Cancel anytime before day 7 — no charge.</p>
+      <p style="margin-top:12px;font-size:0.85rem;color:var(--muted);" id="club-cta-tagline">7-day free trial, then €99/yr. Up to 10 coaches. Cancel anytime before day 7 — no charge.</p>
     </div>
   </div>
 </section>
@@ -1660,7 +1660,7 @@
       <!-- Free -->
       <div class="pricing-card">
         <div class="plan-name">Free</div>
-        <div class="plan-price">€0<span class="period"> / forever</span></div>
+        <div class="plan-price" id="free-price">€0<span class="period"> / forever</span></div>
         <p class="plan-tagline">Draw your first play in 30 seconds. No card needed.</p>
         <a href="courtdraw-app.html" class="btn btn-ghost plan-btn">Start Drawing Free</a>
         <ul class="plan-features">
@@ -1707,8 +1707,8 @@
       <div class="pricing-card">
         <div class="popular-badge" style="background:linear-gradient(135deg,#7c3aed,#a855f7);">7-Day Free Trial</div>
         <div class="plan-name">Club</div>
-        <div class="plan-price"><sup>€</sup>99<span class="period"> / yr</span></div>
-        <p style="margin:4px 0 10px;font-size:13px;font-weight:700;color:#a855f7;">That's €10 per coach per year.</p>
+        <div class="plan-price" id="club-price"><sup>€</sup>99<span class="period"> / yr</span></div>
+        <p style="margin:4px 0 10px;font-size:13px;font-weight:700;color:#a855f7;" id="club-per-coach">That's €10 per coach per year.</p>
         <p class="plan-tagline">One plan for your whole staff. 7-day free trial — cancel anytime.</p>
         <a href="login.html?checkout=club" class="btn btn-ghost plan-btn" style="border-color:#a855f7;color:#a855f7;">Start 7-Day Free Trial</a>
         <ul class="plan-features">
@@ -1981,25 +1981,86 @@
 </footer>
 
 <script>
-  // Pricing toggle
-  function setPricing(mode) {
+  // Localized display pricing. Not live FX — clean round numbers approximating
+  // what Stripe Adaptive Pricing will actually charge, so the homepage doesn't
+  // show Euros to a visitor who's about to see USD/GBP/AUD at checkout.
+  const PRICING = {
+    EUR: { symbol: '€', suffix: '', proMonthly: 6, proAnnualMonthly: 4, proYearly: 49, club: 99, clubPerCoach: 10 },
+    USD: { symbol: '$', suffix: '', proMonthly: 7, proAnnualMonthly: 5, proYearly: 59, club: 109, clubPerCoach: 11 },
+    GBP: { symbol: '£', suffix: '', proMonthly: 5, proAnnualMonthly: 4, proYearly: 45, club: 85, clubPerCoach: 9 },
+    AUD: { symbol: 'A$', suffix: '', proMonthly: 10, proAnnualMonthly: 7, proYearly: 89, club: 169, clubPerCoach: 17 },
+    CAD: { symbol: 'C$', suffix: '', proMonthly: 9, proAnnualMonthly: 6, proYearly: 79, club: 149, clubPerCoach: 15 }
+  };
+  const COUNTRY_TO_CURRENCY = {
+    US: 'USD', GB: 'GBP', AU: 'AUD', CA: 'CAD', NZ: 'AUD'
+  };
+  let currentCurrency = 'EUR';
+  let currentMode = 'monthly';
+
+  function renderPricing() {
+    const p = PRICING[currentCurrency] || PRICING.EUR;
     const monthly = document.getElementById('toggle-monthly');
     const annual = document.getElementById('toggle-annual');
     const price = document.getElementById('pro-price');
     const tagline = document.getElementById('pro-tagline');
     const proBtnEl = document.getElementById('btn-pro-plan');
-    if (mode === 'monthly') {
+    const freePrice = document.getElementById('free-price');
+    const clubPrice = document.getElementById('club-price');
+    const clubPerCoach = document.getElementById('club-per-coach');
+    const clubCtaTagline = document.getElementById('club-cta-tagline');
+
+    if (freePrice) freePrice.innerHTML = `<sup>${p.symbol}</sup>0<span class="period"> / forever</span>`;
+    if (clubPrice) clubPrice.innerHTML = `<sup>${p.symbol}</sup>${p.club}<span class="period"> / yr</span>`;
+    if (clubPerCoach) clubPerCoach.textContent = `That's ${p.symbol}${p.clubPerCoach} per coach per year.`;
+    if (clubCtaTagline) clubCtaTagline.textContent = `7-day free trial, then ${p.symbol}${p.club}/yr. Up to 10 coaches. Cancel anytime before day 7 — no charge.`;
+
+    if (currentMode === 'monthly') {
       monthly.classList.add('active'); annual.classList.remove('active');
-      price.innerHTML = '<sup>€</sup>6<span class="period"> / mo</span>';
-      tagline.textContent = '7-day free trial, then €6/mo. Switch to annual to save 32%.';
+      price.innerHTML = `<sup>${p.symbol}</sup>${p.proMonthly}<span class="period"> / mo</span>`;
+      tagline.textContent = `7-day free trial, then ${p.symbol}${p.proMonthly}/mo. Switch to annual to save 32%.`;
       if (proBtnEl) proBtnEl.href = 'login.html?checkout=proMonthly';
     } else {
       annual.classList.add('active'); monthly.classList.remove('active');
-      price.innerHTML = '<sup>€</sup>4<span class="period"> / mo</span>';
-      tagline.textContent = '7-day free trial, then €49/yr. €6/mo billed monthly. Cancel anytime.';
+      price.innerHTML = `<sup>${p.symbol}</sup>${p.proAnnualMonthly}<span class="period"> / mo</span>`;
+      tagline.textContent = `7-day free trial, then ${p.symbol}${p.proYearly}/yr. ${p.symbol}${p.proMonthly}/mo billed monthly. Cancel anytime.`;
       if (proBtnEl) proBtnEl.href = 'login.html?checkout=proYearly';
     }
   }
+
+  // Pricing toggle (monthly/annual) — kept as the public entry point used by the buttons
+  function setPricing(mode) {
+    currentMode = mode;
+    renderPricing();
+  }
+
+  // Best-effort geo-IP currency detection. Falls back silently to EUR on any
+  // failure/timeout/CORS issue — never blocks page render, never throws.
+  (function detectCurrency() {
+    try {
+      const cached = sessionStorage.getItem('cd_currency');
+      if (cached && PRICING[cached]) {
+        currentCurrency = cached;
+        renderPricing();
+        return;
+      }
+    } catch (e) {}
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2500);
+    fetch('https://ipwho.is/', { signal: controller.signal })
+      .then(res => res.json())
+      .then(data => {
+        clearTimeout(timeout);
+        const code = data && data.country_code;
+        const currency = COUNTRY_TO_CURRENCY[code];
+        if (currency) {
+          currentCurrency = currency;
+          try { sessionStorage.setItem('cd_currency', currency); } catch (e) {}
+          renderPricing();
+        }
+      })
+      .catch(() => { /* keep EUR default, no error surfaced */ });
+  })();
 
   // FAQ accordion
   function toggleFaq(btn) {
