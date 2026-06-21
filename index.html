@@ -2047,11 +2047,13 @@
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 2500);
-    fetch('https://ipwho.is/', { signal: controller.signal })
+    // geojs.io: confirmed CORS-friendly from a browser context (unlike ipwho.is,
+    // whose free plan rejects all cross-origin requests with a 403).
+    fetch('https://get.geojs.io/v1/ip/country.json', { signal: controller.signal })
       .then(res => res.json())
       .then(data => {
         clearTimeout(timeout);
-        const code = data && data.country_code;
+        const code = data && data.country;
         const currency = COUNTRY_TO_CURRENCY[code];
         if (currency) {
           currentCurrency = currency;
