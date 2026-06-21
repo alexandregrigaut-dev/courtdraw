@@ -2036,15 +2036,9 @@
   // Best-effort geo-IP currency detection. Falls back silently to EUR on any
   // failure/timeout/CORS issue — never blocks page render, never throws.
   (function detectCurrency() {
-    try {
-      const cached = sessionStorage.getItem('cd_currency');
-      if (cached && PRICING[cached]) {
-        currentCurrency = cached;
-        renderPricing();
-        return;
-      }
-    } catch (e) {}
-
+    // No caching: a visitor's apparent location can change within a browser
+    // session (VPN toggled, mobile network switch) without the tab closing,
+    // so every load gets a fresh lookup rather than reusing a stale result.
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 2500);
     // geojs.io: confirmed CORS-friendly from a browser context (unlike ipwho.is,
@@ -2057,7 +2051,6 @@
         const currency = COUNTRY_TO_CURRENCY[code];
         if (currency) {
           currentCurrency = currency;
-          try { sessionStorage.setItem('cd_currency', currency); } catch (e) {}
           renderPricing();
         }
       })
