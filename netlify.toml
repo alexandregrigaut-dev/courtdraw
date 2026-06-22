@@ -77,26 +77,6 @@
   to   = "/community.html"
   status = 200
 
-[[redirects]]
-  from = "/football"
-  to   = "/football.html"
-  status = 200
-
-[[redirects]]
-  from = "/basketball"
-  to   = "/basketball.html"
-  status = 200
-
-[[redirects]]
-  from = "/tennis"
-  to   = "/tennis.html"
-  status = 200
-
-[[redirects]]
-  from = "/padel"
-  to   = "/padel.html"
-  status = 200
-
 [[headers]]
   for = "/.well-known/assetlinks.json"
   [headers.values]
