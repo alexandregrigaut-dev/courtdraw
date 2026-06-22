@@ -1338,7 +1338,7 @@ body.portrait-mode #toolbar-toggle-btn { display: none !important; }
   min-width: 44px; min-height: 44px;
   display: none; /* overridden by portrait-mode rules below */
 }
-#pt-bottom-hint { bottom: 4px; right: 4px; }
+#pt-bottom-hint { bottom: max(4px, env(safe-area-inset-bottom)); right: 4px; }
 #pt-top-hint    { top: 4px;    right: 4px; }
 body.portrait-mode #pt-bottom-hint,
 body.portrait-mode #pt-top-hint    { display: block; }
