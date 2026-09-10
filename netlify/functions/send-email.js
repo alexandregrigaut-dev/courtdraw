@@ -1,5 +1,6 @@
 const { Resend } = require('resend');
 const admin = require('firebase-admin');
+const crypto = require('crypto');
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -16,6 +17,24 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM     = 'CourtDraw <hello@courtdraw.app>';
 const REPLY_TO = 'hello@courtdraw.app';
 const APP_URL  = process.env.PUBLIC_URL || 'https://courtdraw.app';
+
+// ─── Unsubscribe links ─────────────────────────────────────────────────────────
+// Every marketing email gets a signed, one-click unsubscribe link in its footer
+// (and a List-Unsubscribe header for native Gmail/Outlook unsubscribe buttons).
+// The signature is an HMAC over the recipient's email so links can't be forged
+// or used to unsubscribe someone else. Verified server-side in unsubscribe.js.
+
+const UNSUB_SECRET = process.env.INTERNAL_SECRET;
+
+function signUnsubscribeToken(email) {
+  return crypto.createHmac('sha256', UNSUB_SECRET || '').update(email).digest('hex').slice(0, 32);
+}
+
+function buildUnsubscribeUrl(email) {
+  const normalized = String(email).trim().toLowerCase();
+  const token = signUnsubscribeToken(normalized);
+  return `${APP_URL}/api/unsubscribe?email=${encodeURIComponent(normalized)}&token=${token}`;
+}
 
 // ─── Shared layout helpers ────────────────────────────────────────────────────
 
@@ -34,7 +53,7 @@ const LOGO_SVG = `
   <line x1="26" y1="14" x2="25.3" y2="14" stroke="white" stroke-width="0.75"/>
 </svg>`;
 
-function layout({ label, labelColor = '#3b82f6', title, body, ctaText, ctaUrl, features, footerNote }) {
+function layout({ label, labelColor = '#3b82f6', title, body, ctaText, ctaUrl, features, footerNote, unsubscribeUrl }) {
   const featureBlock = features ? `
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;">
       <tr>
@@ -91,8 +110,11 @@ function layout({ label, labelColor = '#3b82f6', title, body, ctaText, ctaUrl, f
             Questions? Reply to this email or contact us at
             <a href="mailto:hello@courtdraw.app" style="color:#3b82f6;text-decoration:none;">hello@courtdraw.app</a>
           </p>
-          <p style="margin:0;font-size:11px;color:#334155;">
+          <p style="margin:0 0 10px;font-size:11px;color:#334155;">
             &copy; 2026 CourtDraw &middot; ${footerNote}
+          </p>
+          <p style="margin:0;">
+            <a href="${unsubscribeUrl}" style="font-size:11px;color:#64748b;text-decoration:underline;">Unsubscribe from these emails</a>
           </p>
         </td></tr>
 
@@ -105,7 +127,7 @@ function layout({ label, labelColor = '#3b82f6', title, body, ctaText, ctaUrl, f
 
 // Strip HTML tags for the plain-text alternative.
 // Sending only HTML with no text part is a strong spam signal.
-function toPlainText({ title, body, ctaText, ctaUrl, features, footerNote }) {
+function toPlainText({ title, body, ctaText, ctaUrl, features, footerNote, unsubscribeUrl }) {
   const bodyText = body
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<strong>(.*?)<\/strong>/gi, '$1')
@@ -126,7 +148,29 @@ function toPlainText({ title, body, ctaText, ctaUrl, features, footerNote }) {
     '─'.repeat(48),
     footerNote,
     'CourtDraw · hello@courtdraw.app',
+    '',
+    `Unsubscribe: ${unsubscribeUrl}`,
   ].join('\n').trim();
+}
+
+// Assembles the final Resend payload for a template: injects the signed
+// unsubscribe link into the HTML/text footer and sets List-Unsubscribe
+// headers so Gmail/Outlook/Yahoo show their native one-click unsubscribe button.
+function buildEmail(email, subject, data) {
+  const url = buildUnsubscribeUrl(email);
+  const finalData = { ...data, unsubscribeUrl: url };
+  return {
+    from: FROM,
+    reply_to: REPLY_TO,
+    to: email,
+    subject,
+    html: layout(finalData),
+    text: toPlainText(finalData),
+    headers: {
+      'List-Unsubscribe': `<mailto:${REPLY_TO}?subject=unsubscribe>, <${url}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
+  };
 }
 
 // ─── Templates ────────────────────────────────────────────────────────────────
@@ -147,14 +191,7 @@ const templates = {
       ],
       footerNote: "You're receiving this because you created a CourtDraw account."
     };
-    return {
-      from: FROM,
-      reply_to: REPLY_TO,
-      to: email,
-      subject: 'Welcome to CourtDraw',
-      html: layout(data),
-      text: toPlainText(data),
-    };
+    return buildEmail(email, 'Welcome to CourtDraw', data);
   },
 
   paymentConfirmed: (email) => {
@@ -172,14 +209,7 @@ const templates = {
       ],
       footerNote: "You're receiving this because you subscribed to CourtDraw Pro."
     };
-    return {
-      from: FROM,
-      reply_to: REPLY_TO,
-      to: email,
-      subject: 'CourtDraw Pro is now active',
-      html: layout(data),
-      text: toPlainText(data),
-    };
+    return buildEmail(email, 'CourtDraw Pro is now active', data);
   },
 
   clubWelcome: (email) => {
@@ -198,14 +228,7 @@ const templates = {
       ],
       footerNote: "You're receiving this because you subscribed to CourtDraw Club."
     };
-    return {
-      from: FROM,
-      reply_to: REPLY_TO,
-      to: email,
-      subject: 'Your CourtDraw Club is ready',
-      html: layout(data),
-      text: toPlainText(data),
-    };
+    return buildEmail(email, 'Your CourtDraw Club is ready', data);
   },
 
   paymentFailed: (email) => {
@@ -218,14 +241,7 @@ const templates = {
       ctaUrl: `${APP_URL}/courtdraw-app.html`,
       footerNote: "You're receiving this because of a billing issue on your CourtDraw account."
     };
-    return {
-      from: FROM,
-      reply_to: REPLY_TO,
-      to: email,
-      subject: 'CourtDraw — payment could not be processed',
-      html: layout(data),
-      text: toPlainText(data),
-    };
+    return buildEmail(email, 'CourtDraw — payment could not be processed', data);
   },
 
   cancellation: (email) => {
@@ -239,14 +255,7 @@ const templates = {
       ctaUrl: `${APP_URL}/#pricing`,
       footerNote: "You're receiving this because your CourtDraw subscription was cancelled."
     };
-    return {
-      from: FROM,
-      reply_to: REPLY_TO,
-      to: email,
-      subject: 'Your CourtDraw subscription has been cancelled',
-      html: layout(data),
-      text: toPlainText(data),
-    };
+    return buildEmail(email, 'Your CourtDraw subscription has been cancelled', data);
   },
 
   cancellationScheduled: (email, endDate, plan) => {
@@ -261,14 +270,7 @@ const templates = {
       ctaUrl: `${APP_URL}/courtdraw-app.html`,
       footerNote: `You're receiving this because you cancelled your CourtDraw ${planName} subscription.`
     };
-    return {
-      from: FROM,
-      reply_to: REPLY_TO,
-      to: email,
-      subject: `Your CourtDraw ${planName} subscription will end soon`,
-      html: layout(data),
-      text: toPlainText(data),
-    };
+    return buildEmail(email, `Your CourtDraw ${planName} subscription will end soon`, data);
   },
 
   // ── Anonymous email capture: first-visit welcome ─────────────────────────────
@@ -284,11 +286,7 @@ const templates = {
       ctaUrl: `${APP_URL}/login.html?mode=register`,
       footerNote: "You're receiving this because you saved a play on CourtDraw."
     };
-    return {
-      from: FROM, reply_to: REPLY_TO, to: email,
-      subject: 'Your CourtDraw play is waiting for you',
-      html: layout(data), text: toPlainText(data),
-    };
+    return buildEmail(email, 'Your CourtDraw play is waiting for you', data);
   },
 
   // ── Drip email: Day 2 — Feature spotlight ───────────────────────────────────
@@ -310,11 +308,7 @@ const templates = {
       ],
       footerNote: "You're receiving this because you created a free CourtDraw account."
     };
-    return {
-      from: FROM, reply_to: REPLY_TO, to: email,
-      subject: 'Did you know CourtDraw can animate your plays?',
-      html: layout(data), text: toPlainText(data),
-    };
+    return buildEmail(email, 'Did you know CourtDraw can animate your plays?', data);
   },
 
   // ── Drip email: Day 5 — Urgency around save limit ────────────────────────────
@@ -337,11 +331,7 @@ const templates = {
       ],
       footerNote: "You're receiving this because you created a free CourtDraw account."
     };
-    return {
-      from: FROM, reply_to: REPLY_TO, to: email,
-      subject: 'You\'ve got 3 saves — here\'s what coaches with Pro say',
-      html: layout(data), text: toPlainText(data),
-    };
+    return buildEmail(email, 'You\'ve got 3 saves — here\'s what coaches with Pro say', data);
   },
 
   // ── Drip email: Day 10 — Direct trial CTA ────────────────────────────────────
@@ -361,13 +351,9 @@ const templates = {
         { icon: '💾', label: 'Unlimited saves' },
         { icon: '📹', label: 'Video overlay' },
       ],
-      footerNote: "You're receiving this because you created a free CourtDraw account. To stop receiving these emails, reply with 'unsubscribe'."
+      footerNote: "You're receiving this because you created a free CourtDraw account."
     };
-    return {
-      from: FROM, reply_to: REPLY_TO, to: email,
-      subject: 'Your 7-day CourtDraw Pro trial is waiting',
-      html: layout(data), text: toPlainText(data),
-    };
+    return buildEmail(email, 'Your 7-day CourtDraw Pro trial is waiting', data);
   },
 
   // Sent when a Pro trial checkout completes (no charge yet)
@@ -388,14 +374,7 @@ const templates = {
       ],
       footerNote: "You're receiving this because you started a CourtDraw Pro trial."
     };
-    return {
-      from: FROM,
-      reply_to: REPLY_TO,
-      to: email,
-      subject: 'Your 7-day CourtDraw Pro trial has started',
-      html: layout(data),
-      text: toPlainText(data),
-    };
+    return buildEmail(email, 'Your 7-day CourtDraw Pro trial has started', data);
   },
 
   // Sent when a Pro trial converts to a paid subscription (day 4 charge succeeds)
@@ -415,14 +394,7 @@ const templates = {
       ],
       footerNote: "You're receiving this because your CourtDraw Pro trial converted to a paid subscription."
     };
-    return {
-      from: FROM,
-      reply_to: REPLY_TO,
-      to: email,
-      subject: 'CourtDraw Pro — your subscription is now active',
-      html: layout(data),
-      text: toPlainText(data),
-    };
+    return buildEmail(email, 'CourtDraw Pro — your subscription is now active', data);
   },
 
   // Sent when a Club trial checkout completes (no charge yet)
@@ -443,14 +415,7 @@ const templates = {
       ],
       footerNote: "You're receiving this because you started a CourtDraw Club trial."
     };
-    return {
-      from: FROM,
-      reply_to: REPLY_TO,
-      to: email,
-      subject: 'Your 7-day CourtDraw Club trial has started',
-      html: layout(data),
-      text: toPlainText(data),
-    };
+    return buildEmail(email, 'Your 7-day CourtDraw Club trial has started', data);
   },
 
   // ── Weekly digest: Pro/Club user who saved plays last week ───────────────────
@@ -481,13 +446,9 @@ const templates = {
       body: `Good work. Here's your latest:${spotlight}Keep building — consistent prep is what separates good coaches from great ones.${suggestionLine}`,
       ctaText: 'Open the app →',
       ctaUrl: `${APP_URL}/courtdraw-app.html`,
-      footerNote: "You're receiving this weekly digest because you have an active CourtDraw Pro subscription. Reply to unsubscribe."
+      footerNote: "You're receiving this weekly digest because you have an active CourtDraw Pro subscription."
     };
-    return {
-      from: FROM, reply_to: REPLY_TO, to: email,
-      subject: `You saved ${count} ${count === 1 ? 'play' : 'plays'} this week — keep it up`,
-      html: layout(data), text: toPlainText(data),
-    };
+    return buildEmail(email, `You saved ${count} ${count === 1 ? 'play' : 'plays'} this week — keep it up`, data);
   },
 
   // ── Weekly digest: Pro/Club user who saved nothing last week ─────────────────
@@ -507,13 +468,9 @@ const templates = {
       body: `No new plays saved last week.${recapLine}${suggestionLine}<br><br>Jump back in whenever you're ready — your library is waiting.`,
       ctaText: 'Open the app →',
       ctaUrl: `${APP_URL}/courtdraw-app.html`,
-      footerNote: "You're receiving this weekly digest because you have an active CourtDraw Pro subscription. Reply to unsubscribe."
+      footerNote: "You're receiving this weekly digest because you have an active CourtDraw Pro subscription."
     };
-    return {
-      from: FROM, reply_to: REPLY_TO, to: email,
-      subject: "Your CourtDraw plays are waiting — what's on this week?",
-      html: layout(data), text: toPlainText(data),
-    };
+    return buildEmail(email, "Your CourtDraw plays are waiting — what's on this week?", data);
   },
 
   // ── Weekly digest: Free user re-engagement ───────────────────────────────────
@@ -531,13 +488,9 @@ const templates = {
         { icon: '🏟', label: '38+ courts' },
         { icon: '📐', label: 'Phase animation' },
       ],
-      footerNote: "You're receiving this because you have a CourtDraw account. Reply to unsubscribe."
+      footerNote: "You're receiving this because you have a CourtDraw account."
     };
-    return {
-      from: FROM, reply_to: REPLY_TO, to: email,
-      subject: 'Your CourtDraw plays are waiting',
-      html: layout(data), text: toPlainText(data),
-    };
+    return buildEmail(email, 'Your CourtDraw plays are waiting', data);
   },
 
   // ── Re-engagement: Email 1 — zero sessions, Pro/Club user ───────────────────
@@ -556,13 +509,9 @@ const templates = {
         { icon: '▶️', label: 'Present mode' },
         { icon: '📤', label: 'PDF export' },
       ],
-      footerNote: "You're receiving this because you have a CourtDraw account. Reply to unsubscribe."
+      footerNote: "You're receiving this because you have a CourtDraw account."
     };
-    return {
-      from: FROM, reply_to: REPLY_TO, to: email,
-      subject: 'Chain your plays into a session plan',
-      html: layout(data), text: toPlainText(data),
-    };
+    return buildEmail(email, 'Chain your plays into a session plan', data);
   },
 
   // ── Re-engagement: Email 1 — zero sessions, Free user (upsell) ──────────────
@@ -580,13 +529,9 @@ const templates = {
         { icon: '▶️', label: 'Present mode' },
         { icon: '💾', label: 'Unlimited saves' },
       ],
-      footerNote: "You're receiving this because you have a CourtDraw account. Reply to unsubscribe."
+      footerNote: "You're receiving this because you have a CourtDraw account."
     };
-    return {
-      from: FROM, reply_to: REPLY_TO, to: email,
-      subject: 'Chain your plays into a session plan — Pro feature',
-      html: layout(data), text: toPlainText(data),
-    };
+    return buildEmail(email, 'Chain your plays into a session plan — Pro feature', data);
   },
 
   // ── Re-engagement: Email 2 — zero plays, all users ──────────────────────────
@@ -603,13 +548,9 @@ const templates = {
                : 'On the free plan you can draw plays and save up to 3. When you\'re ready for more, Pro gives you unlimited saves, phase animation, and session planning.'}`,
       ctaText,
       ctaUrl,
-      footerNote: "You're receiving this because you have a CourtDraw account. Reply to unsubscribe."
+      footerNote: "You're receiving this because you have a CourtDraw account."
     };
-    return {
-      from: FROM, reply_to: REPLY_TO, to: email,
-      subject: 'Your CourtDraw board is waiting',
-      html: layout(data), text: toPlainText(data),
-    };
+    return buildEmail(email, 'Your CourtDraw board is waiting', data);
   },
 
   // ── Broadcast: Community Library announcement ────────────────────────────────
@@ -634,13 +575,9 @@ const templates = {
         { icon: '⚡', label: 'Load in one click' },
         { icon: '✏️', label: 'Customise anything' },
       ],
-      footerNote: "You're receiving this because you have a CourtDraw account. <a href='mailto:hello@courtdraw.app?subject=Unsubscribe' style='color:#3b82f6;'>Unsubscribe</a>"
+      footerNote: "You're receiving this because you have a CourtDraw account."
     };
-    return {
-      from: FROM, reply_to: REPLY_TO, to: email,
-      subject: 'New: Browse 200+ plays in the Community Library 🌐',
-      html: layout(data), text: toPlainText(data),
-    };
+    return buildEmail(email, 'New: Browse 200+ plays in the Community Library 🌐', data);
   },
 
   // Sent when a Club trial converts to a paid subscription (day 8 charge succeeds)
@@ -660,14 +597,7 @@ const templates = {
       ],
       footerNote: "You're receiving this because your CourtDraw Club trial converted to a paid subscription."
     };
-    return {
-      from: FROM,
-      reply_to: REPLY_TO,
-      to: email,
-      subject: 'CourtDraw Club — your subscription is now active',
-      html: layout(data),
-      text: toPlainText(data),
-    };
+    return buildEmail(email, 'CourtDraw Club — your subscription is now active', data);
   }
 
 };

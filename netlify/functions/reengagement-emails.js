@@ -95,6 +95,8 @@ exports.handler = async () => {
           skipped++; continue;
         }
 
+        if (userData.unsubscribed) { skipped++; continue; }
+
         const plan   = userData.plan || 'free';
         const isPaid = plan === 'pro' || plan === 'club';
 

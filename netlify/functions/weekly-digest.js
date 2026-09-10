@@ -80,7 +80,8 @@ exports.handler = async () => {
           skipped++; continue;
         }
 
-        // Skip if already sent this week
+        // Skip if unsubscribed or already sent this week
+        if (userData.unsubscribed) { skipped++; continue; }
         if (userData.weeklyDigestSentWeek === thisWeek) { skipped++; continue; }
 
         const plan   = userData.plan || 'free';

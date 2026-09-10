@@ -80,6 +80,7 @@ exports.handler = async () => {
         const dripEmailsSent   = Array.isArray(data.dripEmailsSent) ? data.dripEmailsSent : [];
 
         // Only send to free users who haven't received this drip yet
+        if (data.unsubscribed) { skipped++; continue; }
         if (plan !== 'free') { skipped++; continue; }
         if (dripEmailsSent.includes(matchDay)) { skipped++; continue; }
 
@@ -103,6 +104,7 @@ exports.handler = async () => {
     for (const doc of anonSnap.docs) {
       const data = doc.data();
       if (!data.email || !data.capturedAt) { skipped++; continue; }
+      if (data.unsubscribed) { skipped++; continue; }
       processed++;
 
       const capturedMs = data.capturedAt.toMillis ? data.capturedAt.toMillis() : data.capturedAt;
