@@ -1,0 +1,29 @@
+# CourtDraw
+
+> CourtDraw is a browser-based sports coaching tactics board covering 38+ sports (football, basketball, tennis, padel, volleyball, rugby, ice hockey, and more). Coaches draw plays, position players, animate multi-phase sequences, and share tactics — no install, no account required to start. Free tier available; Pro is €6/month or €49/year; Club (up to 10 coaches, shared library) is €99/year, both with a 7-day free trial.
+
+CourtDraw works entirely in the browser as a Progressive Web App: it works offline after the first visit, requires no download, and needs no account for the free tier. Drawing tools include arrows, dashed arrows, curves, zones, text, and an eraser, plus sport-specific player tokens that are pre-positioned automatically. Plays can be exported as PNG or PDF, or shared as a live link (Pro).
+
+## Product
+
+- [Open the app](https://courtdraw.app/courtdraw-app.html): Start drawing immediately, no sign-up needed.
+- [Homepage](https://courtdraw.app/): Overview, pricing, and FAQ.
+- [All sports](https://courtdraw.app/sports/): Directory of all 38+ supported sport courts.
+- [Community library](https://courtdraw.app/community): 200+ browsable coaching plays across 12 sports.
+
+## Guides
+
+- [Share a Tactics Board on WhatsApp](https://courtdraw.app/guides/share-tactics-board-whatsapp/): How to get a diagram from CourtDraw to a team group chat in seconds.
+- [One Tactics Board for a Multi-Sport Club](https://courtdraw.app/guides/one-tactics-board-multi-sport-club/): How the Club plan covers multiple sports and coaches under one shared library.
+- [How to Build a Training Session Plan](https://courtdraw.app/guides/how-to-build-a-training-session-plan/): Chaining saved plays into a timed session with the Session Builder.
+- [Digital vs. Whiteboard Coaching](https://courtdraw.app/guides/digital-vs-whiteboard-coaching/): What actually changes when a coach switches from a physical whiteboard.
+
+## Sport tactics boards
+
+Dedicated pages exist for each sport at `/<sport>-tactics-board/`, e.g. [football](https://courtdraw.app/football-tactics-board/), [basketball](https://courtdraw.app/basketball-tactics-board/), [tennis](https://courtdraw.app/tennis-tactics-board/). See the [full sports directory](https://courtdraw.app/sports/) for all 38+.
+
+## Optional
+
+- [Pricing details](https://courtdraw.app/#pricing): Free / Pro / Club plan comparison.
+- [Privacy policy](https://courtdraw.app/privacy.html)
+- [Terms of service](https://courtdraw.app/terms.html)

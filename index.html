@@ -60,39 +60,143 @@
 
   <!-- JSON-LD -->
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "CourtDraw",
-    "applicationCategory": "SportsApplication",
-    "operatingSystem": "Web, iOS, Android",
-    "offers": [
-      {
-        "@type": "Offer",
-        "name": "Free",
-        "price": "0",
-        "priceCurrency": "EUR"
-      },
-      {
-        "@type": "Offer",
-        "name": "Pro",
-        "price": "6",
-        "priceCurrency": "EUR",
-        "billingIncrement": "P1M"
-      },
-      {
-        "@type": "Offer",
-        "name": "Club",
-        "price": "99",
-        "priceCurrency": "EUR",
-        "billingIncrement": "P1Y"
-      }
-    ],
-    "description": "Online tactics board for coaches. Draw plays and share strategy for 38+ sports.",
-    "url": "https://courtdraw.app",
-    "screenshot": "https://courtdraw.app/assets/og-image.png",
-    "featureList": "38+ sport courts, drawing tools, sport-specific player tokens, PNG export, PDF export, tactic library, offline PWA, pinch-to-zoom, landscape immersive mode"
-  }
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "name": "CourtDraw",
+      "url": "https://courtdraw.app",
+      "logo": "https://courtdraw.app/assets/icons/icon-512.png",
+      "description": "CourtDraw is a browser-based sports coaching tactics board covering 38+ sports. Coaches draw plays, position players, and share tactics with no install and no account required."
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "CourtDraw",
+      "applicationCategory": "SportsApplication",
+      "operatingSystem": "Web, iOS, Android",
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Free",
+          "price": "0",
+          "priceCurrency": "EUR"
+        },
+        {
+          "@type": "Offer",
+          "name": "Pro",
+          "price": "6",
+          "priceCurrency": "EUR",
+          "billingIncrement": "P1M"
+        },
+        {
+          "@type": "Offer",
+          "name": "Club",
+          "price": "99",
+          "priceCurrency": "EUR",
+          "billingIncrement": "P1Y"
+        }
+      ],
+      "description": "Online tactics board for coaches. Draw plays and share strategy for 38+ sports.",
+      "url": "https://courtdraw.app",
+      "screenshot": "https://courtdraw.app/assets/og-image.png",
+      "featureList": "38+ sport courts, drawing tools, sport-specific player tokens, PNG export, PDF export, tactic library, offline PWA, pinch-to-zoom, landscape immersive mode"
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Do I need to create an account to use CourtDraw?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. CourtDraw works entirely in your browser with no account, no sign-up, and no email required. Your tactics are saved to your device using the browser's local storage. If you upgrade to Pro or Club, you'll need an email to manage your subscription \u2014 but you can try the free tier indefinitely without creating anything."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What sports and courts are available on the free plan?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The free plan gives you one court of your choice \u2014 picked on your first visit. All 9 drawing tools, player tokens, offline mode, and PNG export (with a small \"courtdraw.app\" watermark) are included for free. Upgrading to Pro unlocks all 38+ courts and removes the watermark."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does CourtDraw work on iPhone and Android?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. CourtDraw is a Progressive Web App (PWA) tested on iOS Safari 16+ and Chrome for Android. You can add it to your home screen like a native app \u2014 it will launch full-screen without a browser bar and work completely offline. For the best drawing experience we recommend a tablet (iPad or Android tablet) with a stylus, but fingers work great too."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does CourtDraw work without an internet connection?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. CourtDraw uses a service worker to cache itself completely after your first visit. Once cached, it works with no Wi-Fi or mobile data \u2014 ideal for pitch-side use in stadiums, sports halls, or remote training grounds. Your saved tactics are stored locally on-device and are always available offline."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I share tactics with my players or coaching staff?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes \u2014 export any tactic as a high-resolution 1200\u00d7720 PNG image and share it via WhatsApp, Telegram, Slack, email, or drop it into a presentation. Pro users can also generate a live shareable board link \u2014 anyone with the link can open the exact tactic in their browser, no account required. Club plan members get access to a shared tactic library so all coaches on the staff see the same saved plays, plus PDF export with club branding."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the Community Library and who can use it?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The Community Library is a growing collection of 200+ ready-made plays covering 12 sports. Every user \u2014 including the free plan \u2014 can browse and load any play directly onto their board with a single click. Pro and Club subscribers can also publish their own tactics to the library, sharing plays with coaches worldwide. Published plays include the tactic name, sport, type, and an optional age group tag."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does the 7-day Pro trial work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "When you start a Pro plan, you get 7 days of full Pro access at no charge. A card is required upfront, but nothing is charged until day 8. If you cancel before the trial ends \u2014 via the billing portal inside the app \u2014 your subscription ends immediately and you are never billed. If you keep it, your chosen plan (monthly or annual) is automatically charged when the trial converts. No manual steps, no refund requests needed."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does the 7-day Club trial work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "When you start the Club plan, you get 7 days of full Club access at no charge. A card is required upfront, but nothing is charged until day 8. If you cancel before the trial ends \u2014 via the billing portal inside the app \u2014 your subscription ends immediately and you are never billed. If you keep it, \u20ac99/yr is automatically charged when the trial converts. No manual steps, no refund requests needed."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I cancel my Pro or Club subscription at any time?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Absolutely. Cancel anytime from the billing portal inside the app \u2014 no cancellation fee, no questions asked. During a trial (Pro or Club): access ends immediately and you are never charged. After a trial converts: you keep access until the end of your current billing period. Questions? Email <a href=\"mailto:hello@courtdraw.app\">hello@courtdraw.app</a>."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "My sport isn't in the list \u2014 can I request a court?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes! Email us at <a href=\"mailto:hello@courtdraw.app\">hello@courtdraw.app</a> with the sport name and any reference dimensions and we'll add it to the next update. Club plan members get priority custom court requests as part of their plan."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is there a desktop app or do I have to use the browser?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "CourtDraw runs in any modern browser (Chrome, Firefox, Safari, Edge) \u2014 no download required. Because it's a PWA, you can also install it to your desktop or laptop home screen via the browser's \"Install app\" option. This gives you a standalone, full-screen experience without the browser toolbar. Windows, Mac, and Linux are all supported."
+          }
+        }
+      ]
+    }
+  ]
+}
   </script>
 
   <style>
