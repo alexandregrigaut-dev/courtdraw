@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml">
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-9NZSFKFV1N"></script>
   <script>
@@ -22,7 +24,6 @@
   <noscript><img height="1" width="1" style="display:none"
     src="https://www.facebook.com/tr?id=1749822116171334&ev=PageView&noscript=1"/></noscript>
   <!-- End Meta Pixel -->
-  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CourtDraw — The Tactics Board for Every Coach | 38 Sports, Draw in 30 Seconds</title>
   <meta name="description" content="The tactics board for every coach. 38 sports — football, basketball, tennis, padel and 34 more. Draw plays and share strategy in 30 seconds. Free, no install, works on any device." />
@@ -54,7 +55,8 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
   <link rel="preconnect" href="https://fonts.bunny.net" />
   <link href="https://fonts.bunny.net/css?family=cabinet-grotesk:700,900" rel="stylesheet" />
 
@@ -244,7 +246,7 @@
       color: var(--accent); border-radius: 100px; padding: 4px 14px;
       font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
     }
-    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease-in-out 6; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
     .btn {

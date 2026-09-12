@@ -4,6 +4,7 @@
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-9NZSFKFV1N"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-9NZSFKFV1N');</script>
   <meta charset="UTF-8" />
+  <link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>How to Share a Tactics Board on WhatsApp — No App Needed | CourtDraw</title>
   <meta name="description" content="Send a tactics board straight to your team's WhatsApp group in seconds. No app to install, no account needed — export a PNG or use one-tap share from any phone." />
@@ -28,7 +29,8 @@
   <link rel="apple-touch-icon" href="/assets/icons/icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
   <script type="application/ld+json">{
   "@context": "https://schema.org",
   "@graph": [
@@ -88,7 +90,7 @@
     img, svg { display: block; }
     .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
     .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3); color: var(--accent); border-radius: 100px; padding: 4px 14px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
-    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease-in-out 6; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
     .btn { display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all .18s; border: none; text-decoration: none; }
     .btn-primary { background: var(--accent); color: #fff; padding: 14px 28px; font-size: 1rem; }
