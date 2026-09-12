@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
+<meta charset="UTF-8">
   <!-- Meta Pixel Code -->
   <script>
   !function(f,b,e,v,n,t,s)
@@ -28,7 +29,6 @@
     const _gaDebug = new URLSearchParams(location.search).has('debug_mode');
     gtag('config', 'G-9NZSFKFV1N', { debug_mode: _gaDebug });
   </script>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>CourtDraw — Tactics Board for Coaches | 38+ Sports</title>
 <meta name="description" content="Free tactics board for coaches. Draw, animate and share plays for 38+ sports including handball, football, basketball, hockey and more. Works on any device.">
@@ -6013,13 +6013,17 @@ function exportPNG() {
         finalizePng();
       }
     } else if (!state.isPro && !state.isClub) {
-      // Free watermark — Point 11: clearly show courtdraw.app as a URL
+      // Free watermark — domain plus an explicit value prop, so a diagram
+      // forwarded in a group chat reads as an invitation, not just a logo.
       oc.save();
       oc.globalAlpha = 0.55; oc.fillStyle = 'rgba(0,0,0,0.4)';
-      oc.fillRect(W - 178, H - 34, 168, 26);
-      oc.globalAlpha = 0.9; oc.fillStyle = '#ffffff';
-      oc.font = 'bold 15px system-ui'; oc.textAlign = 'right'; oc.textBaseline = 'middle';
-      oc.fillText('courtdraw.app', W - 14, H - 21);
+      oc.fillRect(W - 190, H - 46, 180, 38);
+      oc.globalAlpha = 0.85; oc.fillStyle = '#ffffff';
+      oc.font = '600 10px system-ui'; oc.textAlign = 'right'; oc.textBaseline = 'middle';
+      oc.fillText('FREE TACTICS BOARD', W - 14, H - 34);
+      oc.globalAlpha = 0.9;
+      oc.font = 'bold 15px system-ui';
+      oc.fillText('courtdraw.app', W - 14, H - 17);
       oc.restore();
       finalizePng();
       successMomentUpsell('export', "That's a great play. Share it clean — no watermark — with Pro.");
