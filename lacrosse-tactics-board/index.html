@@ -4,6 +4,7 @@
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-9NZSFKFV1N"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-9NZSFKFV1N');</script>
   <meta charset="UTF-8" />
+  <link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lacrosse Tactics Board — Draw & Share Plays | CourtDraw</title>
   <meta name="description" content="Free online lacrosse tactics board for coaches. Draw 2-3-1 formations, fast break patterns, man-up offenses, clearing plays, and pick-and-roll dodges. Works on iPad." />
@@ -28,7 +29,8 @@
   <link rel="apple-touch-icon" href="/assets/icons/icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
   <script type="application/ld+json">{
   "@context": "https://schema.org",
   "@graph": [
@@ -113,11 +115,11 @@
     a { color: inherit; text-decoration: none; }
     img, svg { display: block; }
     .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
-    .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3); color: var(--accent); border-radius: 100px; padding: 4px 14px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
-    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; border-radius: 100px; padding: 4px 14px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease-in-out 6; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
     .btn { display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all .18s; border: none; text-decoration: none; }
-    .btn-primary { background: var(--accent); color: #fff; padding: 14px 28px; font-size: 1rem; }
+    .btn-primary { background: #2563eb; color: #fff; padding: 14px 28px; font-size: 1rem; }
     .btn-primary:hover { background: #60a5fa; transform: translateY(-1px); box-shadow: 0 8px 30px rgba(59,130,246,0.4); }
     .btn-ghost { background: transparent; color: var(--text); border: 1.5px solid var(--border2); padding: 13px 26px; font-size: 1rem; }
     .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
@@ -154,10 +156,10 @@
     .sp-hero-actions { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
     .sp-hero-fine { font-size: 0.82rem; color: var(--muted); margin-top: 12px; }
     .breadcrumb { padding: 12px 0; border-bottom: 1px solid var(--border); background: var(--bg2); }
-    .breadcrumb-nav { display: none; }
+    .breadcrumb-nav { display: block; }
     .bc-list { list-style: none; display: flex; gap: 8px; align-items: center; font-size: 0.82rem; color: var(--muted); }
     .bc-list li + li::before { content: '/'; color: var(--border2); }
-    .bc-list li a { color: var(--accent); }
+    .bc-list li a { color: #60a5fa; }
     .consolidation-note { display: inline-flex; gap: 8px; align-items: center; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 8px 16px; font-size: 0.85rem; color: var(--muted); margin-top: 16px; flex-wrap: wrap; justify-content: center; }
     .consolidation-note a { color: var(--accent); }
     .sp-section { padding: 72px 0; }
@@ -186,7 +188,7 @@
     .play-card:hover { border-color: var(--accent); }
     .play-card-name { font-size: 1rem; font-weight: 700; margin-bottom: 10px; color: var(--text); }
     .play-card-desc { color: var(--muted); font-size: 0.875rem; line-height: 1.6; margin-bottom: 16px; }
-    .play-load-btn { color: var(--accent); font-size: 0.85rem; font-weight: 700; }
+    .play-load-btn { color: #60a5fa; font-size: 0.85rem; font-weight: 700; }
     .faq-list { max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
     .faq-item { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 28px; }
     .faq-item h3 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
@@ -241,14 +243,10 @@
         <li>Lacrosse</li>
       </ol>
     </nav>
-    <ol class="bc-list">
-      <li><a href="/">Home</a></li>
-      <li><a href="/sports/">Sports</a></li>
-      <li>Lacrosse</li>
-    </ol>
-  </div>
+</div>
 </div>
 
+<main>
 <section class="sp-hero">
   <div class="container">
     <div class="sp-hero-badge">
@@ -392,6 +390,7 @@
   </div>
 </section>
 
+</main>
 <footer>
   <div class="container">
     <div class="footer-grid">
@@ -415,7 +414,7 @@
         <p>The tactics board for every coach. Draw plays for 38+ sports in your browser — free, fast, and offline-ready.</p>
       </div>
       <div class="footer-col">
-        <h4>Sports</h4>
+        <h3>Sports</h3>
         <ul>
           <li><a href="/sports/">All Sports Hub</a></li>
           <li><a href="/football-tactics-board/">Football</a></li>
@@ -424,7 +423,7 @@
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Product</h4>
+        <h3>Product</h3>
         <ul>
           <li><a href="/courtdraw-app.html">Open App</a></li>
           <li><a href="/#features">Features</a></li>
@@ -433,7 +432,7 @@
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Legal</h4>
+        <h3>Legal</h3>
         <ul>
           <li><a href="/privacy.html">Privacy Policy</a></li>
           <li><a href="/terms.html">Terms of Service</a></li>
