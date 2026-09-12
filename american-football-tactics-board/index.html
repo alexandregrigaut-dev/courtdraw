@@ -156,7 +156,7 @@
     .sp-hero-actions { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
     .sp-hero-fine { font-size: 0.82rem; color: var(--muted); margin-top: 12px; }
     .breadcrumb { padding: 12px 0; border-bottom: 1px solid var(--border); background: var(--bg2); }
-    .breadcrumb-nav { display: none; }
+    .breadcrumb-nav { display: block; }
     .bc-list { list-style: none; display: flex; gap: 8px; align-items: center; font-size: 0.82rem; color: var(--muted); }
     .bc-list li + li::before { content: '/'; color: var(--border2); }
     .bc-list li a { color: var(--accent); }
@@ -243,14 +243,10 @@
         <li>American Football</li>
       </ol>
     </nav>
-    <ol class="bc-list">
-      <li><a href="/">Home</a></li>
-      <li><a href="/sports/">Sports</a></li>
-      <li>American Football</li>
-    </ol>
-  </div>
+</div>
 </div>
 
+<main>
 <section class="sp-hero">
   <div class="container">
     <div class="sp-hero-badge">
@@ -410,6 +406,7 @@
   </div>
 </section>
 
+</main>
 <footer>
   <div class="container">
     <div class="footer-grid">
@@ -433,7 +430,7 @@
         <p>The tactics board for every coach. Draw plays for 38+ sports in your browser — free, fast, and offline-ready.</p>
       </div>
       <div class="footer-col">
-        <h4>Sports</h4>
+        <h3>Sports</h3>
         <ul>
           <li><a href="/sports/">All Sports Hub</a></li>
           <li><a href="/football-tactics-board/">Football</a></li>
@@ -442,7 +439,7 @@
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Product</h4>
+        <h3>Product</h3>
         <ul>
           <li><a href="/courtdraw-app.html">Open App</a></li>
           <li><a href="/#features">Features</a></li>
@@ -451,7 +448,7 @@
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Legal</h4>
+        <h3>Legal</h3>
         <ul>
           <li><a href="/privacy.html">Privacy Policy</a></li>
           <li><a href="/terms.html">Terms of Service</a></li>
