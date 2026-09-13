@@ -6125,7 +6125,7 @@ img.court-img{width:100%;height:auto;display:block}
   <button class="btn-dl" onclick="dl()">&#x2B07; Download PNG</button>
   <button class="btn-print" onclick="window.print()">&#x1F5A8; Print</button>
 </div>
-<img class="court-img" src="${dataUrl}">
+<img class="court-img" src="${dataUrl}" alt="${safeTitle}">
 <script>
 function dl(){
   var a=document.createElement('a');
@@ -6300,6 +6300,7 @@ function updateHeaderLogo() {
   const url = state.clubLogoUrl;
   if (url && state.isClub) {
     logoImg.src = url;
+    logoImg.alt = (state.clubName || 'Club') + ' logo';
     logoImg.style.display = 'block';
     svgEl.style.display   = 'none';
     titleEl.style.display = 'none';
@@ -6343,6 +6344,7 @@ async function loadMyClub() {
   if (logoEl) {
     if (state.clubLogoUrl) {
       logoEl.src = state.clubLogoUrl;
+      logoEl.alt = (state.clubName || 'Club') + ' logo';
       logoEl.style.display = 'inline';
     } else {
       logoEl.style.display = 'none';
@@ -7105,7 +7107,7 @@ function enterPresentation() {
   const nameEl = document.getElementById('pres-club-name');
   const tacticNameEl = document.getElementById('pres-tactic-name');
   if (logo) {
-    if (state.clubLogoUrl) { logo.src = state.clubLogoUrl; logo.style.display = 'block'; }
+    if (state.clubLogoUrl) { logo.src = state.clubLogoUrl; logo.alt = (state.clubName || 'Club') + ' logo'; logo.style.display = 'block'; }
     else logo.style.display = 'none';
   }
   if (nameEl) nameEl.textContent = state.clubName || 'CourtDraw';
