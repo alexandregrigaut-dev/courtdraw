@@ -16,7 +16,7 @@
   <meta name="twitter:card"       content="summary_large_image" />
 
   <!-- Favicon -->
-  <link rel="icon" href="/favicon.ico" />
+  <link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml" />
 
   <!-- Fonts (same as main site) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -161,7 +161,7 @@
       text-align: center; padding: 80px 24px; color: var(--muted);
     }
     .state-msg .icon { font-size: 40px; margin-bottom: 16px; }
-    .state-msg h3 { font-size: 1.1rem; color: var(--text); margin-bottom: 8px; }
+    .state-msg h2 { font-size: 1.1rem; color: var(--text); margin-bottom: 8px; }
 
     /* ── Load more ── */
     .load-more-wrap { text-align: center; margin-top: 32px; }
@@ -224,7 +224,7 @@
   <div id="plays-grid" class="plays-grid">
     <div class="state-msg" style="grid-column:1/-1">
       <div class="icon">⏳</div>
-      <h3>Loading plays…</h3>
+      <h2>Loading plays…</h2>
     </div>
   </div>
   <div class="load-more-wrap" id="load-more-wrap" style="display:none">
@@ -405,7 +405,7 @@
     if (shown === 0) {
       grid.innerHTML = `<div class="state-msg" style="grid-column:1/-1">
         <div class="icon">🔍</div>
-        <h3>No plays for this sport yet</h3>
+        <h2>No plays for this sport yet</h2>
         <p style="color:var(--muted);font-size:.9rem;margin-top:6px">Be the first to publish one.</p>
       </div>`;
     }
@@ -457,7 +457,7 @@
       if (!allPlays.length) {
         document.getElementById('plays-grid').innerHTML = `<div class="state-msg" style="grid-column:1/-1">
           <div class="icon">🌐</div>
-          <h3>No community plays yet</h3>
+          <h2>No community plays yet</h2>
           <p style="color:var(--muted);font-size:.9rem;margin-top:6px">Publish the first one from within CourtDraw Pro.</p>
         </div>`;
         return;
@@ -474,7 +474,7 @@
     .catch(() => {
       document.getElementById('plays-grid').innerHTML = `<div class="state-msg" style="grid-column:1/-1">
         <div class="icon">⚠️</div>
-        <h3>Couldn't load plays</h3>
+        <h2>Couldn't load plays</h2>
         <p style="color:var(--muted);font-size:.9rem;margin-top:6px">Please try refreshing the page.</p>
       </div>`;
     });
