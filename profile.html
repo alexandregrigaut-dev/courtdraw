@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coach Profile — CourtDraw</title>
+  <meta name="description" content="Browse tactics boards published by this coach on CourtDraw. Open any play and build on it." />
+  <link rel="canonical" href="https://courtdraw.app/c/" />
+
+  <!-- Open Graph — generic (this template serves every coach's profile, so
+       per-coach OG data would need server-side rendering; out of scope for
+       a static site). Still correct and shareable, just not personalised. -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:title"       content="Coach Profile — CourtDraw" />
+  <meta property="og:description" content="Browse tactics boards published by this coach on CourtDraw." />
+  <meta property="og:image"       content="https://courtdraw.app/og-image.png" />
+  <meta name="twitter:card"       content="summary_large_image" />
+  <meta name="robots" content="noindex" />
+  <!-- noindex: this template can be requested for a username that doesn't
+       exist (404 state, rendered client-side) — safer not to have search
+       engines index every possible /c/:username permutation. Remove once
+       there's a real sitemap entry per published coach. -->
+
+  <!-- Favicon -->
+  <link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml" />
+
+  <!-- Fonts (same as community.html) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a1628;
+      --bg2:     #0d1f3c;
+      --border:  #1a2d4a;
+      --border2: #2a3f5c;
+      --text:    #f1f5f9;
+      --muted:   #94a3b8;
+      --accent:  #3b82f6;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Nav ── */
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; height: 60px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: rgba(10,22,40,0.92);
+      backdrop-filter: blur(12px); z-index: 100;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+      font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em;
+    }
+    .nav-logo svg { flex-shrink: 0; }
+    .nav-cta {
+      background: #2563eb; color: #fff;
+      padding: 8px 18px; border-radius: 10px;
+      font-size: 0.85rem; font-weight: 700;
+      transition: background .15s;
+    }
+    .nav-cta:hover { background: #60a5fa; }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center; padding: 64px 24px 48px;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.3);
+      color: #60a5fa; border-radius: 100px; padding: 4px 14px;
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em;
+      text-transform: uppercase; margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+      font-size: clamp(1.9rem, 5vw, 3rem); font-weight: 900;
+      letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 14px;
+      overflow-wrap: anywhere;
+    }
+    .hero p {
+      color: var(--muted); font-size: 1rem; max-width: 520px;
+      margin: 0 auto 28px; line-height: 1.6;
+    }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #2563eb; color: #fff;
+      padding: 13px 28px; border-radius: 12px;
+      font-size: 0.95rem; font-weight: 700;
+      transition: background .15s, transform .12s;
+    }
+    .hero-cta:hover { background: #60a5fa; transform: translateY(-1px); }
+
+    /* ── Grid ── */
+    .grid-wrap {
+      max-width: 1200px; margin: 0 auto; padding: 32px 24px 64px;
+    }
+    .plays-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .play-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 0;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      transition: border-color .15s, transform .15s;
+      cursor: pointer;
+    }
+    .play-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .play-card-thumb {
+      width: 100%; aspect-ratio: 5/3; overflow: hidden; border-radius: 12px 12px 0 0;
+      background: #0f172a;
+    }
+    .play-card-thumb svg { width: 100%; height: 100%; display: block; }
+    .play-card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+    .play-card-sport {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.74rem; font-weight: 600; letter-spacing: 0.04em;
+      text-transform: uppercase; color: var(--accent);
+      background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2);
+      border-radius: 6px; padding: 3px 8px; width: fit-content;
+    }
+    .play-card-name {
+      font-family: 'Cabinet Grotesk', system-ui, sans-serif;
+      font-size: 1rem; font-weight: 700; line-height: 1.3;
+      color: var(--text);
+    }
+    .play-card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: auto; padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .play-card-saves  { font-size: 0.78rem; color: var(--muted); }
+
+    /* ── States ── */
+    .state-msg {
+      text-align: center; padding: 80px 24px; color: var(--muted);
+    }
+    .state-msg .icon { font-size: 40px; margin-bottom: 16px; }
+    .state-msg h2 { font-size: 1.1rem; color: var(--text); margin-bottom: 8px; }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 24px; text-align: center;
+      font-size: 0.82rem; color: var(--muted);
+    }
+    .footer a { color: var(--muted); }
+    .footer a:hover { color: var(--accent); }
+    .footer-links { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+  </style>
+  <!-- Court SVG definitions for thumbnail rendering -->
+  <script src="/src/court-svgs.js"></script>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="6" fill="#3b82f6"/>
+      <rect x="2" y="8.5" width="24" height="11" rx="1" fill="#1d4ed8"/>
+      <rect x="2" y="8.5" width="24" height="11" rx="1" stroke="white" stroke-width="0.9"/>
+      <line x1="14" y1="8.5" x2="14" y2="19.5" stroke="white" stroke-width="0.9"/>
+      <line x1="7.5" y1="9.8" x2="7.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+      <line x1="20.5" y1="9.8" x2="20.5" y2="18.2" stroke="white" stroke-width="0.75"/>
+      <line x1="2" y1="14" x2="26" y2="14" stroke="white" stroke-width="0.75"/>
+    </svg>
+    CourtDraw
+  </a>
+  <a href="/app" class="nav-cta">Draw a Play →</a>
+</nav>
+
+<main>
+<section class="hero">
+  <div class="hero-badge">Coach Profile</div>
+  <h1 id="profile-heading">Loading…</h1>
+  <p id="profile-sub">&nbsp;</p>
+  <a href="/app" class="hero-cta">Open CourtDraw →</a>
+</section>
+
+<div class="grid-wrap">
+  <div id="plays-grid" class="plays-grid">
+    <div class="state-msg" style="grid-column:1/-1">
+      <div class="icon">⏳</div>
+      <h2>Loading plays…</h2>
+    </div>
+  </div>
+</div>
+
+</main>
+<footer class="footer">
+  <div>© 2026 CourtDraw. The tactics board for every sport your club runs.</div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/app">Draw a Play</a>
+    <a href="/community">Community</a>
+    <a href="/#pricing">Pricing</a>
+  </div>
+</footer>
+
+<script>
+  // Sport → emoji mapping (same table as community.html)
+  const SPORT_EMOJI = {
+    'football': '⚽', 'soccer': '⚽', 'basketball': '🏀',
+    'tennis': '🎾', 'padel': '🎾', 'squash': '🎾', 'badminton': '🏸',
+    'pickleball': '🏓', 'table tennis': '🏓',
+    'volleyball': '🏐', 'beach volleyball': '🏐',
+    'american football': '🏈', 'gaelic football': '⚽',
+    'australian rules': '🏉', 'lacrosse': '🥍',
+    'netball': '🏀', 'baseball': '⚾', 'softball': '⚾',
+    'cricket': '🏏', 'polo': '🐎',
+    'whiteboard': '📋'
+  };
+
+  function sportEmoji(sport) {
+    if (!sport) return '🏟';
+    const s = sport.toLowerCase();
+    for (const [k, v] of Object.entries(SPORT_EMOJI)) {
+      if (s.includes(k)) return v;
+    }
+    return '🏟';
+  }
+
+  function e(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  const COURT_BG = {
+    tennis_singles:'#1d4ed8', tennis_doubles:'#1d4ed8',
+    padel:'#1a4a6e', pickleball:'#1a4a6e', squash:'#c2410c',
+    badminton_singles:'#0891b2', badminton_doubles:'#0891b2',
+    table_tennis:'#166534', racquetball:'#b45309', beach_tennis:'#d97706',
+    football_full:'#15803d', football_half:'#15803d',
+    futsal:'#065f46', futsal_mini:'#065f46',
+    basketball_full:'#92400e', basketball_half:'#92400e',
+    volleyball:'#1e40af', floorball:'#374151',
+    korfball:'#166534', netball:'#7c3aed',
+    rugby_union:'#15803d', rugby_league:'#15803d',
+    field_hockey:'#166534', gaelic_football:'#15803d',
+    hurling:'#166534', american_football:'#14532d',
+    australian_rules:'#1a3a2a', ice_hockey:'#1e3a5f',
+    roller_hockey:'#374151', beach_volleyball:'#b45309',
+    beach_handball:'#b45309', beach_soccer:'#0369a1',
+    padbol:'#0c4a6e', indoor_hockey:'#065f46',
+    lacrosse:'#166534', water_polo:'#1e40af',
+    fistball:'#166534', handball:'#0284c7',
+    whiteboard:'#1e293b',
+  };
+
+  function courtBg(courtId) {
+    if (!courtId) return '#1e293b';
+    const key = courtId.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    return COURT_BG[key] || COURT_BG[courtId] || '#1e293b';
+  }
+
+  function renderThumbSvg(play) {
+    const tokens = Array.isArray(play.tokens) ? play.tokens : [];
+    const objects = Array.isArray(play.objects) ? play.objects : [];
+
+    const courtSvgInner = (window.COURT_SVGS && window.COURT_SVGS[play.courtId])
+      || `<rect width="1000" height="600" fill="${courtBg(play.courtId)}"/>`;
+
+    const objSvgs = objects.map(o => {
+      const pts = o.points || (o.x1 !== undefined ? [[o.x1,o.y1],[o.x2,o.y2]] : null);
+      if (!pts || pts.length < 2) return '';
+      const color = o.color || '#fff';
+      const w = (o.lineWidth || 3) * 0.5;
+      const dashed = (o.type === 'dashed-arrow' || o.type === 'dash') ? 'stroke-dasharray="8,5"' : '';
+      let d = `M${pts[0][0]},${pts[0][1]}`;
+      for (let i = 1; i < pts.length; i++) d += ` L${pts[i][0]},${pts[i][1]}`;
+      return `<path d="${d}" stroke="${color}" stroke-width="${w}" fill="none" ${dashed} stroke-linecap="round" opacity="0.85"/>`;
+    }).join('');
+
+    const tokenSvgs = tokens.map(tk => {
+      if (!tk.pct || tk.pct.length < 2) return '';
+      const cx = tk.pct[0] * 1000;
+      const cy = tk.pct[1] * 600;
+      const fill = tk.team === 'red' ? '#ef4444' : '#60a5fa';
+      const lbl = (tk.label || '').slice(0, 4);
+      return `<circle cx="${cx}" cy="${cy}" r="26" fill="${fill}" stroke="#fff" stroke-width="5"/>
+              <text x="${cx}" y="${cy+9}" text-anchor="middle" fill="#fff" font-size="20" font-weight="700" font-family="system-ui">${lbl}</text>`;
+    }).join('');
+
+    return `<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+      ${courtSvgInner}
+      ${objSvgs}
+      ${tokenSvgs}
+    </svg>`;
+  }
+
+  function renderCard(play) {
+    const sport   = play.sport || play.courtId || '';
+    const emoji   = sportEmoji(sport);
+    const name    = play.name || 'Untitled play';
+    const saves   = play.saveCount || 0;
+    const sportLabel = sport ? sport.replace(/ \(.*\)/, '') : 'Sport';
+
+    const card = document.createElement('div');
+    card.className = 'play-card';
+    card.innerHTML = `
+      <div class="play-card-thumb">${renderThumbSvg(play)}</div>
+      <div class="play-card-body">
+        <div class="play-card-sport">${emoji} ${e(sportLabel)}</div>
+        <div class="play-card-name">${e(name)}</div>
+        <div class="play-card-footer">
+          <span class="play-card-saves">${saves > 0 ? saves + ' saves' : ''}</span>
+        </div>
+      </div>
+    `;
+    card.addEventListener('click', () => {
+      try {
+        sessionStorage.setItem('courtdraw_queued_play', JSON.stringify({
+          id:           play.id,
+          name:         play.name,
+          courtId:      play.courtId,
+          sport:        play.sport,
+          objects:      play.objects,
+          tokens:       play.tokens,
+          phases:       play.phases,
+          currentPhase: play.currentPhase || 0,
+          _source:      'published',
+        }));
+      } catch(e) {}
+      window.location.href = '/app?loadplay=1';
+    });
+    return card;
+  }
+
+  const USERNAME_RE = /^[a-z0-9_]{3,30}$/;
+
+  function getRequestedUsername() {
+    const params = new URLSearchParams(window.location.search);
+    return (params.get('u') || '').toLowerCase().trim();
+  }
+
+  const username = getRequestedUsername();
+  const grid = document.getElementById('plays-grid');
+  const heading = document.getElementById('profile-heading');
+  const sub = document.getElementById('profile-sub');
+
+  if (!USERNAME_RE.test(username)) {
+    heading.textContent = 'Coach not found';
+    sub.textContent = 'This profile link looks incomplete or incorrect.';
+    grid.innerHTML = `<div class="state-msg" style="grid-column:1/-1">
+      <div class="icon">🔍</div>
+      <h2>No profile to show</h2>
+    </div>`;
+  } else {
+    document.title = '@' + username + ' — CourtDraw';
+    fetch('/api/get-author-plays?username=' + encodeURIComponent(username))
+      .then(r => {
+        if (r.status === 404) throw new Error('not-found');
+        if (!r.ok) throw new Error('server-error');
+        return r.json();
+      })
+      .then(({ plays }) => {
+        heading.textContent = '@' + username;
+        const list = plays || [];
+        sub.textContent = list.length
+          ? `${list.length} published play${list.length === 1 ? '' : 's'}`
+          : 'No published plays yet.';
+        if (!list.length) {
+          grid.innerHTML = `<div class="state-msg" style="grid-column:1/-1">
+            <div class="icon">🌐</div>
+            <h2>No published plays yet</h2>
+            <p style="color:var(--muted);font-size:.9rem;margin-top:6px">Check back soon.</p>
+          </div>`;
+          return;
+        }
+        grid.innerHTML = '';
+        list.forEach(p => grid.appendChild(renderCard(p)));
+      })
+      .catch(err => {
+        if (err.message === 'not-found') {
+          heading.textContent = 'Coach not found';
+          sub.textContent = "This profile doesn't exist.";
+        } else {
+          heading.textContent = '@' + username;
+          sub.textContent = 'Could not load plays right now.';
+        }
+        grid.innerHTML = `<div class="state-msg" style="grid-column:1/-1">
+          <div class="icon">${err.message === 'not-found' ? '🔍' : '⚠️'}</div>
+          <h2>${err.message === 'not-found' ? 'No profile to show' : "Couldn't load plays"}</h2>
+          <p style="color:var(--muted);font-size:.9rem;margin-top:6px">${err.message === 'not-found' ? '' : 'Please try refreshing the page.'}</p>
+        </div>`;
+      });
+  }
+</script>
+</body>
+</html>
