@@ -100,3 +100,17 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Embeddable board widget: this is the ONLY path allowed to be framed by
+# other sites. Content-Security-Policy's frame-ancestors directive takes
+# precedence over X-Frame-Options in every modern browser (per the CSP
+# spec), so this scoped exception is honoured for /embed.html alone while
+# the site-wide X-Frame-Options: DENY set above stays untouched — everywhere
+# else keeps failing closed even if a browser doesn't support CSP framing
+# control. embed.html itself has no authenticated or state-changing
+# capability, so there is nothing on this path for a clickjacking attack
+# to target.
+[[headers]]
+  for = "/embed.html"
+  [headers.values]
+    Content-Security-Policy = "frame-ancestors *"

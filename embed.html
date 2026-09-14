@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tactics Board — CourtDraw</title>
+  <meta name="description" content="An embedded, read-only tactics board created with CourtDraw." />
+  <meta name="robots" content="noindex" />
+  <!-- noindex: this is a per-embed render target, not a page meant to rank on its own. -->
+
+  <link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:     #0a1628;
+      --border: #1a2d4a;
+      --text:   #e6edf7;
+      --muted:  #7d8ba3;
+      --accent: #3b82f6;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+    }
+
+    #wrap {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+    }
+
+    #board-area {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      position: relative;
+    }
+
+    #board-svg-holder {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+    }
+    #board-svg-holder svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 8px;
+    }
+
+    .state-msg {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .state-msg a { color: var(--accent); }
+
+    #phase-controls {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 6px 0 2px;
+      flex: 0 0 auto;
+    }
+    #phase-controls.active { display: flex; }
+    #phase-controls button {
+      background: var(--border);
+      border: none;
+      color: var(--text);
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+    }
+    #phase-controls button:disabled { opacity: 0.35; cursor: default; }
+    #phase-dots { display: flex; gap: 5px; }
+    #phase-dots span {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--border);
+    }
+    #phase-dots span.on { background: var(--accent); }
+
+    #brand-footer {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 8px;
+      font-size: 11px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+    #brand-footer a {
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 600;
+      margin-left: 4px;
+    }
+    #brand-footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+  <div id="wrap">
+    <main id="board-area">
+      <div id="board-svg-holder"></div>
+    </main>
+    <div id="phase-controls">
+      <button id="phase-prev" aria-label="Previous step">‹</button>
+      <div id="phase-dots"></div>
+      <button id="phase-next" aria-label="Next step">›</button>
+    </div>
+    <div id="brand-footer">
+      Made with <a href="https://courtdraw.app?utm_source=embed&utm_medium=widget&utm_campaign=viral_loop" target="_blank" rel="noopener">CourtDraw</a>
+    </div>
+  </div>
+
+  <script src="/src/court-svgs.js"></script>
+  <script>
+    // ── Same court-background palette used by community.html / profile.html ──
+    const COURT_BG = {
+      tennis_singles:'#1d4ed8', tennis_doubles:'#1d4ed8',
+      padel:'#1a4a6e', pickleball:'#1a4a6e', squash:'#c2410c',
+      badminton_singles:'#0891b2', badminton_doubles:'#0891b2',
+      table_tennis:'#166534', racquetball:'#b45309', beach_tennis:'#d97706',
+      football_full:'#15803d', football_half:'#15803d',
+      futsal:'#065f46', futsal_mini:'#065f46',
+      basketball_full:'#92400e', basketball_half:'#92400e',
+      volleyball:'#1e40af', floorball:'#374151',
+      korfball:'#166534', netball:'#7c3aed',
+      rugby_union:'#15803d', rugby_league:'#15803d',
+      field_hockey:'#166534', gaelic_football:'#15803d',
+      hurling:'#166534', american_football:'#14532d',
+      australian_rules:'#1a3a2a', ice_hockey:'#1e3a5f',
+      roller_hockey:'#374151', beach_volleyball:'#b45309',
+      beach_handball:'#b45309', beach_soccer:'#0369a1',
+      padbol:'#0c4a6e', indoor_hockey:'#065f46',
+      lacrosse:'#166534', water_polo:'#1e40af',
+      fistball:'#166534', handball:'#0284c7',
+      whiteboard:'#1e293b',
+    };
+    function courtBg(courtId) {
+      if (!courtId) return '#1e293b';
+      const key = String(courtId).toLowerCase().replace(/[^a-z0-9]/g, '_');
+      return COURT_BG[key] || COURT_BG[courtId] || '#1e293b';
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // Only plain hex (#abc / #aabbcc / #aabbccdd) or a short allow-list of
+    // CSS colour keywords may reach an SVG attribute — anything else falls
+    // back to a safe default. This payload comes straight from a URL
+    // fragment with no server-side moderation, so it must be treated as
+    // fully untrusted input, unlike the community-library thumbnail
+    // renderer this is based on.
+    const SAFE_COLOR = /^#[0-9a-fA-F]{3,8}$|^(white|black|red|blue|green|yellow|orange|purple|cyan|magenta|gray|grey)$/;
+    function safeColor(c, fallback) {
+      return (typeof c === 'string' && SAFE_COLOR.test(c.trim())) ? c.trim() : fallback;
+    }
+
+    function safeNum(n, fallback, min, max) {
+      const v = Number(n);
+      if (!isFinite(v)) return fallback;
+      if (min !== undefined && v < min) return min;
+      if (max !== undefined && v > max) return max;
+      return v;
+    }
+
+    const MAX_ITEMS = 500; // defensive cap against an oversized crafted payload
+
+    function renderBoardSvg(snap, courtId) {
+      const objects = Array.isArray(snap.objects) ? snap.objects.slice(0, MAX_ITEMS) : [];
+      const tokens  = Array.isArray(snap.tokens)  ? snap.tokens.slice(0, MAX_ITEMS)  : [];
+
+      const courtSvgInner = (window.COURT_SVGS && window.COURT_SVGS[courtId])
+        || `<rect width="1000" height="600" fill="${courtBg(courtId)}"/>`;
+
+      const objSvgs = objects.map(o => {
+        if (!o || typeof o !== 'object') return '';
+        const rawPts = o.points || (o.x1 !== undefined ? [[o.x1, o.y1], [o.x2, o.y2]] : null);
+        if (!Array.isArray(rawPts) || rawPts.length < 2) return '';
+        const pts = rawPts
+          .filter(p => Array.isArray(p) && p.length >= 2)
+          .map(p => [safeNum(p[0], null, -1000, 2000), safeNum(p[1], null, -1000, 2000)])
+          .filter(p => p[0] !== null && p[1] !== null);
+        if (pts.length < 2) return '';
+        const color = safeColor(o.color, '#ffffff');
+        const w = safeNum(o.lineWidth, 3, 1, 20) * 0.5;
+        const dashed = (o.type === 'dashed-arrow' || o.type === 'dash') ? 'stroke-dasharray="8,5"' : '';
+        let d = `M${pts[0][0]},${pts[0][1]}`;
+        for (let i = 1; i < pts.length; i++) d += ` L${pts[i][0]},${pts[i][1]}`;
+        return `<path d="${d}" stroke="${color}" stroke-width="${w}" fill="none" ${dashed} stroke-linecap="round" opacity="0.85"/>`;
+      }).join('');
+
+      const tokenSvgs = tokens.map(tk => {
+        if (!tk || typeof tk !== 'object' || !Array.isArray(tk.pct) || tk.pct.length < 2) return '';
+        const cx = safeNum(tk.pct[0], null, -1, 2) * 1000;
+        const cy = safeNum(tk.pct[1], null, -1, 2) * 600;
+        if (!isFinite(cx) || !isFinite(cy)) return '';
+        if (tk.team === 'ball') {
+          return `<circle cx="${cx}" cy="${cy}" r="14" fill="#f5f5f0" stroke="#78716c" stroke-width="3"/>`;
+        }
+        const fill = tk.team === 'red' ? '#ef4444' : '#60a5fa';
+        const lbl = escapeHtml(String(tk.label || '').slice(0, 4));
+        return `<circle cx="${cx}" cy="${cy}" r="26" fill="${fill}" stroke="#fff" stroke-width="5"/>
+                <text x="${cx}" y="${cy + 9}" text-anchor="middle" fill="#fff" font-size="20" font-weight="700" font-family="system-ui">${lbl}</text>`;
+      }).join('');
+
+      return `<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+        ${courtSvgInner}
+        ${objSvgs}
+        ${tokenSvgs}
+      </svg>`;
+    }
+
+    function showState(html) {
+      document.getElementById('board-svg-holder').innerHTML = `<div class="state-msg">${html}</div>`;
+    }
+
+    // ── Decode the same #s= payload format produced by "Copy share link" ──
+    function decodePayload() {
+      const hash = location.hash;
+      if (!hash.startsWith('#s=')) return null;
+      try {
+        const payload = JSON.parse(decodeURIComponent(atob(hash.slice(3))));
+        if (!payload || typeof payload !== 'object') return null;
+        return payload;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function init() {
+      const payload = decodePayload();
+      if (!payload) {
+        showState('No board to display.<br><a href="https://courtdraw.app" target="_blank" rel="noopener">Create one on CourtDraw →</a>');
+        return;
+      }
+
+      const courtId = typeof payload.courtId === 'string' ? payload.courtId : 'tennis_singles';
+
+      let phases = Array.isArray(payload.phases)
+        ? payload.phases.filter(p => p && typeof p === 'object').slice(0, 30)
+        : [];
+      if (phases.length === 0) {
+        phases = [{ objects: payload.objects, tokens: payload.tokens }];
+      }
+
+      let current = safeNum(payload.currentPhase, 0, 0, phases.length - 1);
+      const holder = document.getElementById('board-svg-holder');
+      const controls = document.getElementById('phase-controls');
+      const dotsEl = document.getElementById('phase-dots');
+      const prevBtn = document.getElementById('phase-prev');
+      const nextBtn = document.getElementById('phase-next');
+
+      function draw() {
+        holder.innerHTML = renderBoardSvg(phases[current] || {}, courtId);
+        if (phases.length > 1) {
+          controls.classList.add('active');
+          dotsEl.innerHTML = phases.map((_, i) => `<span class="${i === current ? 'on' : ''}"></span>`).join('');
+          prevBtn.disabled = current === 0;
+          nextBtn.disabled = current === phases.length - 1;
+        }
+      }
+
+      prevBtn.addEventListener('click', () => { if (current > 0) { current--; draw(); } });
+      nextBtn.addEventListener('click', () => { if (current < phases.length - 1) { current++; draw(); } });
+
+      draw();
+    }
+
+    init();
+  </script>
+</body>
+</html>
