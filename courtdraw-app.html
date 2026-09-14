@@ -5150,6 +5150,9 @@ function saveTactic() {
   if (nonTutorialCount === 1) {
     successMomentUpsell('firstSave', "Your first play is saved. Build an unlimited library with Pro.");
   }
+  if (nonTutorialCount === 3) {
+    shareMomentPrompt('share3', "You've saved 3 plays! Share your favorite with your team.", 'Share a play →', () => shareBoard());
+  }
   saveToStorage();
   // Firestore write — fire-and-forget; localStorage already saved it so UI is never blocked
   const _saveUid = window.__currentUser && window.__currentUser.uid;
@@ -7304,6 +7307,31 @@ function successMomentUpsell(key, msg) {
     if (state.isPro || state.isClub) return; // upgraded during the wait
     showUpgradeToast(msg, 'Try Pro free →', () => openPaywall(msg), 0);
   }, 20000);
+}
+
+// ── Milestone share prompt ─────────────────────────────────────────────────
+// Same dismissible-toast mechanism as the upsells above, but for ANY tier —
+// a coach who's built up a real library (not just tried the tool once) is a
+// good moment to nudge toward sharing, since every shared link is a
+// passive distribution channel (the viewer footer already carries a
+// "sign up free" CTA). Free users routing through shareBoard() land on the
+// existing Pro paywall for sharing — that's the current feature gate doing
+// its normal job, not something this prompt duplicates.
+// Milestone is 3 (not higher) because FREE_SAVES = 3 — anything above that
+// is unreachable for free-tier users, whose saveTactic() call is a no-op
+// past the cap (verified: this was originally set to 5 and silently never
+// fired for free users until caught by testing).
+// Fires once per session per key, 4s after the save (lets the "saved!"
+// toast show and clear first) so it never stacks with it.
+let _shareMomentTimer = null;
+function shareMomentPrompt(key, msg, ctaLabel, ctaFn) {
+  const guardKey = 'cd_smp_' + key;
+  if (sessionStorage.getItem(guardKey)) return;
+  sessionStorage.setItem(guardKey, '1');
+  clearTimeout(_shareMomentTimer);
+  _shareMomentTimer = setTimeout(() => {
+    showUpgradeToast(msg, ctaLabel, ctaFn, 0);
+  }, 4000);
 }
 
 // Point 2: upgrade toast with inline CTA + dismiss button
