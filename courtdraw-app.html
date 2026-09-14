@@ -5886,6 +5886,51 @@ async function openBillingPortal() {
 }
 
 // ══════════════════════════════════════════════
+// QR CODE (lazy-loaded — only free-tier PNG export needs this, so it never
+// adds weight to the common Pro/Club export path or to page load in general)
+// ══════════════════════════════════════════════
+let _qrLibPromise = null;
+function loadQrLib() {
+  if (window.qrcode) return Promise.resolve();
+  if (_qrLibPromise) return _qrLibPromise;
+  _qrLibPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = '/assets/vendor/qrcode.js';
+    s.onload = resolve;
+    s.onerror = () => { _qrLibPromise = null; reject(new Error('QR lib failed to load')); };
+    document.head.appendChild(s);
+  });
+  return _qrLibPromise;
+}
+
+// Draws a QR code directly as canvas rectangles (no image/async round-trip).
+// Includes a quiet-zone margin inside boxSize so it stays scannable when the
+// court illustration behind it isn't plain white.
+function drawQrOnCanvas(ctx, url, x, y, boxSize) {
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(url);
+    qr.make();
+    const count = qr.getModuleCount();
+    const quietModules = 4;
+    const cell = boxSize / (count + quietModules * 2);
+    const offset = quietModules * cell;
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x, y, boxSize, boxSize);
+    ctx.fillStyle = '#000000';
+    for (let r = 0; r < count; r++) {
+      for (let c = 0; c < count; c++) {
+        if (qr.isDark(r, c)) {
+          ctx.fillRect(x + offset + c * cell, y + offset + r * cell, Math.ceil(cell), Math.ceil(cell));
+        }
+      }
+    }
+    ctx.restore();
+  } catch (e) { /* non-fatal — export continues without the QR code */ }
+}
+
+// ══════════════════════════════════════════════
 // EXPORT PNG
 // ══════════════════════════════════════════════
 function exportPNG() {
@@ -6027,10 +6072,17 @@ function exportPNG() {
       oc.font = 'bold 15px system-ui';
       oc.fillText('courtdraw.app', W - 14, H - 17);
       oc.restore();
-      finalizePng();
+      // QR code — a printed/forwarded free export is a passive distribution
+      // channel; a scannable link back costs nothing and works even when the
+      // text watermark isn't legible (low-res forward, printed handout).
+      // Never blocks the export: if the QR lib fails to load, we still export.
+      loadQrLib()
+        .then(() => drawQrOnCanvas(oc, 'https://courtdraw.app?s=qr', 14, H - 78, 64))
+        .catch(() => {})
+        .then(finalizePng);
       successMomentUpsell('export', "That's a great play. Share it clean — no watermark — with Pro.");
     } else {
-      finalizePng(); // Pro — no watermark
+      finalizePng(); // Pro/Club — clean export, no watermark, no QR
     }
     }); // end Promise.all(ballPromises).then
   };
