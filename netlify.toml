@@ -77,6 +77,11 @@
   to   = "/community.html"
   status = 200
 
+[[redirects]]
+  from = "/c/:username"
+  to   = "/profile.html?u=:username"
+  status = 200
+
 [[headers]]
   for = "/.well-known/assetlinks.json"
   [headers.values]
