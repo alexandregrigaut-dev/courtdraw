@@ -10,6 +10,8 @@ CourtDraw works entirely in the browser as a Progressive Web App: it works offli
 - [Homepage](https://courtdraw.app/): Overview, pricing, and FAQ.
 - [All sports](https://courtdraw.app/sports/): Directory of all 38+ supported sport courts.
 - [Community library](https://courtdraw.app/community): 200+ browsable coaching plays across 12 sports.
+- [Coach profile pages](https://courtdraw.app/c/): Each coach who publishes to the Community library gets a public page at `/c/<username>` listing their plays.
+- Embeddable widget: any saved play can be embedded read-only on an external site via `<iframe src="https://courtdraw.app/embed.html#s=...">`, generated from the app's "Copy share link" feature.
 
 ## Guides
 
@@ -17,6 +19,12 @@ CourtDraw works entirely in the browser as a Progressive Web App: it works offli
 - [One Tactics Board for a Multi-Sport Club](https://courtdraw.app/guides/one-tactics-board-multi-sport-club/): How the Club plan covers multiple sports and coaches under one shared library.
 - [How to Build a Training Session Plan](https://courtdraw.app/guides/how-to-build-a-training-session-plan/): Chaining saved plays into a timed session with the Session Builder.
 - [Digital vs. Whiteboard Coaching](https://courtdraw.app/guides/digital-vs-whiteboard-coaching/): What actually changes when a coach switches from a physical whiteboard.
+- [Tennis Drill Diagrams Every Coach Should Have](https://courtdraw.app/guides/tennis-drill-diagrams-for-coaches/): Core cone patterns, feeding drills, and doubles rotations worth drawing once and reusing every session.
+- [How to Plan a Junior Tennis Lesson](https://courtdraw.app/guides/how-to-plan-a-junior-tennis-lesson/): A repeatable four-block structure for a 60-minute junior lesson.
+- [Free vs. Pro Tactics Board: What Actually Matters](https://courtdraw.app/guides/free-vs-pro-tactics-board-comparison/): What's actually different on the free plan, feature by feature.
+- [Padel Positioning Drills for Beginners](https://courtdraw.app/guides/padel-positioning-drills-for-beginners/): The positioning habits that separate beginner padel players from intermediate ones.
+- [Build a Reusable Coaching Play Library](https://courtdraw.app/guides/how-to-build-a-reusable-coaching-play-library/): A naming and organizing system for saved plays that scales across a season.
+- [Best Tactics Board Apps: How to Actually Choose](https://courtdraw.app/guides/best-tactics-board-apps/): A framework comparing whiteboards, generic drawing apps, video analysis tools, and dedicated tactics boards.
 
 ## Sport tactics boards
 
