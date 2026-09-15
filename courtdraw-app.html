@@ -6098,7 +6098,7 @@ function exportPNG() {
       // text watermark isn't legible (low-res forward, printed handout).
       // Never blocks the export: if the QR lib fails to load, we still export.
       loadQrLib()
-        .then(() => drawQrOnCanvas(oc, 'https://courtdraw.app?s=qr', 14, H - 78, 64))
+        .then(() => drawQrOnCanvas(oc, 'https://courtdraw.app?utm_source=export_qr&utm_medium=png&utm_campaign=viral_loop', 14, H - 78, 64))
         .catch(() => {})
         .then(finalizePng);
       successMomentUpsell('export', "That's a great play. Share it clean — no watermark — with Pro.");
