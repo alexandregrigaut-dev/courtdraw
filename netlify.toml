@@ -35,6 +35,151 @@
   status = 301
   force = true
 
+# Sport tactics-board pages: force the trailing-slash canonical URL.
+# GSC showed non-trailing-slash variants (e.g. /basketball-tactics-board)
+# earning impressions separately from the canonical /basketball-tactics-board/
+# — both served 200 with no redirect, splitting ranking signal.
+[[redirects]]
+  from = "/american-football-tactics-board"
+  to   = "/american-football-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/australian-rules-tactics-board"
+  to   = "/australian-rules-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/badminton-tactics-board"
+  to   = "/badminton-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/basketball-tactics-board"
+  to   = "/basketball-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/beach-handball-tactics-board"
+  to   = "/beach-handball-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/beach-soccer-tactics-board"
+  to   = "/beach-soccer-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/beach-tennis-tactics-board"
+  to   = "/beach-tennis-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/beach-volleyball-tactics-board"
+  to   = "/beach-volleyball-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/field-hockey-tactics-board"
+  to   = "/field-hockey-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/fistball-tactics-board"
+  to   = "/fistball-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/floorball-tactics-board"
+  to   = "/floorball-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/football-tactics-board"
+  to   = "/football-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/futsal-tactics-board"
+  to   = "/futsal-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/gaelic-football-tactics-board"
+  to   = "/gaelic-football-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/handball-tactics-board"
+  to   = "/handball-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/hurling-tactics-board"
+  to   = "/hurling-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/ice-hockey-tactics-board"
+  to   = "/ice-hockey-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/indoor-hockey-tactics-board"
+  to   = "/indoor-hockey-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/korfball-tactics-board"
+  to   = "/korfball-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/lacrosse-tactics-board"
+  to   = "/lacrosse-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/netball-tactics-board"
+  to   = "/netball-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/padbol-tactics-board"
+  to   = "/padbol-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/padel-tactics-board"
+  to   = "/padel-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/pickleball-tactics-board"
+  to   = "/pickleball-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/racquetball-tactics-board"
+  to   = "/racquetball-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/roller-hockey-tactics-board"
+  to   = "/roller-hockey-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/rugby-league-tactics-board"
+  to   = "/rugby-league-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/rugby-union-tactics-board"
+  to   = "/rugby-union-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/squash-tactics-board"
+  to   = "/squash-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/table-tennis-tactics-board"
+  to   = "/table-tennis-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/tennis-tactics-board"
+  to   = "/tennis-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/volleyball-tactics-board"
+  to   = "/volleyball-tactics-board/"
+  status = 301
+[[redirects]]
+  from = "/water-polo-tactics-board"
+  to   = "/water-polo-tactics-board/"
+  status = 301
+
+# Stray typo'd URL picking up Search Console impressions with no matching
+# page — catch it rather than let it 404, since some inbound link/query
+# apparently expects it.
+[[redirects]]
+  from = "/american-factory-tactics-board"
+  to   = "/american-football-tactics-board/"
+  status = 301
+
 # Redirect direct .html access to canonical clean URLs (prevents duplicate indexing)
 [[redirects]]
   from = "/community.html"
