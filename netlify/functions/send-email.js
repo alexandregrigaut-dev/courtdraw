@@ -580,6 +580,25 @@ const templates = {
     return buildEmail(email, 'New: Browse 200+ plays in the Community Library 🌐', data);
   },
 
+  // ── Broadcast: Android beta tester recruitment ───────────────────────────────
+  androidTesterInvite: (email) => {
+    const data = {
+      label: '📱 Help us test',
+      labelColor: '#22c55e',
+      title: 'Help test the CourtDraw Android app? (2 minutes)',
+      body: `We just built a CourtDraw app for Android and need a small group of testers before it can go live on the Play Store — Google requires at least 12 people to opt in and test for 14 days first.<br><br>
+             If you're on Android, would you help?<br><br>
+             1. Open the link below on your phone<br>
+             2. Tap "Become a tester"<br>
+             3. Install CourtDraw from the Play Store like any other app<br><br>
+             That's it — no feedback required, just having it installed counts. Thank you!`,
+      ctaText: 'Become a tester →',
+      ctaUrl: 'https://play.google.com/apps/testing/app.courtdraw.twa',
+      footerNote: "You're receiving this because you have a CourtDraw account."
+    };
+    return buildEmail(email, 'Help test the CourtDraw Android app? (2 minutes)', data);
+  },
+
   // Sent when a Club trial converts to a paid subscription (day 8 charge succeeds)
   clubTrialConverted: (email) => {
     const data = {
