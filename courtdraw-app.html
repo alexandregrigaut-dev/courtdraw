@@ -5832,8 +5832,14 @@ function openCourtPaywall(freeName) {
 }
 
 async function startCheckout(planKey) {
-  // GA4 — track checkout intent (mark 'begin_checkout' as a Key Event in GA4 → Admin → Events)
-  gtag('event', 'begin_checkout', { plan: planKey, event_category: 'ecommerce' });
+  // GA4 — top-of-funnel signal: fires the moment any upgrade/trial CTA is
+  // clicked, regardless of auth state. This function is also re-entered by
+  // the post-login auto-resume path below, so a single person clicking
+  // "Upgrade" while logged out fires this twice (once now, once on resume)
+  // — expected for a click-intent signal, and kept separate from
+  // 'begin_checkout' below specifically so that double-count doesn't
+  // contaminate the real checkout-funnel number.
+  gtag('event', 'upgrade_cta_click', { plan: planKey, event_category: 'ecommerce' });
   const user = window.__currentUser;
   if (!user) {
     // Save the intended plan so we can auto-trigger checkout after login
@@ -5857,6 +5863,16 @@ async function startCheckout(planKey) {
     });
     if (!res.ok) throw new Error('server error');
     const { url } = await res.json();
+    // GA4 — mark 'begin_checkout' as a Key Event in GA4 → Admin → Events.
+    // Fires only once a real Stripe checkout session has been created (i.e.
+    // the user is authenticated and about to be handed off to Stripe), so
+    // it reflects people who actually reached payment — not everyone who
+    // merely clicked an upgrade button before being routed through sign-in.
+    // Previously this fired at the top of the function, before the auth
+    // check, so every logged-out click was double-counted (once on click,
+    // once more when auto-resumed after login) — inflating this number and
+    // making the real checkout→trial drop-off look worse than it is.
+    gtag('event', 'begin_checkout', { plan: planKey, event_category: 'ecommerce' });
     window.location.href = url;
   } catch {
     showToast('Could not start checkout — please try again.');
