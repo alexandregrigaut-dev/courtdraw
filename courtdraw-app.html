@@ -1672,6 +1672,8 @@ body.portrait-mode .player-token:active {
   white-space: nowrap;
 }
 .comm-author { font-size: 11px; color: #64748b; margin-top: 4px; }
+a.comm-author { display: inline-block; text-decoration: none; }
+a.comm-author:hover { color: #60a5fa; text-decoration: underline; }
 .comm-unpub-btn {
   margin-top: 8px; padding: 3px 10px; font-size: 11px; font-weight: 600;
   color: #ef4444; background: transparent; border: 1px solid #ef444455;
@@ -7908,13 +7910,19 @@ function renderCommunityGrid() {
     const saveCountBadge = sc > 0
       ? `<div class="comm-save-count">Loaded by ${sc} coach${sc === 1 ? '' : 'es'}</div>`
       : '';
+    // Only link real coach-published plays to a profile — seed/team content
+    // (t._source === 'seed') has no coach behind it to link to, and
+    // authorName there is "CourtDraw Team", not a resolvable username.
+    const authorHtml = (t._source === 'published' && t.authorName)
+      ? `<a href="/c/${encodeURIComponent(t.authorName)}" class="comm-author" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="View ${author}'s profile">@${author}</a>`
+      : `<div class="comm-author">${author}</div>`;
     return `<div class="comm-card" onclick="handleCommPlayClick(${idx})" role="button" tabindex="0"
               aria-label="Load ${name}" onkeydown="if(event.key==='Enter'||event.key===' ')handleCommPlayClick(${idx})">
       ${thumbHtml}
       <div class="comm-card-body">
         <div class="comm-card-name">${name}</div>
         <div class="comm-card-badges">${sportBadge}${catBadge}</div>
-        <div class="comm-author">${author}</div>
+        ${authorHtml}
         ${saveCountBadge}
         ${unpubBtn}
       </div>

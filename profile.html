@@ -345,6 +345,17 @@
   const USERNAME_RE = /^[a-z0-9_]{3,30}$/;
 
   function getRequestedUsername() {
+    // Reached via the clean URL /c/:username, which Netlify serves as a
+    // rewrite (status 200) — the browser's address bar and window.location
+    // stay at /c/<username>, they never reflect the internal ?u=:username
+    // Netlify used server-side to pick this page. So the real username has
+    // to be read from the path; the query string is kept only as a fallback
+    // for direct access to profile.html?u=<username> (e.g. local testing).
+    const pathMatch = window.location.pathname.match(/^\/c\/([^/]+)\/?$/);
+    if (pathMatch) {
+      try { return decodeURIComponent(pathMatch[1]).toLowerCase().trim(); }
+      catch { return pathMatch[1].toLowerCase().trim(); }
+    }
     const params = new URLSearchParams(window.location.search);
     return (params.get('u') || '').toLowerCase().trim();
   }
