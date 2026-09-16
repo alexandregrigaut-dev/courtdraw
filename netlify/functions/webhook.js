@@ -90,16 +90,22 @@ exports.handler = async (event) => {
       }
     }
 
-    // Club plan: create the club document, assign a stable clubId, generate a join code
+    // Club plan: create the club document, assign a stable clubId, generate a join code.
+    // Guarded by clubSnap.exists so a duplicate webhook delivery (Stripe explicitly
+    // allows re-delivery of the same event on retry) can't silently regenerate the
+    // code and invalidate one already shared with the club's coaching staff.
     if (plan === 'club') {
-      const clubId   = 'club_' + userId;
-      const clubCode = generateClubCode();
+      const clubId  = 'club_' + userId;
       update.clubId = clubId;
-      await db.collection('clubs').doc(clubId).set({
-        ownerId:   userId,
-        clubCode,           // 6-char code coaches use to join
-        createdAt: new Date().toISOString()
-      }, { merge: true });
+      const clubRef  = db.collection('clubs').doc(clubId);
+      const clubSnap = await clubRef.get();
+      if (!clubSnap.exists) {
+        await clubRef.set({
+          ownerId:   userId,
+          clubCode:  generateClubCode(),   // 6-char code coaches use to join
+          createdAt: new Date().toISOString()
+        });
+      }
     }
 
     await db.collection('users').doc(userId).update(update);
