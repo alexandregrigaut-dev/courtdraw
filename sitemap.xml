@@ -19,6 +19,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://courtdraw.app/compare/</loc>
+    <lastmod>2026-09-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://courtdraw.app/guides/share-tactics-board-whatsapp/</loc>
     <lastmod>2026-09-13</lastmod>
     <changefreq>monthly</changefreq>

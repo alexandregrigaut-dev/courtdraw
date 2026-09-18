@@ -22,6 +22,7 @@ CourtDraw works entirely in the browser as a Progressive Web App: it works offli
 - [Tennis Drill Diagrams Every Coach Should Have](https://courtdraw.app/guides/tennis-drill-diagrams-for-coaches/): Core cone patterns, feeding drills, and doubles rotations worth drawing once and reusing every session.
 - [How to Plan a Junior Tennis Lesson](https://courtdraw.app/guides/how-to-plan-a-junior-tennis-lesson/): A repeatable four-block structure for a 60-minute junior lesson.
 - [Free vs. Pro Tactics Board: What Actually Matters](https://courtdraw.app/guides/free-vs-pro-tactics-board-comparison/): What's actually different on the free plan, feature by feature.
+- [Tactics Board Apps Compared](https://courtdraw.app/compare/): Honest side-by-side of CourtDraw, TacticalPad, Tactico, Cupello and Coachbetter, including where competitors are the better choice.
 - [Coaching a Sport You've Never Played](https://courtdraw.app/guides/coaching-a-sport-you-have-never-played/): A four-block first practice plan for PE teachers and volunteer coaches assigned a sport outside their own background.
 - [Padel Positioning Drills for Beginners](https://courtdraw.app/guides/padel-positioning-drills-for-beginners/): The positioning habits that separate beginner padel players from intermediate ones.
 - [Build a Reusable Coaching Play Library](https://courtdraw.app/guides/how-to-build-a-reusable-coaching-play-library/): A naming and organizing system for saved plays that scales across a season.
