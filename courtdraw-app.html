@@ -3215,6 +3215,17 @@ const CATEGORIES = {
 // ══════════════════════════════════════════════
 // ── Analytics: fire each event only once per session ─────────────────────
 let _gaFirstDrawFired = false;
+let _gaFirstActionFired = false;
+
+// first_draw only covers canvas strokes, so a user who sets up a full formation
+// by placing tokens registered as having done nothing. This fires on the first
+// meaningful board interaction of any kind, so the activation funnel starts at
+// "touched the tool" rather than "drew a line".
+function trackFirstAction(source) {
+  if (_gaFirstActionFired) return;
+  _gaFirstActionFired = true;
+  gtag('event', 'first_action', { event_category: 'engagement', source, court_id: state.courtId });
+}
 
 const state = {
   courtId: 'tennis_singles',
@@ -3720,6 +3731,7 @@ function onDown(e) {
     _gaFirstDrawFired = true;
     gtag('event', 'first_draw', { event_category: 'engagement', court_id: state.courtId });
   }
+  if (state.tool !== 'eraser') trackFirstAction('draw');
   // Save undo snapshot before the first erase so the whole drag gesture is one undo unit
   if (state.tool === 'eraser') { saveUndo(); eraseAt(nx, ny); redrawAll(); }
   canvas.setPointerCapture(e.pointerId);
@@ -5006,6 +5018,11 @@ function openSaveDialog() {
       counter.style.display = 'none';
     }
   }
+  gtag('event', 'save_dialog_opened', {
+    event_category: 'engagement',
+    variant: 'quick',
+    saves_so_far: state.savedTactics.filter(t => !t._tutorial).length,
+  });
   openModal('modal-save-quick');
   setTimeout(() => { quickInp && quickInp.select(); quickInp && quickInp.focus(); }, 80);
 }
@@ -5023,6 +5040,11 @@ function quickSaveTactic() {
 function openSaveDialogFull() {
   renderLibrary();
   if (state.isClub) loadClubLibrary();
+  gtag('event', 'save_dialog_opened', {
+    event_category: 'engagement',
+    variant: 'full',
+    saves_so_far: state.savedTactics.filter(t => !t._tutorial).length,
+  });
   openModal('modal-library');
   const isPro = state.isPro || state.isClub;
   const proLabel = document.getElementById('pro-fields-label');
@@ -5140,6 +5162,12 @@ function saveTactic() {
   };
   state.savedTactics.push(tactic);
   const nonTutorialCount = state.savedTactics.filter(function(t) { return !t._tutorial; }).length;
+  gtag('event', 'play_saved', {
+    event_category: 'engagement',
+    save_number: nonTutorialCount,
+    court_id: state.courtId,
+    signed_in: !!window.__currentUser,
+  });
   // Progressive save countdown for free users — makes the limit visible and upgrade intent gradual
   if (!state.isPro && !state.isClub) {
     const remaining = FREE_SAVES - nonTutorialCount;
@@ -5815,6 +5843,11 @@ function dismissWelcome(openPicker = false) {
 
 
 function openPaywall(reason) {
+  gtag('event', 'paywall_shown', {
+    event_category: 'ecommerce',
+    reason: String(reason || '').slice(0, 100),
+    saves_so_far: state.savedTactics.filter(t => !t._tutorial).length,
+  });
   // Always reset to default framing before opening
   document.getElementById('paywall-hero-icon').textContent  = '⚡';
   document.getElementById('paywall-hero-title').textContent = 'Unlock Everything';
@@ -7307,6 +7340,7 @@ function applyFormation(formationId) {
   if (!fms) return;
   const formation = fms.find(f => f.id === formationId);
   if (!formation) return;
+  trackFirstAction('formation');
 
   // Rebuild token layer with formation positions and labels
   const layer = document.getElementById('token-layer');
@@ -8519,6 +8553,7 @@ function addPlayer() {
     showToast('Maximum player count reached.');
     return;
   }
+  trackFirstAction('add_player');
   // Determine next team and label
   const blueCount = state.tokenPositions.filter(t => t.team === 'blue').length;
   const redCount  = state.tokenPositions.filter(t => t.team === 'red').length;
