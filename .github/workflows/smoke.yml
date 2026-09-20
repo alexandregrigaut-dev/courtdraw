@@ -1,0 +1,29 @@
+# Smoke tests for the app's first-run journey and the four GA4 activation
+# events. Kept deliberately small so it stays fast enough to run on every PR.
+name: Smoke tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The repo has no dependencies of its own — Playwright is installed here
+      # rather than in package.json so Netlify never has to install it.
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@^1.47
+          npx playwright install --with-deps chromium
+
+      - name: Run smoke tests
+        run: npm test
