@@ -3227,6 +3227,66 @@ function trackFirstAction(source) {
   gtag('event', 'first_action', { event_category: 'engagement', source, court_id: state.courtId });
 }
 
+// ── Save nudge ────────────────────────────────────────────────────────
+// Measured 18–21 Sep 2026: 149 users touched the board, 10 opened the save
+// dialog (6.7%), and of those 10, five completed the save. The dialog isn't
+// the problem — almost nobody gets to it. People make something and leave
+// without ever considering keeping it.
+//
+// So prompt once, after they've stopped drawing, and report whether that
+// ratio moves. A toast rather than a modal on purpose: 25 of 188 first-time
+// visitors already left at the welcome overlay without dismissing it, and a
+// second blocking layer would cost more than it earns.
+//
+// Set NUDGE_ENABLED to false to switch it off; nothing else needs touching.
+const NUDGE_ENABLED     = true;
+const NUDGE_IDLE_MS     = 8000; // quiet time after the last stroke
+const NUDGE_MIN_OBJECTS = 3;    // a play worth keeping, not one stray arrow
+const NUDGE_VISIBLE_MS  = 9000;
+
+let _nudgeTimer = null;
+let _nudgeShown = false;
+
+/** Called on every completed stroke; only fires once drawing actually stops. */
+function scheduleSaveNudge() {
+  if (!NUDGE_ENABLED || _nudgeShown) return;
+  clearTimeout(_nudgeTimer);
+  _nudgeTimer = setTimeout(maybeShowSaveNudge, NUDGE_IDLE_MS);
+}
+
+function maybeShowSaveNudge() {
+  if (!NUDGE_ENABLED || _nudgeShown) return;
+  // A shared-board viewer is looking at someone else's play — nothing to keep.
+  if (document.body.classList.contains('share-view')) return;
+  if (!_gaFirstActionFired) return;
+  if (state.objects.length < NUDGE_MIN_OBJECTS) return;
+  // Anyone who already saved has found the button without help.
+  if (state.savedTactics.filter(t => !t._tutorial).length > 0) return;
+  // Don't stack on top of whatever dialog is already open.
+  if (document.querySelector('.modal-backdrop.open')) return;
+
+  _nudgeShown = true;
+  gtag('event', 'save_nudge_shown', {
+    event_category: 'engagement',
+    objects_count: state.objects.length,
+    court_id: state.courtId,
+  });
+
+  showUpgradeToast(
+    'Keep this play? It&rsquo;ll be here next time you open the board.',
+    'Save it',
+    () => {
+      gtag('event', 'save_nudge_accepted', { event_category: 'engagement' });
+      openSaveDialog('nudge');
+    },
+    NUDGE_VISIBLE_MS,
+    (viaButton) => gtag('event', 'save_nudge_dismissed', {
+      event_category: 'engagement',
+      method: viaButton ? 'button' : 'timeout',
+    })
+  );
+}
+
 const state = {
   courtId: 'tennis_singles',
   tool: 'arrow',
@@ -3762,7 +3822,7 @@ function onUp(e) {
   if (dx < 3 && dy < 3) { previewObj = null; return; }
   const obj = buildObject(state.startNX, state.startNY, nx, ny, state.points);
   if (obj) {
-    saveUndo(); state.objects.push(obj); saveCurrentPhase();
+    saveUndo(); state.objects.push(obj); saveCurrentPhase(); scheduleSaveNudge();
   }
   previewObj = null;
   redrawAll();
@@ -4995,7 +5055,7 @@ function filterClubLibraryDisplay() {
   });
 }
 
-function openSaveDialog() {
+function openSaveDialog(source) {
   const court = COURTS.find(c => c.id === state.courtId);
   const sportName = court ? court.name.replace(/ \(.*\)/, '') : 'Tactic';
   const now = new Date();
@@ -5021,6 +5081,7 @@ function openSaveDialog() {
   gtag('event', 'save_dialog_opened', {
     event_category: 'engagement',
     variant: 'quick',
+    source: source === 'nudge' ? 'nudge' : 'toolbar',
     saves_so_far: state.savedTactics.filter(t => !t._tutorial).length,
   });
   openModal('modal-save-quick');
@@ -7440,9 +7501,12 @@ function shareMomentPrompt(key, msg, ctaLabel, ctaFn) {
 
 // Point 2: upgrade toast with inline CTA + dismiss button
 // Pass ms=0 to make it persistent (no auto-dismiss) — user must tap ✕ or the CTA.
-function showUpgradeToast(msg, ctaLabel, ctaFn, ms = 6000) {
+function showUpgradeToast(msg, ctaLabel, ctaFn, ms = 6000, onDismiss) {
   const t = document.getElementById('toast');
-  const dismiss = () => t.classList.remove('show');
+  const hide    = () => t.classList.remove('show');
+  // onDismiss separates an active reject from letting it time out. The CTA path
+  // deliberately doesn't call it — accepting is not dismissing.
+  const dismiss = (viaButton) => { hide(); if (onDismiss) onDismiss(viaButton === true); };
   t.className = 'show upgrade-toast';
   t.innerHTML = `
     <div class="upgrade-toast-body">
@@ -7450,10 +7514,10 @@ function showUpgradeToast(msg, ctaLabel, ctaFn, ms = 6000) {
       <button class="toast-dismiss" id="toast-dismiss-btn" aria-label="Dismiss">✕</button>
     </div>
     <button class="toast-cta" id="toast-cta-btn">${ctaLabel}</button>`;
-  document.getElementById('toast-dismiss-btn').onclick = dismiss;
-  document.getElementById('toast-cta-btn').onclick = () => { dismiss(); ctaFn(); };
+  document.getElementById('toast-dismiss-btn').onclick = () => dismiss(true);
+  document.getElementById('toast-cta-btn').onclick = () => { clearTimeout(toastTimer); hide(); ctaFn(); };
   clearTimeout(toastTimer);
-  if (ms > 0) toastTimer = setTimeout(dismiss, ms);
+  if (ms > 0) toastTimer = setTimeout(() => dismiss(false), ms);
 }
 
 // ══════════════════════════════════════════════

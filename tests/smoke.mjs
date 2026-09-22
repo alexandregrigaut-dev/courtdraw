@@ -167,6 +167,78 @@ test('app: completing a save fires play_saved', async (page) => {
   assertEq(params?.save_number, 1, 'the first save should be numbered 1');
 });
 
+// ── Tests: the save nudge ────────────────────────────────────────────────
+// 6.7% of users who touch the board ever open the save dialog. The nudge is
+// the experiment against that number, so its gating has to stay honest: it
+// must not fire on a stray line, and it must route into the instrumented
+// save path rather than a parallel one.
+
+/** NUDGE_IDLE_MS is a top-level const, reachable in page scope but not on window. */
+const nudgeIdleMs = (page) => page.evaluate(() => NUDGE_IDLE_MS);
+
+test('nudge: does not fire below the object threshold', async (page) => {
+  await openAppPastWelcome(page);
+  await drawStroke(page);
+  await drawStroke(page);                       // two objects — under the minimum
+  await page.waitForTimeout(await nudgeIdleMs(page) + 2500);
+  const fired = await firedEvents(page);
+  assert(!fired.includes('save_nudge_shown'),
+    'two strokes is not a play; the nudge must stay quiet');
+});
+
+test('nudge: fires once drawing stops, and routes into the save dialog', async (page) => {
+  await openAppPastWelcome(page);
+  await drawStroke(page);
+  await drawStroke(page);
+  await drawStroke(page);                       // at the minimum
+  await page.waitForTimeout(await nudgeIdleMs(page) + 2500);
+
+  const fired = await firedEvents(page);
+  assertIncludes(fired, 'save_nudge_shown', 'three objects plus idle should nudge');
+  const shown = await eventParams(page, 'save_nudge_shown');
+  assertEq(shown?.objects_count, 3, 'the nudge should report how much was drawn');
+  assert(await page.locator('#toast.show').count() === 1, 'the nudge should be visible as a toast');
+
+  await page.locator('#toast-cta-btn').click();
+  await page.waitForTimeout(600);
+  const after = await firedEvents(page);
+  assertIncludes(after, 'save_nudge_accepted', 'tapping the CTA should report acceptance');
+  assertIncludes(after, 'save_dialog_opened', 'the CTA must open the real save dialog');
+  assert(await page.locator('#modal-save-quick').isVisible(), 'save dialog should be open');
+  const opened = await eventParams(page, 'save_dialog_opened');
+  assertEq(opened?.source, 'nudge', 'nudge-driven opens must be attributable');
+});
+
+test('nudge: dismissing it reports the reason, and it does not return', async (page) => {
+  await openAppPastWelcome(page);
+  for (let i = 0; i < 3; i++) await drawStroke(page);
+  await page.waitForTimeout(await nudgeIdleMs(page) + 2500);
+  await page.locator('#toast-dismiss-btn').click();
+  await page.waitForTimeout(400);
+  const after = await firedEvents(page);
+  assertIncludes(after, 'save_nudge_dismissed', 'dismissing should report itself');
+  assertEq((await eventParams(page, 'save_nudge_dismissed'))?.method, 'button',
+    'an active reject should be distinguishable from a timeout');
+  // Drawing again must not summon it a second time. Invoking the trigger
+  // directly rather than idling again keeps the suite fast and asserts the
+  // once-per-session guard itself, not the timer.
+  await drawStroke(page);
+  await page.evaluate(() => maybeShowSaveNudge());
+  await page.waitForTimeout(400);
+  const final = await firedEvents(page);
+  assertEq(final.filter(n => n === 'save_nudge_shown').length, 1,
+    'the nudge is once per session; a repeat would be nagging');
+});
+
+test('app: toolbar Save still reports itself as the toolbar', async (page) => {
+  await openAppPastWelcome(page);
+  await drawStroke(page);
+  await page.locator('button[title="Save tactic"]').click();
+  await page.waitForTimeout(600);
+  assertEq((await eventParams(page, 'save_dialog_opened'))?.source, 'toolbar',
+    'unattributed opens should not be credited to the nudge');
+});
+
 test('app: community library opens with plays rendered', async (page) => {
   // The 206-play library is the shortest path from a blank court to a first
   // save, so a silent failure here would be expensive and invisible.
