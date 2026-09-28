@@ -219,6 +219,14 @@ test('nudge: dismissing it reports the reason, and it does not return', async (p
   assertIncludes(after, 'save_nudge_dismissed', 'dismissing should report itself');
   assertEq((await eventParams(page, 'save_nudge_dismissed'))?.method, 'button',
     'an active reject should be distinguishable from a timeout');
+
+  // The ✕ handler used to hide the toast without clearing the auto-hide timer,
+  // so the same dismissal reported twice — 'button' now, 'timeout' later. Wait
+  // past the toast's own lifetime and confirm only one outcome was recorded.
+  await page.waitForTimeout(await page.evaluate(() => NUDGE_VISIBLE_MS) + 2500);
+  const settled = await firedEvents(page);
+  assertEq(settled.filter(n => n === 'save_nudge_dismissed').length, 1,
+    'one toast must yield exactly one outcome, or the funnel is unreadable');
   // Drawing again must not summon it a second time. Invoking the trigger
   // directly rather than idling again keeps the suite fast and asserts the
   // once-per-session guard itself, not the timer.
