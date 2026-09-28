@@ -7518,10 +7518,22 @@ function shareMomentPrompt(key, msg, ctaLabel, ctaFn) {
 // Pass ms=0 to make it persistent (no auto-dismiss) — user must tap ✕ or the CTA.
 function showUpgradeToast(msg, ctaLabel, ctaFn, ms = 6000, onDismiss) {
   const t = document.getElementById('toast');
-  const hide    = () => t.classList.remove('show');
+  // One toast, one outcome. Without this latch the ✕ handler hid the toast but
+  // left the auto-hide timer armed, so a dismissed nudge reported itself twice
+  // — once as 'button', then again as 'timeout' when the timer caught up. That
+  // inflated save_nudge_dismissed past save_nudge_shown in GA4 (188 vs 133
+  // events over 23–27 Sep) and made the nudge's own funnel unreadable.
+  let settled = false;
+  const settle = () => {
+    if (settled) return false;
+    settled = true;
+    clearTimeout(toastTimer);
+    t.classList.remove('show');
+    return true;
+  };
   // onDismiss separates an active reject from letting it time out. The CTA path
   // deliberately doesn't call it — accepting is not dismissing.
-  const dismiss = (viaButton) => { hide(); if (onDismiss) onDismiss(viaButton === true); };
+  const dismiss = (viaButton) => { if (settle() && onDismiss) onDismiss(viaButton === true); };
   t.className = 'show upgrade-toast';
   t.innerHTML = `
     <div class="upgrade-toast-body">
@@ -7530,7 +7542,7 @@ function showUpgradeToast(msg, ctaLabel, ctaFn, ms = 6000, onDismiss) {
     </div>
     <button class="toast-cta" id="toast-cta-btn">${ctaLabel}</button>`;
   document.getElementById('toast-dismiss-btn').onclick = () => dismiss(true);
-  document.getElementById('toast-cta-btn').onclick = () => { clearTimeout(toastTimer); hide(); ctaFn(); };
+  document.getElementById('toast-cta-btn').onclick = () => { if (settle()) ctaFn(); };
   clearTimeout(toastTimer);
   if (ms > 0) toastTimer = setTimeout(() => dismiss(false), ms);
 }
