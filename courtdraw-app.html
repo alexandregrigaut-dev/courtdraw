@@ -3358,7 +3358,7 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
     // free-badge style = pulsing CTA; only show for users who have neither Pro nor Club
     badge.classList.toggle('free-badge', !isPro && !isClub);
     // Free: opens paywall; Pro (not Club): opens upgrade modal with billing + Club upgrade; Club: billing portal
-    if (!isPro && !isClub) badge.onclick = () => openPaywall();
+    if (!isPro && !isClub) badge.onclick = () => openPaywall(null, 'upgrade_badge');
     else if (isPro && !isClub) badge.onclick = () => openProUpgradeModal();
     else badge.onclick = () => openBillingPortal();
   }
@@ -5198,7 +5198,7 @@ function saveTactic() {
   const _billableSaves = state.savedTactics.filter(function(t) { return !t._tutorial; }).length;
   if (!state.isPro && !state.isClub && _billableSaves >= FREE_SAVES) {
     closeModal('modal-library');
-    openPaywall(`You've used all ${FREE_SAVES} free saves. Upgrade to Pro for unlimited saves.`);
+    openPaywall(`You've used all ${FREE_SAVES} free saves. Upgrade to Pro for unlimited saves.`, 'save_cap');
     return;
   }
   saveCurrentPhase();
@@ -5748,7 +5748,7 @@ function updateSaveCounter() {
   if (used >= max) {
     el.textContent = `${used}/${max} saves — upgrade →`;
     el.classList.add('full');
-    el.onclick = () => openPaywall(`You've used all ${max} free saves. Upgrade to Pro for unlimited saves.`);
+    el.onclick = () => openPaywall(`You've used all ${max} free saves. Upgrade to Pro for unlimited saves.`, 'save_cap_counter');
   } else if (used === max - 1) {
     el.textContent = `${used}/${max} saves used`;
     el.classList.add('warn');
@@ -5821,11 +5821,13 @@ const FEATURE_PREVIEWS = {
   session:   { icon: '📅', title: 'Training Sessions',          desc: 'Chain 3–8 saved plays into a full training plan. Set drill durations, step through plays on the pitch, and export the whole session as a PDF to share with your coaching staff.' },
 };
 let _fpPaywallReason = '';
+let _fpPaywallSource = '';
 
 function showFeaturePreview(featureKey, paywallReason) {
   const preview = FEATURE_PREVIEWS[featureKey];
-  if (!preview) { openPaywall(paywallReason); return; }
+  if (!preview) { openPaywall(paywallReason, 'feature:' + featureKey); return; }
   _fpPaywallReason = paywallReason;
+  _fpPaywallSource = 'feature:' + featureKey;
   document.getElementById('fp-modal-title').textContent = 'Pro Feature';
   document.getElementById('fp-icon').textContent = preview.icon;
   document.getElementById('fp-title').textContent = preview.title;
@@ -5835,7 +5837,7 @@ function showFeaturePreview(featureKey, paywallReason) {
 
 function skipFeaturePreview() {
   closeModal('modal-feature-preview');
-  openPaywall(_fpPaywallReason);
+  openPaywall(_fpPaywallReason, _fpPaywallSource);
 }
 
 // ══════════════════════════════════════════════
@@ -5869,7 +5871,7 @@ function updatePhaseTeaserUI() {
 function skipPhaseTeaser() {
   clearTimeout(_ptTimer);
   closeModal('modal-phase-teaser');
-  openPaywall('Phase-by-phase animation is a Pro feature. Plan each move step by step.');
+  openPaywall('Phase-by-phase animation is a Pro feature. Plan each move step by step.', 'phase_animation');
 }
 
 function closePhaseTeaser() {
@@ -5903,10 +5905,13 @@ function dismissWelcome(openPicker = false) {
 
 
 
-function openPaywall(reason) {
+function openPaywall(reason, source) {
   gtag('event', 'paywall_shown', {
     event_category: 'ecommerce',
+    // `reason` is the sentence shown to the user; `source` is what tripped it.
+    // They're separate because the copy is not a stable analytics key.
     reason: String(reason || '').slice(0, 100),
+    source: source || 'unspecified',
     saves_so_far: state.savedTactics.filter(t => !t._tutorial).length,
   });
   // Always reset to default framing before opening
@@ -5919,6 +5924,16 @@ function openPaywall(reason) {
 function openCourtPaywall(freeName) {
   // Softer, invitation-framed variant shown when a user taps a locked court.
   const sport = freeName || 'your sport';
+  // This opens the paywall modal directly rather than via openPaywall(), so it
+  // has to report for itself — without this it was the one wall we couldn't see.
+  gtag('event', 'paywall_shown', {
+    event_category: 'ecommerce',
+    reason: 'Locked court — free plan is limited to one sport.',
+    source: 'locked_court',
+    free_court: state.freeCourt || '',
+    attempted_court: state.courtId || '',
+    saves_so_far: state.savedTactics.filter(t => !t._tutorial).length,
+  });
   document.getElementById('paywall-hero-icon').textContent  = '🏟';
   document.getElementById('paywall-hero-title').textContent = `You're on your free ${sport} court`;
   document.getElementById('paywall-reason').textContent     = 'Want all 38 sports? Try 7 days free — no charge until day 8, cancel anytime.';
@@ -5979,7 +5994,7 @@ function openProUpgradeModal() {
 
 async function openBillingPortal() {
   const user = window.__currentUser;
-  if (!user) { openPaywall(); return; }
+  if (!user) { openPaywall(null, 'billing_signed_out'); return; }
   // Club members (invited coaches) don't have their own subscription
   if (state.isClub && !state.isClubOwner) {
     showToast("You're a club member — billing is managed by your club owner.");

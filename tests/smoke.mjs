@@ -253,6 +253,40 @@ test('app: community library opens with plays rendered', async (page) => {
   assert(cards > 0, 'the library should render at least the bundled plays, not an empty grid');
 });
 
+// ── Tests: paywall reporting ─────────────────────────────────────────────
+// openCourtPaywall() opened the modal directly and reported nothing, so the
+// most likely wall in the product was invisible in analytics. These pin the
+// reporting in place and keep `source` meaningful.
+
+test('paywall: the locked-court wall reports itself', async (page) => {
+  await openAppPastWelcome(page);
+  await page.evaluate(() => openCourtPaywall('Tennis'));
+  await page.waitForTimeout(400);
+  assertIncludes(await firedEvents(page), 'paywall_shown',
+    'the locked-court wall must report — it was silent before');
+  const p = await eventParams(page, 'paywall_shown');
+  assertEq(p?.source, 'locked_court', 'it must be attributable to the court lock');
+  assert(await page.locator('#modal-paywall').isVisible(), 'and still actually open the modal');
+});
+
+test('paywall: triggers are distinguishable by source', async (page) => {
+  await openAppPastWelcome(page);
+  await page.evaluate(() => openPaywall('You have used all 3 free saves.', 'save_cap'));
+  await page.waitForTimeout(300);
+  const p = await eventParams(page, 'paywall_shown');
+  assertEq(p?.source, 'save_cap', 'an explicit source should be reported verbatim');
+  assert(String(p?.reason || '').includes('free saves'),
+    'the user-facing sentence should still travel as `reason`');
+});
+
+test('paywall: an unlabelled trigger is reported as unspecified, not dropped', async (page) => {
+  await openAppPastWelcome(page);
+  await page.evaluate(() => openPaywall());
+  await page.waitForTimeout(300);
+  assertEq((await eventParams(page, 'paywall_shown'))?.source, 'unspecified',
+    'a missing source should be visible as a gap, not absent');
+});
+
 // ── Tests: marketing pages ───────────────────────────────────────────────
 
 test('pages: landing page renders without errors or horizontal overflow', async (page, errors) => {
