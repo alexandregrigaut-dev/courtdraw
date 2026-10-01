@@ -323,6 +323,41 @@ test('pages: compare page table survives at phone width', async (page) => {
   }), '.table-wrap should be the thing that scrolls');
 });
 
+test('pages: clubs page renders with its pricing maths intact', async (page) => {
+  await page.goto(url('clubs/index.html'), { waitUntil: 'load' });
+  await page.waitForTimeout(800);
+
+  assert((await page.locator('h1').innerText()).length > 10, 'clubs page should have an h1');
+  assert(await page.locator('.club-maths .cm-row').count() === 2,
+    'the break-even block should show both rows (two Pro vs one Club)');
+
+  // the whole argument of the page is that these two numbers sit side by side
+  const vals = await page.locator('.club-maths .cm-val').allInnerTexts();
+  assert(vals.some(v => v.includes('98')) && vals.some(v => v.includes('99')),
+    `break-even block should contrast 98 against 99, got ${JSON.stringify(vals)}`);
+
+  // FAQ markup must stay in step with the FAQPage schema or the rich result breaks
+  const onPage = await page.locator('.faq-item').count();
+  const inSchema = await page.evaluate(() => {
+    for (const el of document.querySelectorAll('script[type="application/ld+json"]')) {
+      for (const node of (JSON.parse(el.textContent)['@graph'] || [])) {
+        if (node['@type'] === 'FAQPage') return node.mainEntity.length;
+      }
+    }
+    return -1;
+  });
+  assert(onPage === 5 && inSchema === 5,
+    `FAQ count must match schema: ${onPage} on page, ${inSchema} in JSON-LD`);
+
+  assert(await page.locator('.nav-links a[href="/clubs/"]').count() === 1,
+    'clubs page should be reachable from the global nav');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(500);
+  assert(!(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)),
+    'clubs page should not scroll horizontally at 390px');
+});
+
 // ── Runner ───────────────────────────────────────────────────────────────
 
 const filter = process.argv[2];

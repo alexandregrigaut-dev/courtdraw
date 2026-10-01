@@ -933,6 +933,7 @@
       <a href="#features">Features</a>
       <a href="#how">How It Works</a>
       <a href="/compare/">Compare</a>
+      <a href="/clubs/">For Clubs</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
     </div>
@@ -1714,7 +1715,7 @@
     <div class="section-header">
       <span class="badge" style="background:rgba(168,85,247,0.15);color:#a855f7;border-color:rgba(168,85,247,0.3);">For Directors of Coaching</span>
       <h2>Your club's shared playbook.<br/>One tactic, every coach.</h2>
-      <p>One Club plan covers up to 10 coaches — shared library, club branding, aligned tactics. One tool for the whole staff.</p>
+      <p>One Club plan covers up to 10 coaches — shared library, club branding, aligned tactics. Two Pro subscriptions already cost about the same as one Club plan, so from the second coach onwards it is the cheaper way to buy.</p>
     </div>
     <div class="features-grid" style="grid-template-columns:repeat(3,1fr);">
       <div class="feature-card" style="border-color:rgba(168,85,247,0.25);">
@@ -1822,7 +1823,8 @@
         <div class="popular-badge" style="background:linear-gradient(135deg,#7c3aed,#a855f7);">7-Day Free Trial</div>
         <div class="plan-name">Club</div>
         <div class="plan-price" id="club-price"><sup>€</sup>99<span class="period"> / yr</span></div>
-        <p style="margin:4px 0 10px;font-size:13px;font-weight:700;color:#a855f7;" id="club-per-coach">That's €10 per coach per year.</p>
+        <p style="margin:4px 0 2px;font-size:13px;font-weight:700;color:#a855f7;" id="club-per-coach">That's €10 per coach per year.</p>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text2);line-height:1.5;" id="club-vs-pro">Two Pro plans cost €98. Club costs €99 — and covers ten coaches.</p>
         <p class="plan-tagline">One plan for your whole staff. 7-day free trial — cancel anytime.</p>
         <a href="login.html?checkout=club" class="btn btn-ghost plan-btn" style="border-color:#a855f7;color:#a855f7;">Start 7-Day Free Trial</a>
         <ul class="plan-features">
@@ -2123,11 +2125,14 @@
     const freePrice = document.getElementById('free-price');
     const clubPrice = document.getElementById('club-price');
     const clubPerCoach = document.getElementById('club-per-coach');
+    const clubVsPro = document.getElementById('club-vs-pro');
     const clubCtaTagline = document.getElementById('club-cta-tagline');
 
     if (freePrice) freePrice.innerHTML = `<sup>${p.symbol}</sup>0<span class="period"> / forever</span>`;
     if (clubPrice) clubPrice.innerHTML = `<sup>${p.symbol}</sup>${p.club}<span class="period"> / yr</span>`;
     if (clubPerCoach) clubPerCoach.textContent = `That's ${p.symbol}${p.clubPerCoach} per coach per year.`;
+    if (clubVsPro) clubVsPro.textContent =
+      `Two Pro plans cost ${p.symbol}${p.proYearly * 2}. Club costs ${p.symbol}${p.club} — and covers ten coaches.`;
     if (clubCtaTagline) clubCtaTagline.textContent = `7-day free trial, then ${p.symbol}${p.club}/yr. Up to 10 coaches. Cancel anytime before day 7 — no charge.`;
 
     if (currentMode === 'monthly') {
