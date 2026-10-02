@@ -358,6 +358,42 @@ test('pages: clubs page renders with its pricing maths intact', async (page) => 
     'clubs page should not scroll horizontally at 390px');
 });
 
+test('pages: 5-a-side page deep-links the right court and keeps FAQ schema in step', async (page) => {
+  await page.goto(url('5-a-side-tactics-board/index.html'), { waitUntil: 'load' });
+  await page.waitForTimeout(800);
+
+  // the whole point of the page is to open the 5-a-side pitch, not futsal
+  const params = await page.evaluate(() => [...new Set(
+    [...document.querySelectorAll('a[href*="courtdraw-app"]')].map(a => new URL(a.href).search))]);
+  assert(params.length === 1 && params[0] === '?court=futsal_mini',
+    `every CTA should open the 5-a-side court, got ${JSON.stringify(params)}`);
+
+  // FAQ rich result is dropped if the schema and the visible text disagree
+  const faq = await page.evaluate(() => {
+    const onPage = [...document.querySelectorAll('.faq-item h3')].map(h => h.textContent.trim());
+    let schema = null;
+    for (const el of document.querySelectorAll('script[type="application/ld+json"]')) {
+      for (const node of (JSON.parse(el.textContent)['@graph'] || [])) {
+        if (node['@type'] === 'FAQPage') schema = node.mainEntity.map(q => q.name.trim());
+      }
+    }
+    return { onPage, schema };
+  });
+  assert(faq.schema && faq.onPage.length === 5 && JSON.stringify(faq.schema) === JSON.stringify(faq.onPage),
+    `FAQ schema must match the visible questions:\n  page:   ${JSON.stringify(faq.onPage)}\n  schema: ${JSON.stringify(faq.schema)}`);
+
+  // class names must match the shared sport-page stylesheet, or the page renders unstyled
+  assert(await page.evaluate(() => {
+    const el = document.querySelector('.how-num');
+    return el ? getComputedStyle(el).borderRadius : 'MISSING';
+  }) === '50%', '.how-num must exist and pick up the shared sport-page stylesheet');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(500);
+  assert(!(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)),
+    '5-a-side page should not scroll horizontally at 390px');
+});
+
 // ── Runner ───────────────────────────────────────────────────────────────
 
 const filter = process.argv[2];
