@@ -32,60 +32,86 @@
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
   <script type="application/ld+json">{
-  "@context": "https://schema.org",
-  "@graph": [
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "BreadcrumbList",
+   "itemListElement": [
     {
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://courtdraw.app/" },
-        { "@type": "ListItem", "position": 2, "name": "For Clubs", "item": "https://courtdraw.app/clubs/" }
-      ]
+     "@type": "ListItem",
+     "position": 1,
+     "name": "Home",
+     "item": "https://courtdraw.app/"
     },
     {
-      "@type": "Product",
-      "name": "CourtDraw Club",
-      "description": "A shared tactics board for a club's whole coaching staff: 38+ sports, a shared play library, club colours, branded PDF exports, presentation mode and an admin dashboard.",
-      "brand": { "@type": "Brand", "name": "CourtDraw" },
-      "offers": {
-        "@type": "Offer",
-        "price": "99",
-        "priceCurrency": "EUR",
-        "availability": "https://schema.org/InStock",
-        "url": "https://courtdraw.app/clubs/",
-        "description": "Up to 10 coaching staff. 7-day free trial."
-      }
-    },
-    {
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "How many coaches does a Club plan cover?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Up to ten coaching staff on one plan, for 99 euros a year. That works out at about 10 euros per coach per year. Coaches join with a six-character code rather than needing individual invitations set up one by one." }
-        },
-        {
-          "@type": "Question",
-          "name": "Is Club cheaper than buying Pro for each coach?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Two annual Pro subscriptions already cost about the same as one Club plan, and Club covers ten coaches rather than two. From the second coach onwards Club is the cheaper way to buy, and by the tenth it is a fraction of the per-seat price." }
-        },
-        {
-          "@type": "Question",
-          "name": "Does it work for a club running several different sports?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Yes. CourtDraw covers 38 or more sports on one board, including tennis, padel, basketball, volleyball, handball, futsal, hurling and Gaelic football. A club running three or four programmes uses one tool rather than three different subscriptions." }
-        },
-        {
-          "@type": "Question",
-          "name": "What does the club owner see that coaches do not?",
-          "acceptedAnswer": { "@type": "Answer", "text": "The club owner gets an admin dashboard showing the roster, activity and usage, and controls the shared library and club branding. Coaches see the shared plays, the club's colours on every board, and their own saved work." }
-        },
-        {
-          "@type": "Question",
-          "name": "What happens when the trial ends?",
-          "acceptedAnswer": { "@type": "Answer", "text": "The Club plan includes a 7-day free trial. Cancel any time before day seven and no charge is made. Plays already saved stay in each coach's account." }
-        }
-      ]
+     "@type": "ListItem",
+     "position": 2,
+     "name": "For Clubs",
+     "item": "https://courtdraw.app/clubs/"
     }
-  ]
+   ]
+  },
+  {
+   "@type": "WebApplication",
+   "name": "CourtDraw Club",
+   "applicationCategory": "SportsApplication",
+   "operatingSystem": "Any (web browser)",
+   "url": "https://courtdraw.app/clubs/",
+   "offers": {
+    "@type": "Offer",
+    "price": "99",
+    "priceCurrency": "EUR",
+    "url": "https://courtdraw.app/clubs/",
+    "description": "Up to 10 coaching staff. 7-day free trial."
+   },
+   "description": "A shared tactics board for a club's whole coaching staff: 38+ sports, a shared play library, club colours, branded PDF exports, presentation mode and an admin dashboard."
+  },
+  {
+   "@type": "FAQPage",
+   "mainEntity": [
+    {
+     "@type": "Question",
+     "name": "How many coaches does a Club plan cover?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Up to ten coaching staff on one plan, for 99 euros a year. That works out at about 10 euros per coach per year. Coaches join with a six-character code rather than needing individual invitations set up one by one."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Is Club cheaper than buying Pro for each coach?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Two annual Pro subscriptions already cost about the same as one Club plan, and Club covers ten coaches rather than two. From the second coach onwards Club is the cheaper way to buy, and by the tenth it is a fraction of the per-seat price."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Does it work for a club running several different sports?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Yes. CourtDraw covers 38 or more sports on one board, including tennis, padel, basketball, volleyball, handball, futsal, hurling and Gaelic football. A club running three or four programmes uses one tool rather than three different subscriptions."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "What does the club owner see that coaches do not?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "The club owner gets an admin dashboard showing the roster, activity and usage, and controls the shared library and club branding. Coaches see the shared plays, the club's colours on every board, and their own saved work."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "What happens when the trial ends?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "The Club plan includes a 7-day free trial. Cancel any time before day seven and no charge is made. Plays already saved stay in each coach's account."
+     }
+    }
+   ]
+  }
+ ]
 }</script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
