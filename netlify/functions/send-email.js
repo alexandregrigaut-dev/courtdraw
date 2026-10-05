@@ -231,6 +231,31 @@ const templates = {
     return buildEmail(email, 'Your CourtDraw Club is ready', data);
   },
 
+  // Sent from the customer.subscription.trial_will_end webhook, 3 days out.
+  // Stripe's built-in trial reminder is fixed at 7 days before trial end and
+  // the trial is 7 days long, so its reminder lands on signup day and warns
+  // nobody. This is the warning that actually arrives before the charge.
+  // amountText is pre-formatted by the caller in the customer's own currency,
+  // or empty when the price could not be read — checkout bills in five
+  // currencies, so a guessed figure would be worse than none.
+  trialEndingSoon: (email, endDate, amountText, planName) => {
+    const charge = amountText
+      ? `<strong>${amountText}</strong> will be charged on <strong>${endDate}</strong>.`
+      : `Your subscription starts on <strong>${endDate}</strong>.`;
+    const data = {
+      label: 'Trial ending soon',
+      labelColor: '#f59e0b',
+      title: `Your ${planName} trial ends in 3 days`,
+      body: `${charge}<br><br>
+             Nothing to do if you want to keep going — it renews on its own and every play you have saved stays where it is.<br><br>
+             If it is not for you, cancel before that date and you will not be charged.`,
+      ctaText: 'Manage subscription',
+      ctaUrl: `${APP_URL}/courtdraw-app.html?billing=1`,
+      footerNote: "You're receiving this because your CourtDraw trial is ending soon."
+    };
+    return buildEmail(email, `Your CourtDraw ${planName} trial ends in 3 days`, data);
+  },
+
   paymentFailed: (email) => {
     const data = {
       label: 'Payment failed',
@@ -324,7 +349,7 @@ const templates = {
              CourtDraw Pro gives you <strong>unlimited saves</strong> — every play, every sport, every opponent, organised in one place.<br><br>
              <strong>What coaches say after upgrading:</strong><br>
              <em>"I have a full library now — I load the right play in 10 seconds on the sideline."</em><br><br>
-             Try Pro free for 7 days. No charge until day 4.`,
+             Try Pro free for 7 days. No charge until day 8.`,
       ctaText: 'Start my 7-day free trial',
       ctaUrl: `${APP_URL}/#pricing`,
       features: [
@@ -346,7 +371,7 @@ const templates = {
       body: `You've been using CourtDraw for a few days now. If you're serious about your coaching prep, Pro is worth trying.<br><br>
              <strong>Everything unlocked for 7 days — completely free:</strong><br>
              All 38+ courts, unlimited saves, phase animation, video overlay, clean PNG exports, 200+ play templates, and shareable board links.<br><br>
-             Card required upfront. No charge until day 4. Cancel before then and you won't be billed — no questions asked.`,
+             Card required upfront. No charge until day 8. Cancel before then and you won't be billed — no questions asked.`,
       ctaText: 'Claim my free 7-day trial →',
       ctaUrl: `${APP_URL}/#pricing`,
       features: [
@@ -365,7 +390,7 @@ const templates = {
       label: '7-day free trial started',
       labelColor: '#f59e0b',
       title: 'Your Pro trial has started',
-      body: `You have 3 full days to explore every Pro feature — all 38+ courts, unlimited saves, multi-phase plays, clean PNG exports, video overlay, and the tactics library.<br><br>
+      body: `You have 7 full days to explore every Pro feature — all 38+ courts, unlimited saves, multi-phase plays, clean PNG exports, video overlay, and the tactics library.<br><br>
              <strong>No charge until your trial ends.</strong> Cancel anytime before then and you won't be billed — no questions asked.<br><br>
              Head to the app and start building plays.`,
       ctaText: 'Open the app',
@@ -380,7 +405,7 @@ const templates = {
     return buildEmail(email, 'Your 7-day CourtDraw Pro trial has started', data);
   },
 
-  // Sent when a Pro trial converts to a paid subscription (day 4 charge succeeds)
+  // Sent when a Pro trial converts to a paid subscription (day 8 charge succeeds)
   proTrialConverted: (email) => {
     const data = {
       label: 'Pro plan active',
