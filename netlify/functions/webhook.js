@@ -83,6 +83,15 @@ exports.handler = async (event) => {
           update.isTrialing      = true;
           update.trialEndsAt     = new Date(sub.trial_end * 1000).toISOString();
           update.trialStartedAt  = new Date().toISOString();
+          // Record the actual amount and currency so the in-app trial notice can
+          // state what will be charged rather than guessing. Checkout bills in
+          // five currencies, so assuming euros would show a US customer a figure
+          // they will never be charged — worse than showing no figure at all.
+          const price = sub.items && sub.items.data && sub.items.data[0] && sub.items.data[0].price;
+          if (price && typeof price.unit_amount === 'number') {
+            update.trialAmount   = price.unit_amount;                 // minor units
+            update.trialCurrency = (price.currency || '').toUpperCase();
+          }
         }
       } catch (e) {
         // Non-fatal: trial info is nice-to-have, not required for access

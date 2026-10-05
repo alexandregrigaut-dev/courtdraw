@@ -394,6 +394,170 @@ test('pages: 5-a-side page deep-links the right court and keeps FAQ schema in st
     '5-a-side page should not scroll horizontally at 390px');
 });
 
+test('trial notice: stays quiet while the charge is still far off', async (page) => {
+  await page.goto(url('courtdraw-app.html'), { waitUntil: 'load' });
+  await page.waitForTimeout(1200);
+  const shown = await page.evaluate(() => {
+    const far = new Date(Date.now() + 6 * 86400000).toISOString();
+    maybeShowTrialBanner({ isTrialing: true, trialEndsAt: far, plan: 'club', trialAmount: 9900, trialCurrency: 'EUR' });
+    return document.getElementById('trial-banner').classList.contains('show');
+  });
+  assert(shown === false, 'banner should not appear 6 days out — only inside the last 3');
+});
+
+test('trial notice: states the charge in the customer\'s own currency', async (page) => {
+  await page.goto(url('courtdraw-app.html'), { waitUntil: 'load' });
+  await page.waitForTimeout(1200);
+
+  // The app bills in five currencies. Showing a US customer a euro figure would
+  // be worse than showing none, so each case asserts the symbol it must carry
+  // and that it carries no other currency's.
+  const cases = [
+    { currency: 'EUR', amount: 9900, mustHave: '€',   mustNotHave: ['$', '£'] },
+    { currency: 'USD', amount: 10900, mustHave: '$',  mustNotHave: ['€', '£'] },
+    { currency: 'GBP', amount: 8500, mustHave: '£',   mustNotHave: ['€', '$'] },
+  ];
+  for (const c of cases) {
+    const text = await page.evaluate((c) => {
+      try { localStorage.removeItem('courtdraw_trial_notice_hidden'); } catch {}
+      document.getElementById('trial-banner').classList.remove('show');
+      const soon = new Date(Date.now() + 2 * 86400000).toISOString();
+      maybeShowTrialBanner({ isTrialing: true, trialEndsAt: soon, plan: 'club',
+                             trialAmount: c.amount, trialCurrency: c.currency });
+      const el = document.getElementById('trial-banner');
+      return el.classList.contains('show') ? el.innerText : null;
+    }, c);
+    assert(text, `banner should appear 2 days out for ${c.currency}`);
+    assert(text.includes(c.mustHave), `${c.currency} notice should show ${c.mustHave}, got: ${text}`);
+    for (const wrong of c.mustNotHave) {
+      assert(!text.includes(wrong), `${c.currency} notice must not show ${wrong}, got: ${text}`);
+    }
+    assert(/\b99|109|85\b/.test(text.replace(/[^0-9]/g, ' ')), `notice should carry the amount, got: ${text}`);
+  }
+});
+
+test('trial notice: shows no figure rather than a wrong one', async (page) => {
+  await page.goto(url('courtdraw-app.html'), { waitUntil: 'load' });
+  await page.waitForTimeout(1200);
+  const r = await page.evaluate(() => ({
+    missing: formatTrialAmount(undefined, 'EUR'),
+    noCurrency: formatTrialAmount(9900, null),
+    bogus: formatTrialAmount(9900, 'NOTACURRENCY'),
+    good: formatTrialAmount(9900, 'EUR'),
+  }));
+  assert(r.missing === null && r.noCurrency === null && r.bogus === null,
+    `incomplete or invalid price data must yield null, got ${JSON.stringify(r)}`);
+  assert(typeof r.good === 'string' && r.good.includes('99'), `valid data should format, got ${r.good}`);
+
+  // and the banner still renders, just without an amount
+  const text = await page.evaluate(() => {
+    try { localStorage.removeItem('courtdraw_trial_notice_hidden'); } catch {}
+    const soon = new Date(Date.now() + 2 * 86400000).toISOString();
+    maybeShowTrialBanner({ isTrialing: true, trialEndsAt: soon, plan: 'pro' });
+    const el = document.getElementById('trial-banner');
+    return el.classList.contains('show') ? el.innerText : null;
+  });
+  assert(text && /trial ends/i.test(text), 'banner should still warn when the amount is unknown');
+  assert(!/[€$£]/.test(text), `must not invent a currency figure, got: ${text}`);
+});
+
+test('trial notice: never shows for someone who is not trialing', async (page) => {
+  await page.goto(url('courtdraw-app.html'), { waitUntil: 'load' });
+  await page.waitForTimeout(1200);
+  const anyShown = await page.evaluate(() => {
+    const soon = new Date(Date.now() + 2 * 86400000).toISOString();
+    const el = document.getElementById('trial-banner');
+    for (const data of [
+      {},                                                        // no plan data at all
+      { isTrialing: false, trialEndsAt: soon, plan: 'pro' },      // paid, not trialing
+      { isTrialing: true, plan: 'pro' },                          // trialing but no end date
+      { isTrialing: true, trialEndsAt: 'not-a-date', plan: 'pro' },
+      { isTrialing: true, trialEndsAt: new Date(Date.now() - 86400000).toISOString(), plan: 'pro' }, // already over
+    ]) {
+      el.classList.remove('show');
+      maybeShowTrialBanner(data);
+      if (el.classList.contains('show')) return JSON.stringify(data);
+    }
+    return null;
+  });
+  assert(anyShown === null, `banner shown for a non-trialing case: ${anyShown}`);
+});
+
+test('trial notice: dismissing it keeps it away for the rest of the day', async (page) => {
+  await page.goto(url('courtdraw-app.html'), { waitUntil: 'load' });
+  await page.waitForTimeout(1200);
+  const r = await page.evaluate(() => {
+    try { localStorage.removeItem('courtdraw_trial_notice_hidden'); } catch {}
+    const soon = new Date(Date.now() + 2 * 86400000).toISOString();
+    const data = { isTrialing: true, trialEndsAt: soon, plan: 'club', trialAmount: 9900, trialCurrency: 'EUR' };
+    const el = document.getElementById('trial-banner');
+
+    maybeShowTrialBanner(data);
+    const afterFirst = el.classList.contains('show');
+
+    dismissTrialBanner();
+    const afterDismiss = el.classList.contains('show');
+
+    maybeShowTrialBanner(data);          // same day — must stay away
+    const afterRetry = el.classList.contains('show');
+
+    // a later day is a fresh decision
+    try { localStorage.setItem('courtdraw_trial_notice_hidden', '1999-01-01'); } catch {}
+    maybeShowTrialBanner(data);
+    const afterNewDay = el.classList.contains('show');
+
+    return { afterFirst, afterDismiss, afterRetry, afterNewDay };
+  });
+  assert(r.afterFirst === true,  'banner should show first time');
+  assert(r.afterDismiss === false, 'dismiss should hide it');
+  assert(r.afterRetry === false, 'it must not come back the same day');
+  assert(r.afterNewDay === true, 'a new day should surface it again — the charge is closer, not further');
+});
+
+test('trial notice: is actually readable in all three layouts', async (page) => {
+  // The logic tests above all passed while this banner was rendering clipped
+  // underneath a fixed, full-bleed #board-area on mobile — they only asserted
+  // the `show` class. Mobile portrait and landscape are immersive layouts where
+  // the board is fixed and the header is translated off-screen, so a banner in
+  // normal flow ends up behind the court. This asserts it is really on top and
+  // really legible.
+  for (const [label, width, height] of [['portrait', 390, 844], ['landscape', 844, 390], ['desktop', 1280, 800]]) {
+    await page.setViewportSize({ width, height });
+    await page.goto(url('courtdraw-app.html'), { waitUntil: 'load' });
+    await page.waitForTimeout(1200);
+
+    const r = await page.evaluate(() => {
+      document.querySelectorAll('.modal-backdrop.open, #modal-welcome.open')
+        .forEach(m => m.classList.remove('open'));
+      try { localStorage.removeItem('courtdraw_trial_notice_hidden'); } catch {}
+      const soon = new Date(Date.now() + 2 * 86400000).toISOString();
+      maybeShowTrialBanner({ isTrialing: true, trialEndsAt: soon, plan: 'club',
+                             trialAmount: 9900, trialCurrency: 'EUR' });
+      const el = document.getElementById('trial-banner');
+      const box = el.getBoundingClientRect();
+      // whatever is painted at the banner's own position must be the banner
+      const probe = document.elementFromPoint(Math.round(box.left + 20),
+                                              Math.round(box.top + box.height / 2));
+      const btn = el.querySelector('.tb-btn').getBoundingClientRect();
+      return {
+        visible: box.height > 0 && box.width > 0,
+        onScreen: box.top >= 0 && box.bottom <= innerHeight,
+        clipped: el.scrollHeight > el.clientHeight + 1,
+        covered: !(probe && el.contains(probe)),
+        buttonReachable: btn.width > 0 && btn.right <= innerWidth + 1,
+        overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      };
+    });
+
+    assert(r.visible,  `${label}: banner should have a visible box`);
+    assert(r.onScreen, `${label}: banner should sit fully inside the viewport`);
+    assert(!r.clipped, `${label}: banner text is clipped — it would be unreadable`);
+    assert(!r.covered, `${label}: banner is painted underneath another element`);
+    assert(r.buttonReachable, `${label}: the Manage button must be reachable`);
+    assert(r.overflowX === 0, `${label}: banner must not push the page sideways`);
+  }
+});
+
 // ── Runner ───────────────────────────────────────────────────────────────
 
 const filter = process.argv[2];
