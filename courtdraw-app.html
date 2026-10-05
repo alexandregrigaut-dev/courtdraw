@@ -108,6 +108,47 @@ button {
   padding: env(safe-area-inset-top) 12px 0; gap: 8px;
   position: relative; z-index: 10;
 }
+#trial-banner {
+  display: none; align-items: center; gap: 10px;
+  background: var(--accent-dim); border-bottom: 1px solid var(--border);
+  padding: 8px 12px; font-size: 13px; line-height: 1.4; color: var(--text);
+  position: relative; z-index: 9;
+  flex: none;            /* body is a flex column — without this it gets squashed */
+}
+/* Mobile portrait and landscape are immersive layouts: #board-area is fixed and
+   covers the viewport, and in portrait the header is translateY(-100%) until
+   tapped. An in-flow banner would end up underneath the board in both. Float it
+   instead, above the chrome. It is dismissible and only appears in the last
+   three days of a trial, so a brief overlay is the right trade against someone
+   being charged with no warning. */
+body.portrait-mode #trial-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 21;
+  padding-top: calc(8px + env(safe-area-inset-top));
+  padding-left:  calc(12px + env(safe-area-inset-left));
+  padding-right: calc(12px + env(safe-area-inset-right));
+  background: rgba(29, 78, 216, 0.94);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+[data-theme="light"] body.portrait-mode #trial-banner {
+  background: rgba(239, 246, 255, 0.95);
+}
+#trial-banner.show { display: flex; }
+#trial-banner .tb-text { flex: 1; min-width: 0; }
+#trial-banner .tb-text strong { font-weight: 700; }
+#trial-banner .tb-btn {
+  flex: none; background: var(--accent); color: var(--bg); border: 0;
+  border-radius: var(--radius); padding: 6px 12px; font-size: 12.5px;
+  font-weight: 700; cursor: pointer; font-family: inherit;
+}
+#trial-banner .tb-x {
+  flex: none; background: none; border: 0; color: var(--text2);
+  font-size: 15px; line-height: 1; cursor: pointer; padding: 4px 2px;
+}
+#trial-banner .tb-x:hover { color: var(--text); }
+@media (max-width: 480px) {
+  #trial-banner { font-size: 12.5px; gap: 8px; padding: 7px 10px; }
+  #trial-banner .tb-btn { padding: 5px 10px; font-size: 12px; }
+}
 #logo-wrap { display: flex; align-items: center; gap: 8px; }
 #logo-svg { width: 28px; height: 28px; }
 .app-title {
@@ -1178,6 +1219,17 @@ body.presentation-mode #presentation-overlay { display: flex; }
   /* Compact chrome heights */
   :root { --header-h: 40px; --toolbar-h: 52px; --phase-bar-h: 34px; }
 
+  /* Same reasoning as portrait: the board is fixed and full-bleed here too. */
+  #trial-banner {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 21;
+    padding-top: calc(6px + env(safe-area-inset-top));
+    padding-left:  calc(12px + env(safe-area-inset-left));
+    padding-right: calc(12px + env(safe-area-inset-right));
+    background: rgba(29, 78, 216, 0.94);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  }
+  [data-theme="light"] #trial-banner { background: rgba(239, 246, 255, 0.95); }
+
   /* Court gets the full screen */
   #board-area {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -1798,6 +1850,15 @@ a.comm-author:hover { color: #93c5fd; text-decoration: underline; }
     <button id="pro-badge" class="free-badge" aria-label="Upgrade to Pro" onclick="openPaywall()">Upgrade ✦</button>
   </div>
 </header>
+
+<!-- Trial notice — only ever rendered for a signed-in user inside a trial.
+     trialEndsAt has been written to Firestore since the Stripe webhook was
+     built, but nothing read it, so a trial ended with no warning at all. -->
+<div id="trial-banner" role="status" aria-live="polite">
+  <span class="tb-text" id="trial-banner-text"></span>
+  <button class="tb-btn" type="button" onclick="openBillingPortal()">Manage</button>
+  <button class="tb-x" type="button" aria-label="Dismiss" onclick="dismissTrialBanner()">&#10005;</button>
+</div>
 
 <!-- Account dropdown -->
 <div id="account-menu" role="dialog" aria-label="Account">
@@ -5992,6 +6053,71 @@ function openProUpgradeModal() {
   openModal('modal-pro-upgrade');
 }
 
+// ══════════════════════════════════════════════
+// TRIAL NOTICE
+// Every failed payment on record was a first charge after a trial, and 92% of
+// the money lost was the annual Club charge landing unannounced. This shows the
+// date and the amount in the last stretch of the trial so it is not a surprise.
+// It renders only for a signed-in, trialing user, so it cannot touch the
+// anonymous first-run path.
+// ══════════════════════════════════════════════
+const TRIAL_NOTICE_WITHIN_DAYS = 3;   // stay quiet until the charge is close
+let _trialBannerDayKey = null;
+
+// Guards the ?billing=1 deep link: onAuthStateChanged can fire more than once
+// (token refresh, tab focus) and the portal must not open twice.
+let _billingDeepLinkHandled = false;
+
+// Minor units -> the customer's own currency. Returns null rather than guessing:
+// checkout bills in five currencies, and a wrong figure is worse than none.
+function formatTrialAmount(amount, currency) {
+  if (typeof amount !== 'number' || !currency) return null;
+  try {
+    const whole = amount % 100 === 0;
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency', currency,
+      minimumFractionDigits: whole ? 0 : 2,
+      maximumFractionDigits: whole ? 0 : 2
+    }).format(amount / 100);
+  } catch { return null; }   // unknown currency code — show no figure
+}
+
+function dismissTrialBanner() {
+  const el = document.getElementById('trial-banner');
+  if (el) el.classList.remove('show');
+  // Dismissal lasts the day, not forever: with the charge approaching, the
+  // reminder matters more each day, not less.
+  try {
+    if (_trialBannerDayKey) localStorage.setItem('courtdraw_trial_notice_hidden', _trialBannerDayKey);
+  } catch {}
+}
+
+function maybeShowTrialBanner(data) {
+  const el = document.getElementById('trial-banner');
+  if (!el || !data || !data.isTrialing || !data.trialEndsAt) return;
+
+  const endsAt = Date.parse(data.trialEndsAt);
+  if (!Number.isFinite(endsAt)) return;
+
+  const msLeft = endsAt - Date.now();
+  if (msLeft <= 0) return;                                  // trial already over
+  const daysLeft = Math.ceil(msLeft / 86400000);
+  if (daysLeft > TRIAL_NOTICE_WITHIN_DAYS) return;          // still early
+
+  _trialBannerDayKey = new Date().toISOString().slice(0, 10);
+  try {
+    if (localStorage.getItem('courtdraw_trial_notice_hidden') === _trialBannerDayKey) return;
+  } catch {}                                                 // storage blocked — show it anyway
+
+  const when     = daysLeft === 1 ? 'tomorrow' : `in ${daysLeft} days`;
+  const amount   = formatTrialAmount(data.trialAmount, data.trialCurrency);
+  const planName = data.plan === 'club' ? 'Club' : 'Pro';
+  document.getElementById('trial-banner-text').innerHTML = amount
+    ? `Your ${planName} trial ends <strong>${when}</strong>, then <strong>${amount}</strong> will be charged. Cancel before then and nothing is charged.`
+    : `Your ${planName} trial ends <strong>${when}</strong>. Cancel before then and nothing is charged.`;
+  el.classList.add('show');
+}
+
 async function openBillingPortal() {
   const user = window.__currentUser;
   if (!user) { openPaywall(null, 'billing_signed_out'); return; }
@@ -8931,6 +9057,19 @@ document.addEventListener('DOMContentLoaded', init);
       if (myGen !== _authGen) return; // guard again after inner club fetch
       if (typeof window.__updatePro === 'function')
         window.__updatePro(isPro, isClub, data.clubId || null, data.clubName || data.clubId || '', isClubOwner, clubLogoUrl, teamColorA, teamColorB);
+
+      // Trial notice — after __updatePro, which sets the plan state the
+      // banner's Manage button depends on.
+      if (typeof maybeShowTrialBanner === 'function') maybeShowTrialBanner(data);
+
+      // ?billing=1 — where the failed-payment email lands. Open the portal once
+      // auth and plan state have resolved, then strip the parameter so a refresh
+      // or back-navigation cannot fire it again.
+      if (!_billingDeepLinkHandled && new URLSearchParams(location.search).get('billing') === '1') {
+        _billingDeepLinkHandled = true;
+        history.replaceState(null, '', location.pathname);
+        if (typeof openBillingPortal === 'function') openBillingPortal();
+      }
     } catch {
       // Firestore unavailable — keep localStorage state as fallback
       // Still show logged-in state even if Firestore is unreachable

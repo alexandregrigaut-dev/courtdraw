@@ -238,7 +238,10 @@ const templates = {
       title: 'We could not process your payment',
       body: `Your Pro access is at risk. Please update your billing details to keep everything running — it only takes a moment.`,
       ctaText: 'Update billing',
-      ctaUrl: `${APP_URL}/courtdraw-app.html`,
+      // ?billing=1 opens the Stripe billing portal as soon as auth resolves.
+      // Without it this button landed on the tactics board and left someone
+      // whose card had just declined to find the account menu unaided.
+      ctaUrl: `${APP_URL}/courtdraw-app.html?billing=1`,
       footerNote: "You're receiving this because of a billing issue on your CourtDraw account."
     };
     return buildEmail(email, 'CourtDraw — payment could not be processed', data);
