@@ -26,6 +26,8 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
+const { remainingBulkBudget, recordBulkSend } = require('./_email-budget');
+
 const DRIP_DAYS = [2, 5, 10];
 const DAY_MS    = 24 * 60 * 60 * 1000;
 const WINDOW_MS = 12 * 60 * 60 * 1000; // ±12h tolerance so a run slightly early/late still fires
@@ -48,6 +50,13 @@ exports.handler = async () => {
   const now = Date.now();
   let processed = 0, sent = 0, skipped = 0;
 
+  // Drip is time-critical: a user only matches day 2/5/10 within a +/-12h
+  // window, so a send skipped for want of budget is missed permanently, not
+  // deferred. It therefore takes what the digest left rather than a cap of its
+  // own, and the digest is held below the budget to keep that room free.
+  let budget = await remainingBulkBudget(db);
+  if (budget <= 0) console.warn('Drip run: no bulk budget left today — drips in window will be missed.');
+
   try {
     // Paginate through all Firebase Auth users
     let pageToken;
@@ -56,6 +65,7 @@ exports.handler = async () => {
       pageToken = result.pageToken;
 
       for (const user of result.users) {
+        if (budget <= 0) { skipped++; continue; }
         if (!user.email) continue; // no email — can't send
         processed++;
 
@@ -91,7 +101,8 @@ exports.handler = async () => {
             { dripEmailsSent: [...dripEmailsSent, matchDay] },
             { merge: true }
           );
-          sent++;
+          sent++; budget--;
+          await recordBulkSend(db);
           console.log(`Sent ${template} to ${user.email}`);
         } catch (e) {
           console.error(`Failed to send ${template} to ${user.email}:`, e.message);
@@ -102,6 +113,7 @@ exports.handler = async () => {
     // ── Anonymous email captures (tutorial_complete) ──────────────────────────
     const anonSnap = await db.collection('anonEmails').get();
     for (const doc of anonSnap.docs) {
+      if (budget <= 0) { skipped++; continue; }
       const data = doc.data();
       if (!data.email || !data.capturedAt) { skipped++; continue; }
       if (data.unsubscribed) { skipped++; continue; }
@@ -119,7 +131,8 @@ exports.handler = async () => {
       try {
         await sendDrip(data.email, template);
         await doc.ref.set({ dripEmailsSent: [...dripEmailsSent, matchDay] }, { merge: true });
-        sent++;
+        sent++; budget--;
+        await recordBulkSend(db);
         console.log(`Sent ${template} (anon) to ${data.email}`);
       } catch (e) {
         console.error(`Failed to send ${template} (anon) to ${data.email}:`, e.message);

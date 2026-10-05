@@ -7,10 +7,17 @@
 [functions."drip-emails"]
   schedule = "0 9 * * *"
 
-# R-3 — Weekly digest: runs every Monday at 08:00 UTC
+# R-3 — Weekly digest: runs DAILY at 08:00 UTC, not just Mondays.
+# Each user still receives at most one digest per ISO week — weeklyDigestSentWeek
+# gates that. The daily schedule exists so the send can spread over consecutive
+# days instead of firing every digest in one minute on Monday, which consumed
+# almost the whole Resend daily cap (100/day on the free plan) and left nothing
+# for password resets and Stripe lifecycle mail. See netlify/functions/_email-budget.js.
+# Monday sends up to DIGEST_PER_RUN, the remainder goes on Tuesday, and the rest
+# of the week no-ops.
 # Sends personalised play recap to Pro/Club users; re-engagement nudge to free users
 [functions."weekly-digest"]
-  schedule = "0 8 * * 1"
+  schedule = "0 8 * * *"
 
 # R-4 — Re-engagement emails: runs daily at 10:00 UTC (offset from drip-emails)
 # Email 1: zero session plans after 7 days (plan-aware copy)

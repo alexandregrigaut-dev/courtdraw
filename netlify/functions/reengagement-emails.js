@@ -43,6 +43,8 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
+const { remainingBulkBudget, recordBulkSend } = require('./_email-budget');
+
 const DAY_MS    = 24 * 60 * 60 * 1000;
 const MIN_AGE   = 7 * DAY_MS;   // account must be at least 7 days old
 const STAGGER   = DAY_MS;       // minimum gap between Email 2 → Email 1
@@ -67,6 +69,11 @@ async function sendEmail(email, template, isPaid) {
 exports.handler = async () => {
   const now = Date.now();
   let processed = 0, sent = 0, skipped = 0;
+
+  // Send-once per user, so a skipped send is deferred rather than lost — but it
+  // still draws on the shared bulk budget alongside the digest and the drips.
+  let budget = await remainingBulkBudget(db);
+  if (budget <= 0) console.warn('[reengagement] no bulk budget left today, deferring to tomorrow.');
 
   const log = (msg) => console.log(`[reengagement] ${msg}`);
 
@@ -95,6 +102,7 @@ exports.handler = async () => {
           skipped++; continue;
         }
 
+        if (budget <= 0) { skipped++; continue; }
         if (userData.unsubscribed) { skipped++; continue; }
 
         const plan   = userData.plan || 'free';
@@ -124,7 +132,8 @@ exports.handler = async () => {
               emailSentZeroPlaysSentAt: now,
               emailSentZeroPlaysplan: plan  // plan tier at send time
             }, { merge: true });
-            sent++;
+            sent++; budget--;
+            await recordBulkSend(db);
             sentAnything = true;
             log(`Sent reengageZeroPlays (${plan}) to ${user.email}`);
           } catch (e) {
@@ -150,7 +159,8 @@ exports.handler = async () => {
                 emailSentEmptySessionsSentAt: now,
                 emailSentEmptySessionsPlan: plan  // plan tier at send time
               }, { merge: true });
-              sent++;
+              sent++; budget--;
+              await recordBulkSend(db);
               log(`Sent ${template} to ${user.email}`);
             } catch (e) {
               console.error(`Failed ${template} for ${user.email}:`, e.message);
