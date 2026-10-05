@@ -127,6 +127,68 @@ exports.handler = async (event) => {
     }
   }
 
+  // ── customer.subscription.trial_will_end ───────────────────────────────────
+  // Fires 3 days before trial_end. This exists because Stripe's own trial
+  // reminder is fixed at 7 days before the trial ends and our trial IS 7 days,
+  // so that reminder lands on signup day and warns nobody. Every failed payment
+  // on record was a first charge after a trial, and 92% of the money lost was
+  // the annual Club charge arriving unannounced — this is the warning that
+  // actually arrives in time to do something about it.
+  if (stripeEvent.type === 'customer.subscription.trial_will_end') {
+    const sub = stripeEvent.data.object;
+
+    // Already cancelled — no charge is coming, so warning about one would be
+    // both wrong and alarming.
+    if (sub.cancel_at_period_end === true) {
+      return { statusCode: 200, body: JSON.stringify({ received: true, skipped: 'cancelling' }) };
+    }
+
+    const snap = await db.collection('users')
+      .where('stripeCustomerId', '==', sub.customer)
+      .limit(1)
+      .get();
+
+    if (!snap.empty && sub.trial_end) {
+      const userData = snap.docs[0].data();
+      const userEmail = userData.email;
+
+      // Stripe explicitly re-delivers events on retry. Keying the guard on this
+      // trial's end date rather than a bare boolean means a re-delivery is
+      // skipped while a genuinely new trial later still gets its warning.
+      const alreadySent = userData.trialWillEndSentFor === sub.trial_end;
+
+      if (userEmail && !alreadySent) {
+        const plan     = userData.plan || 'pro';
+        const planName = plan === 'club' ? 'Club' : 'Pro';
+        const endDate  = new Date(sub.trial_end * 1000)
+          .toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        // Read the real price off the subscription. Checkout bills in five
+        // currencies, so an assumed figure could name an amount this customer
+        // will never be charged; an empty string makes the template omit it.
+        let amountText = '';
+        const price = sub.items && sub.items.data && sub.items.data[0] && sub.items.data[0].price;
+        if (price && typeof price.unit_amount === 'number' && price.currency) {
+          try {
+            const whole = price.unit_amount % 100 === 0;
+            amountText = new Intl.NumberFormat('en-GB', {
+              style: 'currency',
+              currency: price.currency.toUpperCase(),
+              minimumFractionDigits: whole ? 0 : 2,
+              maximumFractionDigits: whole ? 0 : 2
+            }).format(price.unit_amount / 100);
+          } catch (e) {
+            amountText = '';   // unrecognised currency — warn without a figure
+          }
+        }
+
+        // Key order matters: send-email spreads templateData positionally.
+        await sendEmail('trialEndingSoon', userEmail, { endDate, amountText, planName });
+        await snap.docs[0].ref.update({ trialWillEndSentFor: sub.trial_end });
+      }
+    }
+  }
+
   // ── customer.subscription.updated ──────────────────────────────────────────
   if (stripeEvent.type === 'customer.subscription.updated') {
     const sub  = stripeEvent.data.object;
