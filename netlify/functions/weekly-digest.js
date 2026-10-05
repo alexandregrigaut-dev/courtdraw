@@ -1,6 +1,10 @@
 /**
  * weekly-digest.js — Netlify Scheduled Function
- * Runs every Monday at 08:00 UTC.
+ * Runs daily at 08:00 UTC, but each user receives at most one digest per ISO
+ * week (weeklyDigestSentWeek). Monday sends up to DIGEST_PER_RUN; anyone left
+ * over is picked up on the following days and the run then no-ops for the rest
+ * of the week. This replaced a Monday-only run that fired every digest at once
+ * and consumed almost the whole Resend daily cap in a single minute.
  *
  * For each user with an email address:
  *   Pro/Club  → personalised digest (plays saved last week, spotlight, stale-sport nudge)
@@ -25,6 +29,8 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
+
+const { remainingBulkBudget, recordBulkSend, DIGEST_PER_RUN } = require('./_email-budget');
 
 const DAY_MS  = 24 * 60 * 60 * 1000;
 const WEEK_MS = 7 * DAY_MS;
@@ -61,6 +67,15 @@ exports.handler = async () => {
 
   let processed = 0, sent = 0, skipped = 0;
 
+  // Cap this run at whichever is smaller: the digest's own per-run cap, or what
+  // is left of today's shared bulk budget. Users not reached today keep their
+  // weeklyDigestSentWeek unset and are picked up by tomorrow's run.
+  const allowance = Math.min(DIGEST_PER_RUN, await remainingBulkBudget(db));
+  if (allowance <= 0) {
+    console.log('Weekly digest: no bulk budget left today, deferring to tomorrow.');
+    return { statusCode: 200, body: JSON.stringify({ processed, sent, skipped, deferred: true }) };
+  }
+
   try {
     let pageToken;
     do {
@@ -68,6 +83,7 @@ exports.handler = async () => {
       pageToken = result.pageToken;
 
       for (const user of result.users) {
+        if (sent >= allowance) { skipped++; continue; }
         if (!user.email) { skipped++; continue; }
         processed++;
 
@@ -141,6 +157,7 @@ exports.handler = async () => {
             { merge: true }
           );
           sent++;
+          await recordBulkSend(db);
           console.log(`Sent ${template} to ${user.email}`);
         } catch (e) {
           console.error(`Failed to send digest to ${user.email}:`, e.message);
@@ -148,7 +165,7 @@ exports.handler = async () => {
       }
     } while (pageToken);
 
-    console.log(`Weekly digest complete. Processed: ${processed}, Sent: ${sent}, Skipped: ${skipped}`);
+    console.log(`Weekly digest complete. Processed: ${processed}, Sent: ${sent}, Skipped: ${skipped}, Allowance: ${allowance}`);
     return { statusCode: 200, body: JSON.stringify({ processed, sent, skipped }) };
   } catch (err) {
     console.error('Weekly digest error:', err.message);
