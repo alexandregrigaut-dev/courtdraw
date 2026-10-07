@@ -4,7 +4,7 @@
   "private": true,
   "description": "CourtDraw — browser tactics board for 38+ sports. Static site; this manifest exists only to expose the test script.",
   "scripts": {
-    "test": "node tests/email-budget.mjs && node tests/trial-reminder.mjs && node tests/smoke.mjs",
+    "test": "node tests/email-budget.mjs && node tests/trial-reminder.mjs && node tests/dunning.mjs && node tests/smoke.mjs",
     "test:unit": "node tests/email-budget.mjs && node tests/trial-reminder.mjs",
     "test:browser": "node tests/smoke.mjs"
   }
