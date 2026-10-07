@@ -558,6 +558,53 @@ test('trial notice: is actually readable in all three layouts', async (page) => 
   }
 });
 
+test('paywall: leads with the limit people actually hit', async (page) => {
+  await page.goto(url('courtdraw-app.html'), { waitUntil: 'load' });
+  await page.waitForTimeout(1200);
+  const r = await page.evaluate(() => {
+    document.querySelectorAll('.modal-backdrop.open, #modal-welcome.open').forEach(m => m.classList.remove('open'));
+    openPaywall('test', 'locked_court');
+    const cells = [...document.querySelectorAll('.pw-grid .pw-cell')];
+    const first = cells[0];
+    return {
+      count: cells.length,
+      flagship: first.querySelector('.pw-feat').textContent.trim(),
+      flagshipFullWidth: (first.getAttribute('style') || '').includes('1/-1'),
+      order: cells.map(c => c.querySelector('.pw-feat').textContent.trim()),
+    };
+  });
+  assert(r.count >= 6, `paywall should list the Pro features, got ${r.count} cells`);
+  assert(/38\+?\s*sports|courts/i.test(r.flagship),
+    `the headline slot should be the locked-court limit, got "${r.flagship}"`);
+  assert(r.flagshipFullWidth, 'the headline cell should span the grid');
+  // Publishing is the Pro feature with no recorded use — it must not reclaim
+  // the headline slot just because it is the one we most want to talk about.
+  assert(!/publish/i.test(r.flagship), `publishing should not be the headline, got "${r.flagship}"`);
+});
+
+test('paywall: never sells a free feature as Pro', async (page) => {
+  // Browsing and saving from the Community Library is free. This claim has
+  // already been shipped twice by mistake — once on the library badge, once in
+  // the paywall grid — so it gets a standing guard rather than another fix.
+  await page.goto(url('courtdraw-app.html'), { waitUntil: 'load' });
+  await page.waitForTimeout(1200);
+  const offenders = await page.evaluate(() => {
+    document.querySelectorAll('.modal-backdrop.open, #modal-welcome.open').forEach(m => m.classList.remove('open'));
+    openPaywall('test', 'locked_court');
+    // Read each field separately: textContent glues the divs together with no
+    // separator ("libraryBrowse"), which silently defeats a \b word boundary.
+    const fields = [];
+    for (const c of document.querySelectorAll('.pw-grid .pw-cell')) {
+      for (const el of c.querySelectorAll('.pw-feat, .pw-feat-sub')) {
+        fields.push(el.textContent.replace(/\s+/g, ' ').trim());
+      }
+    }
+    return fields.filter(t => /browse|browsing/i.test(t));
+  });
+  assert(offenders.length === 0,
+    `no Pro cell may advertise browsing, which is free: ${JSON.stringify(offenders)}`);
+});
+
 // ── Runner ───────────────────────────────────────────────────────────────
 
 const filter = process.argv[2];
