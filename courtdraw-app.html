@@ -31,6 +31,15 @@
   </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>CourtDraw — Tactics Board for Coaches | 38+ Sports</title>
+<meta name="robots" content="noindex">
+<!-- noindex: the app itself is not a search result — someone arriving cold
+     should land on the marketing page, which explains what this is, not on a
+     blank tactics board. It was previously only Disallowed in robots.txt,
+     which stops the crawl but not the indexing: a URL blocked that way can
+     still be listed from inbound links alone, as a bare link with no
+     description, and the app is linked from every page on the site. A noindex
+     on a crawlable page is the mechanism that actually removes it, so the
+     matching Disallow lines have been dropped from robots.txt. -->
 <meta name="description" content="Free tactics board for coaches. Draw, animate and share plays for 38+ sports including handball, football, basketball, hockey and more. Works on any device.">
 <meta name="robots" content="index, follow">
 <meta name="keywords" content="tactics board, coaching app, sports tactics, handball tactics, football tactics, basketball tactics, hockey tactics, coach tools, play drawing">
