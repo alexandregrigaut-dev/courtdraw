@@ -256,20 +256,76 @@ const templates = {
     return buildEmail(email, `Your CourtDraw ${planName} trial ends in 3 days`, data);
   },
 
-  paymentFailed: (email) => {
+  // ─── Dunning ────────────────────────────────────────────────────────────────
+  // Three sends come out of one failing invoice: a notice on Stripe's second
+  // and third attempts (differing by the retry date they name) and a final
+  // notice once Stripe has stopped retrying. A middle template would only
+  // repeat the notice, so there are two templates rather than three.
+  //
+  // Both name the plan from the user record. This used to be hardcoded to
+  // "Pro" — and the great majority of revenue lost to failed payments has
+  // been the €99 Club renewal, so the mail warning the highest-value
+  // customers that their money was at risk named the wrong plan.
+  //
+  // Both also name the real amount. "Your €99 Club renewal did not go
+  // through" is a sentence someone acts on; "your payment failed" is not.
+
+  paymentFailed: (email, planName = 'Pro', amountText = '', retryDate = '') => {
+    const amount = amountText ? `${amountText} ` : '';
+    const nextTry = retryDate
+      ? `We'll try again automatically on <strong>${retryDate}</strong>.`
+      : `We'll try the card again automatically over the next few days.`;
     const data = {
       label: 'Payment failed',
       labelColor: '#ef4444',
-      title: 'We could not process your payment',
-      body: `Your Pro access is at risk. Please update your billing details to keep everything running — it only takes a moment.`,
-      ctaText: 'Update billing',
+      title: `We could not take your ${planName} payment`,
+      body: `Your ${amount}${planName} renewal did not go through. That is usually an expired card or a bank limit rather than anything you did.<br><br>
+             ${nextTry} If the card on file is out of date, updating it now is the quickest way to keep your account running.`,
+      ctaText: 'Update card',
       // ?billing=1 opens the Stripe billing portal as soon as auth resolves.
       // Without it this button landed on the tactics board and left someone
       // whose card had just declined to find the account menu unaided.
       ctaUrl: `${APP_URL}/courtdraw-app.html?billing=1`,
       footerNote: "You're receiving this because of a billing issue on your CourtDraw account."
     };
-    return buildEmail(email, 'CourtDraw — payment could not be processed', data);
+    return buildEmail(email, `CourtDraw — your ${planName} payment did not go through`, data);
+  },
+
+  paymentFailedFinal: (email, planName = 'Pro', amountText = '') => {
+    const amount = amountText ? `${amountText} ` : '';
+    const data = {
+      label: 'Final notice',
+      labelColor: '#dc2626',
+      title: 'Last attempt — the card was declined again',
+      body: `That was the final automatic attempt at your ${amount}${planName} renewal, so no further retries are scheduled.<br><br>
+             Your account will drop to the Free plan, which keeps one court and three saved tactics. <strong>Every play you have saved stays exactly where it is</strong> — putting a working card on file restores full access straight away, and nothing is lost in the meantime.`,
+      ctaText: 'Update card and keep access',
+      ctaUrl: `${APP_URL}/courtdraw-app.html?billing=1`,
+      footerNote: "You're receiving this because the last payment on your CourtDraw account could not be collected."
+    };
+    return buildEmail(email, `Action needed — your CourtDraw ${planName} access is about to end`, data);
+  },
+
+  // Sent instead of 'cancellation' when Stripe ended the subscription itself
+  // because the card kept failing. That is not a goodbye: the coach most
+  // likely still wants the product and has a dead card, so the mail says what
+  // actually happened rather than "sorry to see you go".
+  //
+  // The CTA goes to pricing, not the billing portal: Stripe has deleted the
+  // subscription by this point, so there is nothing left in the portal to
+  // update — they genuinely have to subscribe again.
+  reactivateAfterFailure: (email, planName = 'Pro') => {
+    const data = {
+      label: 'Access paused',
+      labelColor: '#f59e0b',
+      title: 'Your plan has paused — the renewal could not be collected',
+      body: `Your CourtDraw ${planName} subscription has ended because the renewal payment could not be taken, not because you cancelled.<br><br>
+             Your account is on the Free plan for now: one court and three saved tactics. <strong>All of your saved plays are untouched</strong> and come straight back as soon as there is a working card on file.`,
+      ctaText: `Restore ${planName}`,
+      ctaUrl: `${APP_URL}/#pricing`,
+      footerNote: "You're receiving this because your CourtDraw subscription ended after a failed payment."
+    };
+    return buildEmail(email, `Your CourtDraw ${planName} has paused — how to restore it`, data);
   },
 
   cancellation: (email) => {

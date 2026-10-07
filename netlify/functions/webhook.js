@@ -37,6 +37,40 @@ async function sendEmail(template, email, templateData) {
   });
 }
 
+// ─── Shared formatting ────────────────────────────────────────────────────────
+// Checkout bills in five currencies, so an assumed figure could name an amount
+// the customer will never be charged. These return '' rather than guessing, and
+// every template that takes an amount or a date omits it when handed ''.
+
+function formatMoney(unitAmount, currency) {
+  if (typeof unitAmount !== 'number' || !currency) return '';
+  try {
+    const whole = unitAmount % 100 === 0;
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: String(currency).toUpperCase(),
+      minimumFractionDigits: whole ? 0 : 2,
+      maximumFractionDigits: whole ? 0 : 2
+    }).format(unitAmount / 100);
+  } catch (e) {
+    return '';   // unrecognised currency — say it without a figure
+  }
+}
+
+function formatDate(unixSeconds) {
+  if (!unixSeconds) return '';
+  try {
+    return new Date(unixSeconds * 1000)
+      .toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  } catch (e) {
+    return '';
+  }
+}
+
+function planLabel(plan) {
+  return plan === 'club' ? 'Club' : 'Pro';
+}
+
 exports.handler = async (event) => {
   const sig = event.headers['stripe-signature'];
   let stripeEvent;
@@ -158,29 +192,12 @@ exports.handler = async (event) => {
       const alreadySent = userData.trialWillEndSentFor === sub.trial_end;
 
       if (userEmail && !alreadySent) {
-        const plan     = userData.plan || 'pro';
-        const planName = plan === 'club' ? 'Club' : 'Pro';
-        const endDate  = new Date(sub.trial_end * 1000)
-          .toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+        const planName = planLabel(userData.plan || 'pro');
+        const endDate  = formatDate(sub.trial_end);
 
-        // Read the real price off the subscription. Checkout bills in five
-        // currencies, so an assumed figure could name an amount this customer
-        // will never be charged; an empty string makes the template omit it.
-        let amountText = '';
+        // Read the real price off the subscription rather than assuming it.
         const price = sub.items && sub.items.data && sub.items.data[0] && sub.items.data[0].price;
-        if (price && typeof price.unit_amount === 'number' && price.currency) {
-          try {
-            const whole = price.unit_amount % 100 === 0;
-            amountText = new Intl.NumberFormat('en-GB', {
-              style: 'currency',
-              currency: price.currency.toUpperCase(),
-              minimumFractionDigits: whole ? 0 : 2,
-              maximumFractionDigits: whole ? 0 : 2
-            }).format(price.unit_amount / 100);
-          } catch (e) {
-            amountText = '';   // unrecognised currency — warn without a figure
-          }
-        }
+        const amountText = price ? formatMoney(price.unit_amount, price.currency) : '';
 
         // Key order matters: send-email spreads templateData positionally.
         await sendEmail('trialEndingSoon', userEmail, { endDate, amountText, planName });
@@ -245,20 +262,38 @@ exports.handler = async (event) => {
   // Fires when a subscription ends — whether by cancellation, payment failure
   // exhaustion, or trial ending without a successful charge. Always revoke access.
   if (stripeEvent.type === 'customer.subscription.deleted') {
-    const customerId = stripeEvent.data.object.customer;
+    const sub = stripeEvent.data.object;
+    const customerId = sub.customer;
     const snap = await db.collection('users')
       .where('stripeCustomerId', '==', customerId)
       .limit(1)
       .get();
     if (!snap.empty) {
       const userDoc = snap.docs[0];
+      // Captured before the update below, which sets plan to 'free'.
+      const userData = userDoc.data();
       await userDoc.ref.update({
         plan:        'free',
         isTrialing:  false,
         cancelledAt: new Date().toISOString()
       });
-      const userEmail = userDoc.data().email;
-      if (userEmail) await sendEmail('cancellation', userEmail);
+      const userEmail = userData.email;
+      if (userEmail) {
+        // A subscription Stripe ended itself because the card kept failing is
+        // not a goodbye. That coach most likely still wants the product and
+        // has a dead card, so sending the same "sorry to see you go" mail is
+        // how recoverable revenue gets written off. Read off Stripe's own
+        // stated reason; anything else (including a missing reason) keeps the
+        // existing voluntary mail, so an unknown reason cannot regress.
+        const reason = (sub.cancellation_details && sub.cancellation_details.reason) || null;
+        const involuntary = reason === 'payment_failed' || reason === 'payment_disputed';
+        if (involuntary) {
+          // planLabel reads the plan captured before the downgrade above.
+          await sendEmail('reactivateAfterFailure', userEmail, { planName: planLabel(userData.plan) });
+        } else {
+          await sendEmail('cancellation', userEmail);
+        }
+      }
     }
   }
 
@@ -274,13 +309,56 @@ exports.handler = async (event) => {
   // This also covers the trial → paid conversion failure: the first post-trial
   // invoice has billing_reason 'subscription_cycle' (not 'subscription_create'),
   // so it passes the isFirstInvoice check and follows the retry/alert path.
+  //
+  // Smart Retries makes several attempts over about five days. Every one of
+  // them used to fire the identical mail, so the final notice — the one before
+  // the subscription is cancelled, when someone is most willing to go and find
+  // their card — read exactly like the first. It now escalates.
   if (stripeEvent.type === 'invoice.payment_failed') {
     const invoice = stripeEvent.data.object;
     const isFirstInvoice = invoice.billing_reason === 'subscription_create';
     const attemptCount   = invoice.attempt_count || 1;
+
     if (!isFirstInvoice && attemptCount >= 2) {
-      const email = invoice.customer_email;
-      if (email) await sendEmail('paymentFailed', email);
+      // Stripe states whether it intends to try again. Keying the final notice
+      // on next_payment_attempt being empty, rather than on a hardcoded attempt
+      // number, means the retry schedule can be changed in the dashboard
+      // without this sending "last attempt" too early or never sending it.
+      const retryTs = invoice.next_payment_attempt || null;
+      const stage   = retryTs ? 'notice' : 'final';
+
+      const snap = await db.collection('users')
+        .where('stripeCustomerId', '==', invoice.customer)
+        .limit(1)
+        .get();
+
+      const userDoc  = snap.empty ? null : snap.docs[0];
+      const userData = userDoc ? userDoc.data() : {};
+
+      // Prefer the account's own address. Every other handler here mails the
+      // user record, and the two can differ when checkout was completed with a
+      // different address than the account was opened with.
+      const email = userData.email || invoice.customer_email;
+
+      // Dedupe on the attempt, not the invoice: Stripe re-delivers events, but
+      // a genuinely later attempt on the same invoice must still escalate.
+      // A customer with no matching account (nothing to write to) keeps the
+      // old behaviour of no dedupe at all rather than losing the warning.
+      const sentKey     = `${invoice.id || 'unknown'}:${stage}:${attemptCount}`;
+      const alreadySent = userData.dunningSentFor === sentKey;
+
+      if (email && !alreadySent) {
+        const planName   = planLabel(userData.plan);
+        const amountText = formatMoney(invoice.amount_due, invoice.currency);
+
+        // Key order matters: send-email spreads templateData positionally.
+        if (stage === 'final') {
+          await sendEmail('paymentFailedFinal', email, { planName, amountText });
+        } else {
+          await sendEmail('paymentFailed', email, { planName, amountText, retryDate: formatDate(retryTs) });
+        }
+        if (userDoc) await userDoc.ref.update({ dunningSentFor: sentKey });
+      }
     }
   }
 
