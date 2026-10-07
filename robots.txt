@@ -5,12 +5,8 @@ Allow: /
 Disallow: /api/
 Disallow: /.netlify/
 
-# Block the app itself — a large single-page app, not a search result.
-Disallow: /app
-Disallow: /courtdraw-app.html
-
-# login, success, club-admin and join-club are deliberately NOT listed here.
-# They each carry <meta name="robots" content="noindex">, and a noindex tag
+# The app, login, success, club-admin and join-club are deliberately NOT listed
+# here. They each carry <meta name="robots" content="noindex">, and a noindex tag
 # only works on a page the crawler is allowed to fetch: blocking a URL in
 # robots.txt means Googlebot never loads the HTML, never sees the tag, and the
 # URL can still be indexed on the strength of inbound links alone — the exact
