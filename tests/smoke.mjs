@@ -605,6 +605,59 @@ test('paywall: never sells a free feature as Pro', async (page) => {
     `no Pro cell may advertise browsing, which is free: ${JSON.stringify(offenders)}`);
 });
 
+test('seo: no page is told noindex and then blocked from being read', async () => {
+  // A noindex tag only works on a page the crawler is allowed to fetch. Block
+  // the URL in robots.txt as well and Googlebot never loads the HTML, never
+  // sees the tag, and the URL can still be indexed from inbound links alone —
+  // the exact outcome the noindex was added to prevent. The two mechanisms
+  // look complementary and cancel out, so this guards the combination.
+  const fs = await import('node:fs');
+  const robots = fs.readFileSync(path.join(ROOT, 'robots.txt'), 'utf8');
+  const disallowed = robots.split('\n')
+    .map(l => l.trim())
+    .filter(l => l.toLowerCase().startsWith('disallow:'))
+    .map(l => l.slice('disallow:'.length).trim())
+    .filter(Boolean);
+
+  const conflicts = [];
+  for (const file of fs.readdirSync(ROOT).filter(f => f.endsWith('.html'))) {
+    const html = fs.readFileSync(path.join(ROOT, file), 'utf8');
+    if (!/<meta\s+name=["']robots["']\s+content=["'][^"']*noindex/i.test(html)) continue;
+    for (const rule of disallowed) {
+      // robots.txt matches by prefix
+      if (`/${file}`.startsWith(rule) || `/${file.replace(/\.html$/, '')}`.startsWith(rule)) {
+        conflicts.push(`${file} is noindex but robots.txt disallows "${rule}"`);
+      }
+    }
+  }
+  assert(conflicts.length === 0,
+    `noindex cannot work on a page robots.txt blocks:\n  ${conflicts.join('\n  ')}`);
+});
+
+test('seo: the sitemap never advertises a page we tell Google to drop', async () => {
+  // Submitting a URL that answers with noindex is a contradiction Search
+  // Console reports back as an error, and it spends crawl budget to do it.
+  const fs = await import('node:fs');
+  const sitemap = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
+  const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
+  assert(locs.length > 0, 'sitemap should not be empty');
+
+  const bad = [];
+  for (const loc of locs) {
+    const rel = loc.replace(/^https?:\/\/[^/]+/, '').replace(/^\//, '');
+    for (const candidate of [rel, `${rel}index.html`, `${rel.replace(/\/$/, '')}.html`]) {
+      const abs = path.join(ROOT, candidate);
+      if (!candidate || !fs.existsSync(abs) || fs.statSync(abs).isDirectory()) continue;
+      const html = fs.readFileSync(abs, 'utf8');
+      if (/<meta\s+name=["']robots["']\s+content=["'][^"']*noindex/i.test(html)) {
+        bad.push(`${loc} resolves to ${candidate}, which is noindex`);
+      }
+      break;
+    }
+  }
+  assert(bad.length === 0, `sitemap lists noindexed pages:\n  ${bad.join('\n  ')}`);
+});
+
 // ── Runner ───────────────────────────────────────────────────────────────
 
 const filter = process.argv[2];
