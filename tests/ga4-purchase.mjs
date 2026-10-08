@@ -135,7 +135,7 @@ for (const level of ['log', 'warn', 'error']) {
 }
 
 const { handler } = require(path.join(ROOT, 'netlify/functions/webhook.js'));
-const { isValidClientId, sendGa4Event, debugEnabled } = require(path.join(ROOT, 'netlify/functions/_ga4.js'));
+const { isValidClientId, sendGa4Event, debugEnabled, VALIDATION_DOC } = require(path.join(ROOT, 'netlify/functions/_ga4.js'));
 
 // Price ids have to exist before create-checkout-session is loaded: its lookup
 // tables are built at module scope from these.
@@ -311,6 +311,22 @@ test('sendGa4Event reports success only when GA4 accepted it', async () => {
 
 const hasLine = (re) => logLines.some(l => re.test(l));
 
+/** Minimal Firestore double: records what the verdict document was set to. */
+function makeVerdictDb({ failWrite = false } = {}) {
+  const writes = [];
+  return {
+    writes,
+    collection: (col) => ({
+      doc: (id) => ({
+        async set(data) {
+          if (failWrite) throw new Error('simulated Firestore failure');
+          writes.push({ path: `${col}/${id}`, data });
+        },
+      }),
+    }),
+  };
+}
+
 test('debug mode is off unless switched on', async () => {
   resetWorld();
   await sendGa4Event('1234567890.1234567890', 'purchase', { value: 1 });
@@ -367,6 +383,72 @@ test('a rejected payload names the field and the reason', async () => {
   assert(hasLine(/Invalid value type/), 'it must carry GA4\'s own description');
   assert(hasLine(/VALUE_INVALID/), 'and the validation code, which is what the docs index on');
   assert(!hasLine(/validated clean/i), 'it must not also claim the payload was clean');
+});
+
+test('the verdict is recorded where it outlives the logs', async () => {
+  // Netlify keeps function logs for 24 hours. The event this diagnoses fires
+  // seven days after a signup, at a time nobody chooses, so a log line alone
+  // would mean watching daily for a week and still being able to miss it.
+  resetWorld();
+  process.env.GA4_DEBUG = '1';
+  const db = makeVerdictDb();
+  await sendGa4Event('1234567890.1234567890', 'purchase', { value: 99 }, db);
+
+  assert(db.writes.length === 1, `expected one verdict written, got ${db.writes.length}`);
+  const { path: docPath, data } = db.writes[0];
+  assert(docPath === `${VALIDATION_DOC[0]}/${VALIDATION_DOC[1]}`,
+    `wrong document: ${docPath}`);
+  assert(data.ok === true, 'a clean payload should be recorded as such');
+  assert(Array.isArray(data.messages) && data.messages.length === 0, 'with no messages');
+  assert(typeof data.at === 'string' && data.at.includes('T'), 'and a timestamp to date it');
+});
+
+test('a rejection is recorded with the reason and the payload that caused it', async () => {
+  // Without the payload, diagnosing it a week later means reproducing it first.
+  resetWorld();
+  process.env.GA4_DEBUG = '1';
+  validationMessages = [{ fieldPath: 'events[0].params.value', description: 'Invalid value type' }];
+  const db = makeVerdictDb();
+  await sendGa4Event('1234567890.1234567890', 'purchase', { value: 'bad' }, db);
+
+  const { data } = db.writes[0];
+  assert(data.ok === false, 'a rejection must not be recorded as clean');
+  assert(data.messages[0].fieldPath === 'events[0].params.value', 'the field must be kept');
+  assert(JSON.parse(data.payload).events[0].params.value === 'bad',
+    'the exact payload sent must be kept alongside the verdict');
+});
+
+test('a failed validation call is itself recorded, not lost', async () => {
+  // Otherwise an unreachable debug endpoint looks the same as no conversion.
+  resetWorld();
+  process.env.GA4_DEBUG = '1';
+  failDebug = true;
+  const db = makeVerdictDb();
+  await sendGa4Event('1234567890.1234567890', 'purchase', { value: 99 }, db);
+  assert(db.writes.length === 1, 'the failure should still leave a record');
+  assert(db.writes[0].data.ok === false, 'and not claim success');
+});
+
+test('a Firestore failure does not break the sale or the logging', async () => {
+  resetWorld();
+  process.env.GA4_DEBUG = '1';
+  const db = makeVerdictDb({ failWrite: true });
+  const out = await sendGa4Event('1234567890.1234567890', 'purchase', { value: 99 }, db);
+  assert(out === true, `the sale result must be unchanged, got ${out}`);
+  assert(hasLine(/validated clean/), 'the log line should still have been written');
+  assert(hasLine(/could not record verdict/), 'and the write failure made visible');
+});
+
+test('nothing is written when debugging is off, or when no db is given', async () => {
+  resetWorld();
+  const db = makeVerdictDb();
+  await sendGa4Event('1234567890.1234567890', 'purchase', { value: 99 }, db);
+  assert(db.writes.length === 0, 'with debug off there is no verdict to record');
+
+  resetWorld();
+  process.env.GA4_DEBUG = '1';
+  await sendGa4Event('1234567890.1234567890', 'purchase', { value: 99 });
+  assert(debugHits.length === 1, 'validation still happens and still logs');
 });
 
 test('the real send is never delayed or risked by the validation call', async () => {

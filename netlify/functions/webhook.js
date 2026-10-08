@@ -269,7 +269,7 @@ exports.handler = async (event) => {
                 price:     amount,
                 quantity:  1,
               }],
-            });
+            }, db);
           } catch (e) {
             console.error('[webhook] GA4 purchase report failed:', e.message);
           }
