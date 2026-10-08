@@ -1,4 +1,5 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { isValidClientId } = require('./_ga4');
 const admin = require('firebase-admin');
 
 if (!admin.apps.length) {
@@ -48,9 +49,16 @@ exports.handler = async (event) => {
     return { statusCode: 401, body: 'Invalid token' };
   }
 
-  let priceId;
-  try { ({ priceId } = JSON.parse(event.body || '{}')); } catch { return { statusCode: 400, body: 'Bad JSON' }; }
+  let priceId, gaClientId;
+  try { ({ priceId, gaClientId } = JSON.parse(event.body || '{}')); } catch { return { statusCode: 400, body: 'Bad JSON' }; }
   if (!priceId) return { statusCode: 400, body: 'Missing priceId' };
+
+  // The caller's GA4 client id, so the sale can be attributed to the visit
+  // that produced it when it is reported server-side at trial conversion.
+  // Client-supplied and therefore validated before it goes anywhere near
+  // Stripe metadata; anything unexpected is dropped rather than rejected,
+  // because analytics must never be able to block a checkout.
+  const safeGaClientId = isValidClientId(gaClientId) ? gaClientId : '';
 
   const plan   = PLAN_BY_PRICE[priceId];
   const isClub = plan === 'club';
@@ -77,7 +85,7 @@ exports.handler = async (event) => {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: successUrl,
       cancel_url:  `${process.env.PUBLIC_URL}/#pricing`,
-      metadata: { userId: decoded.uid, priceId },
+      metadata: { userId: decoded.uid, priceId, gaClientId: safeGaClientId },
       // All plans: free trial. Card required upfront; no charge until trial ends.
       ...(trialDays > 0 ? { subscription_data: { trial_period_days: trialDays } } : {})
     });

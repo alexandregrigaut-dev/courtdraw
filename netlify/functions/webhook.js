@@ -1,5 +1,6 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const admin = require('firebase-admin');
+const { sendGa4Event } = require('./_ga4');
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -109,6 +110,10 @@ exports.handler = async (event) => {
       subscribedAt: new Date().toISOString()
     };
 
+    // Kept so the sale can be reported to GA4 against the right visitor seven
+    // days from now, when the trial converts and no browser is involved.
+    if (session.metadata.gaClientId) update.gaClientId = session.metadata.gaClientId;
+
     // Store trial metadata for any trialing plan
     if (isTrial && session.subscription) {
       try {
@@ -211,7 +216,11 @@ exports.handler = async (event) => {
     const sub  = stripeEvent.data.object;
     const prev = stripeEvent.data.previous_attributes || {};
 
-    // 1. Trial converted to paid subscription (trialing → active) — any plan
+    // 1. Trial converted to paid subscription (trialing → active) — any plan.
+    //    This is the moment money is actually taken, and the only one: every
+    //    plan is sold as a trial, so nothing is charged at checkout. It happens
+    //    with no browser open, which is why the sale is reported to GA4 from
+    //    here rather than from success.html.
     if (sub.status === 'active' && prev.status === 'trialing') {
       const customerId = sub.customer;
       const snap = await db.collection('users')
@@ -222,15 +231,48 @@ exports.handler = async (event) => {
         const userData  = snap.docs[0].data();
         const userPlan  = userData.plan || 'pro';
         const userEmail = userData.email;
-        await snap.docs[0].ref.update({
-          isTrialing:        false,
-          trialConverted:    true,
-          trialConvertedAt:  new Date().toISOString(),
-        });
-        if (userEmail) {
-          // Send plan-appropriate "trial converted" email
-          const template = userPlan === 'club' ? 'clubTrialConverted' : 'proTrialConverted';
-          await sendEmail(template, userEmail);
+
+        // Stripe re-delivers events on retry. Without this guard a redelivery
+        // sends the "your trial converted" email a second time and counts the
+        // same sale twice in GA4.
+        const alreadyHandled = userData.trialConverted === true;
+
+        if (!alreadyHandled) {
+          await snap.docs[0].ref.update({
+            isTrialing:        false,
+            trialConverted:    true,
+            trialConvertedAt:  new Date().toISOString(),
+          });
+          if (userEmail) {
+            // Send plan-appropriate "trial converted" email
+            const template = userPlan === 'club' ? 'clubTrialConverted' : 'proTrialConverted';
+            await sendEmail(template, userEmail);
+          }
+
+          // Report the sale to GA4. Read the real figure off the subscription
+          // rather than assuming a price: checkout bills in five currencies and
+          // the plan may have changed since the trial began. Never allowed to
+          // throw — an analytics failure must not cost someone their access.
+          try {
+            const price = sub.items && sub.items.data && sub.items.data[0] && sub.items.data[0].price;
+            const amount = price && typeof price.unit_amount === 'number' ? price.unit_amount / 100 : 0;
+            const currency = (price && price.currency ? price.currency : 'eur').toUpperCase();
+            await sendGa4Event(userData.gaClientId, 'purchase', {
+              // Stripe's subscription id makes this idempotent on GA4's side
+              // too, in case a redelivery ever slips past the guard above.
+              transaction_id: sub.id,
+              value: amount,
+              currency,
+              items: [{
+                item_id:   userPlan,
+                item_name: userPlan === 'club' ? 'Club Plan' : 'Pro Plan',
+                price:     amount,
+                quantity:  1,
+              }],
+            });
+          } catch (e) {
+            console.error('[webhook] GA4 purchase report failed:', e.message);
+          }
         }
       }
     }

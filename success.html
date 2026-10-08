@@ -101,36 +101,40 @@
       document.getElementById('success-body').textContent  = 'Your subscription is active. All 38+ courts, unlimited saves, clean PNG exports, and more are now unlocked.';
     }
 
-    // ── Meta Pixel — conversion events ───────────────────────────────────────
-    // Trials fire StartTrial (no charge yet); paid plans fire Purchase with exact EUR value.
+    // ── Conversion events ────────────────────────────────────────────────────
+    // This page is only ever reached at the START of a trial. Every plan the
+    // server will sell is created with trial_period_days > 0, so the checkout
+    // session always comes back with ?trial=true and nothing is charged here.
+    //
+    // Both blocks below used to carry an `else` branch firing 'purchase' and
+    // fbq Purchase for a non-trial checkout. No such checkout exists, so those
+    // branches never ran once in the life of the site — which is why GA4
+    // reported $0.00 of revenue. They have been removed rather than left to
+    // look like working conversion tracking.
+    //
+    // The sale happens seven days later, when Stripe charges the card, with no
+    // browser open. It is reported from the server: see the trialing → active
+    // branch of netlify/functions/webhook.js, which sends GA4 a 'purchase' via
+    // the Measurement Protocol.
+    //
+    // Meta has no equivalent here yet. The Pixel still only ever sees
+    // StartTrial, so Meta is optimising delivery toward people who begin
+    // trials — including the ones who cancel on day 7. Closing that needs the
+    // Conversions API, which is a separate piece of work.
     if (typeof fbq === 'function') {
-      if (isTrial) {
-        const trialName = plan === 'club' ? 'Club Trial' : 'Pro Trial';
-        // value = predicted first charge after trial (helps Meta optimize for high-intent users)
-        const trialValue = plan === 'club' ? 99.00 : (value > 0 ? value : 6.00);
-        fbq('track', 'StartTrial', { content_name: trialName, currency: 'EUR', value: trialValue, predicted_ltv: trialValue * 12 });
-      } else {
-        const contentName = plan === 'club' ? 'Club Plan' : 'Pro Plan';
-        fbq('track', 'Purchase', { content_name: contentName, currency: 'EUR', value });
-      }
+      const trialName = plan === 'club' ? 'Club Trial' : 'Pro Trial';
+      // value = predicted first charge after trial (helps Meta optimize for high-intent users)
+      const trialValue = plan === 'club' ? 99.00 : (value > 0 ? value : 6.00);
+      fbq('track', 'StartTrial', { content_name: trialName, currency: 'EUR', value: trialValue, predicted_ltv: trialValue * 12 });
     }
 
-    // ── Google Analytics — purchase / trial_start key events ─────────────────
-    // GA4 'purchase' is a standard recommended key event (mark it in GA4 → Admin → Events).
-    // 'pro_trial_start' / 'club_trial_start' should also be marked as key events.
+    // Mark 'pro_trial_start' / 'club_trial_start' as key events in GA4 →
+    // Admin → Events. They are trial starts, not revenue, and carry value 0 so
+    // they cannot be mistaken for it in a report.
     if (typeof gtag === 'function') {
-      if (isTrial) {
-        gtag('event', plan === 'club' ? 'club_trial_start' : 'pro_trial_start', {
-          currency: 'EUR', value: 0, plan
-        });
-      } else {
-        gtag('event', 'purchase', {
-          transaction_id: sessionId,
-          value,
-          currency: 'EUR',
-          items: [{ item_id: plan, item_name: plan === 'club' ? 'Club Plan' : 'Pro Plan', price: value, quantity: 1 }]
-        });
-      }
+      gtag('event', plan === 'club' ? 'club_trial_start' : 'pro_trial_start', {
+        currency: 'EUR', value: 0, plan
+      });
     }
   </script>
 </body>
