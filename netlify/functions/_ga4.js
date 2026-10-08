@@ -40,10 +40,19 @@ function debugEnabled() {
   return v !== '' && v !== '0' && v !== 'false' && v !== 'off' && v !== 'no';
 }
 
-// Ask the debug endpoint what it makes of this payload and write the answer to
-// the logs. Diagnostic only: it records nothing, returns nothing, and is not
-// allowed to affect the send that has already happened or the caller's result.
-async function logPayloadValidation(url, body) {
+// Where the verdict is kept so it can be read later. Netlify retains function
+// logs for 24 hours, and the event this diagnoses fires seven days after a
+// signup at a time nobody picks — so logging alone would mean watching daily
+// for a week and still being able to miss it. The log line stays for anyone
+// already looking; this document is what makes the answer available later.
+const VALIDATION_DOC = ['diagnostics', 'ga4Validation'];
+
+// Ask the debug endpoint what it makes of this payload, write the answer to the
+// logs, and record it where it will still be readable in a week. Diagnostic
+// only: it records no analytics event, and is not allowed to affect the send
+// that has already happened or the caller's result.
+async function logPayloadValidation(url, body, db) {
+  let verdict;
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -55,6 +64,7 @@ async function logPayloadValidation(url, body) {
     try { messages = JSON.parse(text).validationMessages || []; } catch (e) { /* not JSON */ }
     if (!messages.length) {
       console.log('[ga4][debug] payload validated clean — GA4 will keep this event');
+      verdict = { ok: true, messages: [] };
     } else {
       for (const m of messages) {
         console.error(
@@ -62,9 +72,26 @@ async function logPayloadValidation(url, body) {
           (m.validationCode ? ` [${m.validationCode}]` : '')
         );
       }
+      verdict = { ok: false, messages };
     }
   } catch (e) {
     console.error('[ga4][debug] validation call failed:', e.message);
+    verdict = { ok: false, messages: [{ description: `validation call failed: ${e.message}` }] };
+  }
+
+  // Separate try: a Firestore failure must not turn a clean diagnostic into a
+  // thrown error, and the log line above has already been written either way.
+  if (!db) return;
+  try {
+    await db.collection(VALIDATION_DOC[0]).doc(VALIDATION_DOC[1]).set({
+      at: new Date().toISOString(),
+      ok: verdict.ok,
+      messages: verdict.messages,
+      // The exact bytes sent, so a rejection can be read without reproducing it.
+      payload: body,
+    });
+  } catch (e) {
+    console.error('[ga4][debug] could not record verdict:', e.message);
   }
 }
 
@@ -77,7 +104,9 @@ function isValidClientId(id) {
 
 // Fire-and-forget. Returns true only if GA4 accepted the request, so callers
 // can log the outcome, but never throws and never rejects.
-async function sendGa4Event(clientId, name, params) {
+// `db` is optional and used only by the debug mode, to keep the verdict
+// somewhere that outlives Netlify's 24-hour log retention.
+async function sendGa4Event(clientId, name, params, db) {
   const secret = process.env.GA4_API_SECRET;
   if (!secret) {
     // Not configured — expected until the secret is set in Netlify. Logged
@@ -126,7 +155,8 @@ async function sendGa4Event(clientId, name, params) {
     if (debugEnabled()) {
       await logPayloadValidation(
         `${GA4_DEBUG_ENDPOINT}?measurement_id=${encodeURIComponent(GA4_MEASUREMENT_ID)}&api_secret=${encodeURIComponent(secret)}`,
-        payload
+        payload,
+        db
       );
     }
     return true;
@@ -136,4 +166,4 @@ async function sendGa4Event(clientId, name, params) {
   }
 }
 
-module.exports = { sendGa4Event, isValidClientId, debugEnabled, GA4_MEASUREMENT_ID };
+module.exports = { sendGa4Event, isValidClientId, debugEnabled, VALIDATION_DOC, GA4_MEASUREMENT_ID };
