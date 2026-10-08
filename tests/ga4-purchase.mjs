@@ -27,12 +27,14 @@ let sentEmails = [];   // send-email calls
 let userDocs = {};
 let failGa4 = false;   // make the GA4 endpoint throw
 let ga4Status = 204;   // or answer with a status code
+let createdSessions = [];   // args passed to stripe.checkout.sessions.create
 
 function resetWorld(userData = {}) {
   ga4Hits = [];
   sentEmails = [];
   failGa4 = false;
   ga4Status = 204;
+  createdSessions = [];
   userDocs = {
     u1: {
       email: 'coach@example.com',
@@ -52,6 +54,11 @@ Module._load = function (request) {
     return () => ({
       webhooks: { constructEvent: (body) => JSON.parse(body) },
       subscriptions: { retrieve: async () => ({}) },
+      checkout: {
+        sessions: {
+          create: async (args) => { createdSessions.push(args); return { url: 'https://stripe.test/session' }; },
+        },
+      },
     });
   }
   if (request === 'firebase-admin') {
@@ -65,6 +72,7 @@ Module._load = function (request) {
       apps: [{}],
       initializeApp() {},
       credential: { cert: () => ({}) },
+      auth: () => ({ verifyIdToken: async () => ({ uid: 'u1', email: 'coach@example.com' }) }),
       firestore: Object.assign(() => ({
         collection: () => ({
           doc: docRef,
@@ -106,6 +114,25 @@ process.env.GA4_API_SECRET = 'test-secret';
 
 const { handler } = require(path.join(ROOT, 'netlify/functions/webhook.js'));
 const { isValidClientId, sendGa4Event } = require(path.join(ROOT, 'netlify/functions/_ga4.js'));
+
+// Price ids have to exist before create-checkout-session is loaded: its lookup
+// tables are built at module scope from these.
+process.env.STRIPE_PRICE_ID_PRO_MONTHLY = 'price_pro_m';
+process.env.STRIPE_PRICE_ID_PRO_YEARLY  = 'price_pro_y';
+process.env.STRIPE_PRICE_ID_CLUB        = 'price_club';
+const { handler: checkoutHandler } = require(path.join(ROOT, 'netlify/functions/create-checkout-session.js'));
+
+const startCheckout = (priceId, gaClientId) => checkoutHandler({
+  httpMethod: 'POST',
+  headers: { authorization: 'Bearer test-token' },
+  body: JSON.stringify({ priceId, ...(gaClientId !== undefined ? { gaClientId } : {}) }),
+});
+
+/** The success_url Stripe was handed, parsed. */
+function successParams() {
+  const u = new URL(createdSessions[createdSessions.length - 1].success_url);
+  return Object.fromEntries(u.searchParams.entries());
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function trialConverted({ unit_amount = 9900, currency = 'eur', id = 'sub_1', withPrice = true } = {}) {
@@ -252,6 +279,71 @@ test('sendGa4Event reports success only when GA4 accepted it', async () => {
   assert(out === true, `expected true on a clean send, got ${out}`);
   assert(ga4Hits.length === 1, 'and it should actually have gone out');
   assert(ga4Hits[0].url.includes('api_secret=test-secret'), 'the secret must be on the query string');
+});
+
+// ── Tests: what the ad platforms are told a trial is worth ───────────────────
+// Same root cause as the dead 'purchase' branch: isTrial is true for every plan
+// this function will sell, so `value` was pinned to 0 and success.html fell
+// back to hardcoded constants to have something to give Meta. Those drifted.
+
+test('the real first charge reaches the success page, not zero', async () => {
+  resetWorld();
+  await startCheckout('price_pro_y');
+  assert(successParams().value === '49',
+    `a €49 plan should report €49, got ${successParams().value}`);
+});
+
+test('each plan reports its own price and interval', async () => {
+  for (const [priceId, value, interval] of [
+    ['price_pro_m', '6',  'month'],
+    ['price_pro_y', '49', 'year'],
+    ['price_club',  '99', 'year'],
+  ]) {
+    resetWorld();
+    await startCheckout(priceId);
+    const p = successParams();
+    assert(p.value === value, `${priceId}: expected ${value}, got ${p.value}`);
+    assert(p.interval === interval, `${priceId}: expected ${interval}, got ${p.interval}`);
+  }
+});
+
+test('monthly and yearly Pro are distinguishable at all', async () => {
+  // Both are plan=pro, so without the interval the success page cannot tell
+  // €6/month from €49/year — which is how every Pro trial came to be reported
+  // as €6.
+  resetWorld();
+  await startCheckout('price_pro_m');
+  const monthly = successParams();
+  resetWorld();
+  await startCheckout('price_pro_y');
+  const yearly = successParams();
+  assert(monthly.plan === yearly.plan, 'both are the Pro plan, so plan alone cannot separate them');
+  assert(monthly.value !== yearly.value || monthly.interval !== yearly.interval,
+    'something in the URL must distinguish them');
+});
+
+test('the trial flag still travels', async () => {
+  // It is what stops the page reporting a trial start as revenue.
+  resetWorld();
+  await startCheckout('price_club');
+  assert(successParams().trial === 'true', 'every plan is sold as a trial and must say so');
+});
+
+test('the GA4 client id is passed on when valid and dropped when not', async () => {
+  resetWorld();
+  await startCheckout('price_pro_y', '1234567890.1234567890');
+  assert(createdSessions[0].metadata.gaClientId === '1234567890.1234567890',
+    'a well-formed id should reach Stripe metadata');
+
+  resetWorld();
+  await startCheckout('price_pro_y', '123.456&api_secret=leak');
+  assert(createdSessions[0].metadata.gaClientId === '',
+    'a malformed id must be dropped rather than stored');
+
+  resetWorld();
+  await startCheckout('price_pro_y');
+  assert(createdSessions[0].metadata.gaClientId === '',
+    'a missing id is not an error — checkout must still work');
 });
 
 // ── Tests: client id validation ───────────────────────────────────────────────

@@ -26,6 +26,15 @@ const VALUE_BY_PRICE = {
   [process.env.STRIPE_PRICE_ID_CLUB]:        99
 };
 
+// Billing interval per price. Needed because 'pro' alone cannot distinguish
+// €6/month from €49/year, and a lifetime value worked out from the wrong one
+// is off by a factor of twelve.
+const INTERVAL_BY_PRICE = {
+  [process.env.STRIPE_PRICE_ID_PRO_MONTHLY]: 'month',
+  [process.env.STRIPE_PRICE_ID_PRO_YEARLY]:  'year',
+  [process.env.STRIPE_PRICE_ID_CLUB]:        'year'
+};
+
 // Trial periods: Club = 7 days, Pro = 7 days
 // Card required upfront for both. Stripe auto-charges on trial end.
 // If user cancels before trial ends, no charge — customer.subscription.deleted fires and access is revoked.
@@ -69,12 +78,22 @@ exports.handler = async (event) => {
   // If the user cancels before trial end: no charge, access revoked automatically via webhook.
   const trialDays = isClub ? CLUB_TRIAL_DAYS : isPro ? PRO_TRIAL_DAYS : 0;
 
-  // Append &trial=true and &value=0 for trials so success.html shows the right message
-  // and Meta Pixel fires StartTrial (no revenue) instead of Purchase.
+  // ?trial=true tells success.html this is the start of a trial, so it reports a
+  // trial start rather than revenue. `value` carries the real first charge that
+  // will follow, and `interval` says how often it recurs.
+  //
+  // `value` used to be forced to 0 for trials, on the reasoning that no money
+  // had changed hands. But isTrial is true for every plan this function will
+  // sell, so it was always 0 — and success.html, needing a figure for Meta's
+  // StartTrial, fell back to hardcoded constants. Those drifted: every Pro
+  // trial was reported as €6, including the €49 annual one, and the lifetime
+  // value multiplied each figure by twelve whether or not it was monthly, so a
+  // €99/year Club trial was reported as €1,188. Passing the real numbers
+  // through removes the need for any fallback.
   const planParam  = plan || 'pro';
   const isTrial    = trialDays > 0;
-  const pixelValue = isTrial ? 0 : value;
-  const successUrl = `${process.env.PUBLIC_URL}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${planParam}&value=${pixelValue}${isTrial ? '&trial=true' : ''}`;
+  const interval   = INTERVAL_BY_PRICE[priceId] || 'month';
+  const successUrl = `${process.env.PUBLIC_URL}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=${planParam}&value=${value}&interval=${interval}${isTrial ? '&trial=true' : ''}`;
 
   let session;
   try {

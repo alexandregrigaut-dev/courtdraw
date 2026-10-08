@@ -81,7 +81,9 @@
     // Detect plan type and trial status from URL params
     const plan    = params.get('plan');
     const isTrial = params.get('trial') === 'true';
-    const value   = parseFloat(params.get('value') || '0');
+    const value    = parseFloat(params.get('value') || '0');
+    // 'month' or 'year' — how often the charge above recurs.
+    const interval = params.get('interval') === 'year' ? 'year' : 'month';
 
     if (plan === 'club' && isTrial) {
       document.getElementById('success-title').textContent = 'Your 7-Day Club Trial Has Started!';
@@ -123,9 +125,21 @@
     // Conversions API, which is a separate piece of work.
     if (typeof fbq === 'function') {
       const trialName = plan === 'club' ? 'Club Trial' : 'Pro Trial';
-      // value = predicted first charge after trial (helps Meta optimize for high-intent users)
-      const trialValue = plan === 'club' ? 99.00 : (value > 0 ? value : 6.00);
-      fbq('track', 'StartTrial', { content_name: trialName, currency: 'EUR', value: trialValue, predicted_ltv: trialValue * 12 });
+      // The charge that will follow the trial, and what a year of it is worth.
+      // Both come from the server rather than being guessed here: 'pro' alone
+      // cannot tell €6/month from €49/year, and the constants this used to fall
+      // back on had drifted from the real prices in both directions — every Pro
+      // trial reported as €6, and a €99/year Club trial reported as €1,188 of
+      // lifetime value because the figure was multiplied by twelve regardless
+      // of interval. Wrong values do not just under-report; they invert which
+      // customers Meta treats as worth finding.
+      const annualValue = interval === 'year' ? value : value * 12;
+      fbq('track', 'StartTrial', {
+        content_name: trialName,
+        currency: 'EUR',
+        value,
+        predicted_ltv: annualValue,
+      });
     }
 
     // Mark 'pro_trial_start' / 'club_trial_start' as key events in GA4 →

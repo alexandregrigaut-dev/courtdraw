@@ -397,6 +397,47 @@ test('checkout: the source survives the sign-in round trip', async (page) => {
   assertEq(stored.source, 'save_cap', 'and so should the wall that triggered it');
 });
 
+/** Load success.html with given query params, capturing fbq and gtag calls. */
+async function openSuccess(page, query) {
+  await page.addInitScript(() => {
+    window.__fbq = [];
+    window.fbq = (...a) => window.__fbq.push(a);
+  });
+  await page.goto(url('success.html') + query, { waitUntil: 'load' });
+  await page.waitForTimeout(600);
+  return page.evaluate(() => window.__fbq.filter(a => a[0] === 'track' && a[1] === 'StartTrial')[0]?.[2] || null);
+}
+
+test('success: Meta is told the real price, not a placeholder', async (page) => {
+  // Every Pro trial used to report €6 because the value was pinned to 0 server
+  // side and this page fell back to a constant — so the €49 annual plan, the
+  // more valuable of the two, was reported as the cheaper one.
+  const p = await openSuccess(page, '?session_id=cs_test&plan=pro&value=49&interval=year&trial=true');
+  assert(p, 'StartTrial should fire for a trial');
+  assertEq(p.value, 49, 'the value should be the real first charge');
+  assertEq(p.currency, 'EUR', 'currency should be stated');
+});
+
+test('success: a year of a monthly plan is twelve charges, a year of an annual plan is one', async (page) => {
+  // predicted_ltv multiplied every figure by twelve regardless of interval, so
+  // a €99/year Club trial was reported to Meta as €1,188 of lifetime value.
+  const monthly = await openSuccess(page, '?session_id=cs_test&plan=pro&value=6&interval=month&trial=true');
+  assertEq(monthly.predicted_ltv, 72, 'twelve months of a €6 plan is €72');
+});
+
+test('success: an annual plan is not multiplied by twelve', async (page) => {
+  const club = await openSuccess(page, '?session_id=cs_test&plan=club&value=99&interval=year&trial=true');
+  assertEq(club.value, 99, 'the Club charge is €99');
+  assertEq(club.predicted_ltv, 99, 'a year of a €99/year plan is €99, not €1188');
+});
+
+test('success: a missing interval is treated as monthly, not as free', async (page) => {
+  // An old link, or a session created before this parameter existed.
+  const p = await openSuccess(page, '?session_id=cs_test&plan=pro&value=6&trial=true');
+  assertEq(p.value, 6, 'the value should still be reported');
+  assertEq(p.predicted_ltv, 72, 'and annualised on the safer assumption');
+});
+
 test('checkout: success.html claims no sale it cannot see', async () => {
   // Every plan is sold as a trial, so this page is only ever reached at the
   // start of one and a 'purchase' here can never fire. It carried exactly that
