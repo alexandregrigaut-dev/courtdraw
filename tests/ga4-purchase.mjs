@@ -28,6 +28,10 @@ let userDocs = {};
 let failGa4 = false;   // make the GA4 endpoint throw
 let ga4Status = 204;   // or answer with a status code
 let createdSessions = [];   // args passed to stripe.checkout.sessions.create
+let debugHits = [];         // calls to the validating debug endpoint
+let failDebug = false;
+let validationMessages = [];  // what the debug endpoint reports back
+let logLines = [];          // console output, which is the whole product here
 
 function resetWorld(userData = {}) {
   ga4Hits = [];
@@ -35,6 +39,11 @@ function resetWorld(userData = {}) {
   failGa4 = false;
   ga4Status = 204;
   createdSessions = [];
+  debugHits = [];
+  failDebug = false;
+  validationMessages = [];
+  logLines = [];
+  delete process.env.GA4_DEBUG;
   userDocs = {
     u1: {
       email: 'coach@example.com',
@@ -97,6 +106,11 @@ Module._load = function (request) {
 // One fetch stub serving both destinations; they are told apart by URL.
 globalThis.fetch = async (url, opts) => {
   const u = String(url);
+  if (u.includes('/debug/mp/collect')) {
+    debugHits.push({ url: u, body: JSON.parse(opts.body) });
+    if (failDebug) throw new Error('simulated debug failure');
+    return { ok: true, status: 200, async text() { return JSON.stringify({ validationMessages }); } };
+  }
   if (u.includes('google-analytics.com')) {
     if (failGa4) throw new Error('simulated network failure');
     if (ga4Status >= 400) return { ok: false, status: ga4Status, async text() { return 'rejected'; } };
@@ -112,8 +126,16 @@ process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test';
 process.env.FIREBASE_PRIVATE_KEY = 'x';
 process.env.GA4_API_SECRET = 'test-secret';
 
+// The debug mode's entire output is log lines, so they are the thing under
+// test. Captured and still forwarded: the runner prints its own results through
+// console.log, and swallowing those would leave the suite silent.
+for (const level of ['log', 'warn', 'error']) {
+  const real = console[level].bind(console);
+  console[level] = (...a) => { logLines.push(a.join(' ')); real(...a); };
+}
+
 const { handler } = require(path.join(ROOT, 'netlify/functions/webhook.js'));
-const { isValidClientId, sendGa4Event } = require(path.join(ROOT, 'netlify/functions/_ga4.js'));
+const { isValidClientId, sendGa4Event, debugEnabled } = require(path.join(ROOT, 'netlify/functions/_ga4.js'));
 
 // Price ids have to exist before create-checkout-session is loaded: its lookup
 // tables are built at module scope from these.
@@ -279,6 +301,119 @@ test('sendGa4Event reports success only when GA4 accepted it', async () => {
   assert(out === true, `expected true on a clean send, got ${out}`);
   assert(ga4Hits.length === 1, 'and it should actually have gone out');
   assert(ga4Hits[0].url.includes('api_secret=test-secret'), 'the secret must be on the query string');
+});
+
+// ── Tests: GA4_DEBUG validation mode ─────────────────────────────────────────
+// The Measurement Protocol answers 2xx for a malformed event and discards it,
+// so a broken payload and no sales look identical. This mode exists to tell
+// those apart, and its entire product is what ends up in the function logs —
+// so that is what is asserted, not just that a request was made.
+
+const hasLine = (re) => logLines.some(l => re.test(l));
+
+test('debug mode is off unless switched on', async () => {
+  resetWorld();
+  await sendGa4Event('1234567890.1234567890', 'purchase', { value: 1 });
+  assert(debugHits.length === 0, 'no validation call should happen by default');
+  assert(ga4Hits.length === 1, 'the real send still happens');
+});
+
+test('GA4_DEBUG=0 and =false mean off, not on', async () => {
+  // Both are non-empty strings, so a bare truthiness check would read them as
+  // on — the opposite of what anyone typing them intends.
+  for (const off of ['0', 'false', 'off', 'no', '', '  ']) {
+    process.env.GA4_DEBUG = off;
+    assert(!debugEnabled(), `GA4_DEBUG=${JSON.stringify(off)} should be off`);
+  }
+  for (const on of ['1', 'true', 'yes', 'on']) {
+    process.env.GA4_DEBUG = on;
+    assert(debugEnabled(), `GA4_DEBUG=${JSON.stringify(on)} should be on`);
+  }
+  delete process.env.GA4_DEBUG;
+});
+
+test('with it on, GA4 is asked to validate the exact bytes that were sent', async () => {
+  // Validating a second, separately built copy would prove nothing about the
+  // payload that actually went.
+  resetWorld();
+  process.env.GA4_DEBUG = '1';
+  await sendGa4Event('1234567890.1234567890', 'purchase', { value: 99, currency: 'EUR' });
+  assert(debugHits.length === 1, `expected one validation call, got ${debugHits.length}`);
+  assert(JSON.stringify(debugHits[0].body) === JSON.stringify(ga4Hits[0].body),
+    'the validated payload must be byte-identical to the sent one');
+  assert(debugHits[0].url.includes('/debug/mp/collect'), 'it must go to the validating endpoint');
+});
+
+test('a clean payload says so in the logs', async () => {
+  resetWorld();
+  process.env.GA4_DEBUG = '1';
+  await sendGa4Event('1234567890.1234567890', 'purchase', { value: 99 });
+  assert(hasLine(/validated clean/i),
+    `expected a clean verdict in the logs, got: ${JSON.stringify(logLines)}`);
+});
+
+test('a rejected payload names the field and the reason', async () => {
+  // The whole point: turning silence into something diagnosable.
+  resetWorld();
+  process.env.GA4_DEBUG = '1';
+  validationMessages = [{
+    fieldPath: 'events[0].params.value',
+    description: 'Invalid value type',
+    validationCode: 'VALUE_INVALID',
+  }];
+  await sendGa4Event('1234567890.1234567890', 'purchase', { value: 'not-a-number' });
+  assert(hasLine(/INVALID/), 'a rejection must be logged as such');
+  assert(hasLine(/events\[0\]\.params\.value/), 'it must name the offending field');
+  assert(hasLine(/Invalid value type/), 'it must carry GA4\'s own description');
+  assert(hasLine(/VALUE_INVALID/), 'and the validation code, which is what the docs index on');
+  assert(!hasLine(/validated clean/i), 'it must not also claim the payload was clean');
+});
+
+test('the real send is never delayed or risked by the validation call', async () => {
+  // The sale is the thing that matters; the diagnostic is not.
+  resetWorld();
+  process.env.GA4_DEBUG = '1';
+  failDebug = true;
+  const out = await sendGa4Event('1234567890.1234567890', 'purchase', { value: 99 });
+  assert(out === true, `a failed validation must not change the result, got ${out}`);
+  assert(ga4Hits.length === 1, 'the real event still went');
+  assert(hasLine(/validation call failed/), 'but the failure should be visible');
+});
+
+test('nothing is validated when nothing was sent', async () => {
+  resetWorld();
+  process.env.GA4_DEBUG = '1';
+  await sendGa4Event('not-a-client-id', 'purchase', { value: 99 });
+  assert(ga4Hits.length === 0 && debugHits.length === 0,
+    'a skipped send has no payload to validate');
+
+  resetWorld();
+  process.env.GA4_DEBUG = '1';
+  ga4Status = 400;
+  await sendGa4Event('1234567890.1234567890', 'purchase', { value: 99 });
+  assert(debugHits.length === 0, 'a rejected send is already diagnosable from its status');
+});
+
+test('the recorded event is identical whether debugging or not', async () => {
+  // Switching diagnostics on must not change the data GA4 keeps, or the
+  // numbers would shift the moment anyone investigated them.
+  resetWorld();
+  await sendGa4Event('1234567890.1234567890', 'purchase', { value: 99 });
+  const quiet = JSON.stringify(ga4Hits[0].body);
+
+  resetWorld();
+  process.env.GA4_DEBUG = '1';
+  await sendGa4Event('1234567890.1234567890', 'purchase', { value: 99 });
+  assert(JSON.stringify(ga4Hits[0].body) === quiet,
+    'switching debugging on must not change the event that is kept');
+
+  // Compared against a fixed shape as well as against the other run: two runs
+  // agreeing proves nothing about a change that affects both, which is exactly
+  // what an unconditional debug_mode flag would be.
+  assert(JSON.stringify(ga4Hits[0].body) === JSON.stringify({
+    client_id: '1234567890.1234567890',
+    events: [{ name: 'purchase', params: { value: 99 } }],
+  }), `the payload must carry only what it was given, got ${JSON.stringify(ga4Hits[0].body)}`);
 });
 
 // ── Tests: what the ad platforms are told a trial is worth ───────────────────
