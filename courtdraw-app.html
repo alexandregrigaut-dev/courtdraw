@@ -3492,18 +3492,24 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
   // user who previously clicked Upgrade ends up in an infinite login redirect loop.
   const pending = localStorage.getItem('courtdraw_pending_checkout');
   if (pending) {
+    // Which wall started this, saved before the sign-in redirect reloaded the page.
+    const pendingSource = localStorage.getItem('courtdraw_pending_checkout_source') || 'direct';
+    const clearPending = () => {
+      localStorage.removeItem('courtdraw_pending_checkout');
+      localStorage.removeItem('courtdraw_pending_checkout_source');
+    };
     if (!window.__currentUser) {
       // Not logged in — clear the stale intent silently. The user chose to continue without
       // an account, so there is nothing to auto-trigger.
-      localStorage.removeItem('courtdraw_pending_checkout');
+      clearPending();
     } else {
       const isClubUpgrade = isPro && !isClub && pending === 'club';
       if (!isPro && !isClub || isClubUpgrade) {
-        localStorage.removeItem('courtdraw_pending_checkout');
-        setTimeout(() => startCheckout(pending), 800);
+        clearPending();
+        setTimeout(() => startCheckout(pending, pendingSource), 800);
       } else {
         // Already on the target plan or higher — clear stale pending checkout
-        localStorage.removeItem('courtdraw_pending_checkout');
+        clearPending();
       }
     }
   }
@@ -5983,7 +5989,16 @@ function dismissWelcome(openPicker = false) {
 
 
 
+// Which paywall trigger most recently led the user here. paywall_shown already
+// reports its own source, but that only says which wall was SHOWN — not which
+// one went on to produce a payment attempt. Those are different questions and
+// the second is the one that pays, so the source is carried through to
+// begin_checkout as well. Null means checkout was started from somewhere other
+// than a paywall (the pricing section, a direct upgrade button).
+let _lastPaywallSource = null;
+
 function openPaywall(reason, source) {
+  _lastPaywallSource = source || 'unspecified';
   gtag('event', 'paywall_shown', {
     event_category: 'ecommerce',
     // `reason` is the sentence shown to the user; `source` is what tripped it.
@@ -6001,6 +6016,7 @@ function openPaywall(reason, source) {
 
 function openCourtPaywall(freeName) {
   // Softer, invitation-framed variant shown when a user taps a locked court.
+  _lastPaywallSource = 'locked_court';
   const sport = freeName || 'your sport';
   // This opens the paywall modal directly rather than via openPaywall(), so it
   // has to report for itself — without this it was the one wall we couldn't see.
@@ -6018,7 +6034,20 @@ function openCourtPaywall(freeName) {
   openModal('modal-paywall');
 }
 
-async function startCheckout(planKey) {
+// GA4 keeps its client id in the _ga cookie as GA<n>.<n>.<id1>.<id2>; the
+// client id is the last two segments. Returns '' when the cookie is absent
+// (ad blocker, consent declined, first paint) — the server treats that as
+// "no attribution" rather than failing the checkout.
+function ga4ClientId() {
+  try {
+    const m = document.cookie.match(/(?:^|;\s*)_ga=GA\d+\.\d+\.(\d+\.\d+)/);
+    return m ? m[1] : '';
+  } catch (e) { return ''; }
+}
+
+let _checkoutInFlight = false;
+
+async function startCheckout(planKey, sourceOverride) {
   // GA4 — top-of-funnel signal: fires the moment any upgrade/trial CTA is
   // clicked, regardless of auth state. This function is also re-entered by
   // the post-login auto-resume path below, so a single person clicking
@@ -6027,15 +6056,29 @@ async function startCheckout(planKey) {
   // 'begin_checkout' below specifically so that double-count doesn't
   // contaminate the real checkout-funnel number.
   gtag('event', 'upgrade_cta_click', { plan: planKey, event_category: 'ecommerce' });
+  // Which wall sent them here. Survives the sign-in round trip below via
+  // localStorage, since the page reloads and the in-memory value is lost.
+  const source = sourceOverride || _lastPaywallSource || 'direct';
+
   const user = window.__currentUser;
   if (!user) {
     // Save the intended plan so we can auto-trigger checkout after login
     localStorage.setItem('courtdraw_pending_checkout', planKey);
+    localStorage.setItem('courtdraw_pending_checkout_source', source);
     closeModal('modal-paywall');
     showToast('Sign in to complete your upgrade — redirecting…');
     setTimeout(() => { window.location.href = '/login.html?next=' + encodeURIComponent(location.pathname); }, 1400);
     return;
   }
+
+  // Two quick taps used to create two Stripe checkout sessions, both of them
+  // valid and both completable — which is how one customer ended up with two
+  // subscriptions a minute apart, one of which had to be cancelled. The
+  // redirect at the end of this function does not happen soon enough to act
+  // as the guard, because the session has to be created first.
+  if (_checkoutInFlight) return;
+  _checkoutInFlight = true;
+
   closeModal('modal-paywall');
   try {
     showToast('Redirecting to checkout…');
@@ -6046,7 +6089,11 @@ async function startCheckout(planKey) {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + token
       },
-      body: JSON.stringify({ priceId: STRIPE_PRICES[planKey] })
+      // gaClientId lets the server record who this is, so the purchase event
+      // can be attributed to the same GA4 user when it fires server-side at
+      // trial conversion — the moment money is actually taken, which happens
+      // with no browser open and so cannot be reported from this page.
+      body: JSON.stringify({ priceId: STRIPE_PRICES[planKey], gaClientId: ga4ClientId() })
     });
     if (!res.ok) throw new Error('server error');
     const { url } = await res.json();
@@ -6059,9 +6106,12 @@ async function startCheckout(planKey) {
     // check, so every logged-out click was double-counted (once on click,
     // once more when auto-resumed after login) — inflating this number and
     // making the real checkout→trial drop-off look worse than it is.
-    gtag('event', 'begin_checkout', { plan: planKey, event_category: 'ecommerce' });
+    gtag('event', 'begin_checkout', { plan: planKey, source, event_category: 'ecommerce' });
     window.location.href = url;
   } catch {
+    // Released only on failure. On success the line above navigates away, and
+    // leaving it set covers the gap while the browser is still unloading.
+    _checkoutInFlight = false;
     showToast('Could not start checkout — please try again.');
   }
 }

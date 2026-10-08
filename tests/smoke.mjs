@@ -295,6 +295,167 @@ test('paywall: an unlabelled trigger is reported as unspecified, not dropped', a
     'a missing source should be visible as a gap, not absent');
 });
 
+// ── Tests: checkout ──────────────────────────────────────────────────────
+
+/**
+ * Put the page in a state where startCheckout() will run to completion:
+ * a signed-in user, and a stubbed endpoint returning a same-page URL so the
+ * final `location.href = url` sets the hash instead of navigating away.
+ */
+async function stubCheckout(page) {
+  await page.evaluate(() => {
+    window.__checkoutCalls = 0;
+    window.__currentUser = { getIdToken: async () => 'test-token' };
+    window.fetch = async (u) => {
+      if (String(u).includes('create-checkout-session')) window.__checkoutCalls++;
+      return { ok: true, json: async () => ({ url: '#checkout-stub' }) };
+    };
+  });
+}
+
+test('checkout: two quick taps create only one Stripe session', async (page) => {
+  // One customer ended up with two subscriptions created a minute apart, one
+  // of which had to be cancelled. There was no re-entry guard, and the
+  // redirect does not happen soon enough to act as one.
+  await openAppPastWelcome(page);
+  await stubCheckout(page);
+  await page.evaluate(() => { startCheckout('pro'); startCheckout('pro'); });
+  await page.waitForTimeout(600);
+  assertEq(await page.evaluate(() => window.__checkoutCalls), 1,
+    'a double tap must not create a second checkout session');
+});
+
+test('checkout: a failed attempt can be retried', async (page) => {
+  // The guard must not strand someone whose first attempt failed.
+  await openAppPastWelcome(page);
+  await page.evaluate(() => {
+    window.__checkoutCalls = 0;
+    window.__currentUser = { getIdToken: async () => 'test-token' };
+    window.fetch = async (u) => {
+      if (String(u).includes('create-checkout-session')) window.__checkoutCalls++;
+      return { ok: false, status: 500, json: async () => ({}) };
+    };
+  });
+  await page.evaluate(() => startCheckout('pro'));
+  await page.waitForTimeout(400);
+  await page.evaluate(() => startCheckout('pro'));
+  await page.waitForTimeout(400);
+  assertEq(await page.evaluate(() => window.__checkoutCalls), 2,
+    'after a failure the guard must release so the user can try again');
+});
+
+test('checkout: begin_checkout reports which wall sent them', async (page) => {
+  // paywall_shown.source says which wall was SHOWN. This says which one
+  // produced a payment attempt — a different question, and the one that pays.
+  await openAppPastWelcome(page);
+  await stubCheckout(page);
+  await page.evaluate(() => openPaywall('You have used all 3 free saves.', 'save_cap'));
+  await page.waitForTimeout(200);
+  await page.evaluate(() => startCheckout('pro'));
+  await page.waitForTimeout(500);
+  assertEq((await eventParams(page, 'begin_checkout'))?.source, 'save_cap',
+    'the triggering wall should travel through to the payment attempt');
+});
+
+test('checkout: a locked court reports itself at checkout too', async (page) => {
+  await openAppPastWelcome(page);
+  await stubCheckout(page);
+  await page.evaluate(() => openCourtPaywall('tennis'));
+  await page.waitForTimeout(200);
+  await page.evaluate(() => startCheckout('pro'));
+  await page.waitForTimeout(500);
+  assertEq((await eventParams(page, 'begin_checkout'))?.source, 'locked_court',
+    'the court wall should be distinguishable from every other trigger');
+});
+
+test('checkout: one started from no wall at all says so', async (page) => {
+  // Must not borrow the label of whatever wall happened to be shown last, or
+  // the comparison between triggers is worthless.
+  await openAppPastWelcome(page);
+  await stubCheckout(page);
+  await page.evaluate(() => startCheckout('pro'));
+  await page.waitForTimeout(500);
+  assertEq((await eventParams(page, 'begin_checkout'))?.source, 'direct',
+    'a checkout with no preceding paywall should report itself as direct');
+});
+
+test('checkout: the source survives the sign-in round trip', async (page) => {
+  // A signed-out click stores the intent, redirects to login, and resumes on
+  // return — by which point the page has reloaded and the in-memory source is
+  // gone. Without this the resumed checkout reports the wrong trigger.
+  await openAppPastWelcome(page);
+  await page.evaluate(() => { window.__currentUser = null; });
+  await page.evaluate(() => openPaywall('All 3 saves used.', 'save_cap'));
+  await page.waitForTimeout(200);
+  await page.evaluate(() => startCheckout('pro'));
+  await page.waitForTimeout(300);
+  const stored = await page.evaluate(() => ({
+    plan:   localStorage.getItem('courtdraw_pending_checkout'),
+    source: localStorage.getItem('courtdraw_pending_checkout_source'),
+  }));
+  assertEq(stored.plan, 'pro', 'the intended plan should be held for after sign-in');
+  assertEq(stored.source, 'save_cap', 'and so should the wall that triggered it');
+});
+
+/** Load success.html with given query params, capturing fbq and gtag calls. */
+async function openSuccess(page, query) {
+  await page.addInitScript(() => {
+    window.__fbq = [];
+    window.fbq = (...a) => window.__fbq.push(a);
+  });
+  await page.goto(url('success.html') + query, { waitUntil: 'load' });
+  await page.waitForTimeout(600);
+  return page.evaluate(() => window.__fbq.filter(a => a[0] === 'track' && a[1] === 'StartTrial')[0]?.[2] || null);
+}
+
+test('success: Meta is told the real price, not a placeholder', async (page) => {
+  // Every Pro trial used to report €6 because the value was pinned to 0 server
+  // side and this page fell back to a constant — so the €49 annual plan, the
+  // more valuable of the two, was reported as the cheaper one.
+  const p = await openSuccess(page, '?session_id=cs_test&plan=pro&value=49&interval=year&trial=true');
+  assert(p, 'StartTrial should fire for a trial');
+  assertEq(p.value, 49, 'the value should be the real first charge');
+  assertEq(p.currency, 'EUR', 'currency should be stated');
+});
+
+test('success: a year of a monthly plan is twelve charges, a year of an annual plan is one', async (page) => {
+  // predicted_ltv multiplied every figure by twelve regardless of interval, so
+  // a €99/year Club trial was reported to Meta as €1,188 of lifetime value.
+  const monthly = await openSuccess(page, '?session_id=cs_test&plan=pro&value=6&interval=month&trial=true');
+  assertEq(monthly.predicted_ltv, 72, 'twelve months of a €6 plan is €72');
+});
+
+test('success: an annual plan is not multiplied by twelve', async (page) => {
+  const club = await openSuccess(page, '?session_id=cs_test&plan=club&value=99&interval=year&trial=true');
+  assertEq(club.value, 99, 'the Club charge is €99');
+  assertEq(club.predicted_ltv, 99, 'a year of a €99/year plan is €99, not €1188');
+});
+
+test('success: a missing interval is treated as monthly, not as free', async (page) => {
+  // An old link, or a session created before this parameter existed.
+  const p = await openSuccess(page, '?session_id=cs_test&plan=pro&value=6&trial=true');
+  assertEq(p.value, 6, 'the value should still be reported');
+  assertEq(p.predicted_ltv, 72, 'and annualised on the safer assumption');
+});
+
+test('checkout: success.html claims no sale it cannot see', async () => {
+  // Every plan is sold as a trial, so this page is only ever reached at the
+  // start of one and a 'purchase' here can never fire. It carried exactly that
+  // branch for the life of the site, which is why GA4 reported no revenue. The
+  // real sale is reported from webhook.js when the trial converts.
+  const fs = await import('node:fs');
+  const html = fs.readFileSync(path.join(ROOT, 'success.html'), 'utf8');
+  assert(!/gtag\(\s*'event'\s*,\s*'purchase'/.test(html),
+    "success.html must not fire a 'purchase' — no charge happens on this page");
+  assert(!/fbq\(\s*'track'\s*,\s*'Purchase'/.test(html),
+    "success.html must not fire a Pixel Purchase — no charge happens on this page");
+  assert(/trial_start/.test(html), 'it should still report the trial start');
+
+  const webhook = fs.readFileSync(path.join(ROOT, 'netlify/functions/webhook.js'), 'utf8');
+  assert(/sendGa4Event\([^)]*'purchase'/s.test(webhook),
+    'the sale must be reported from the webhook, where the charge actually happens');
+});
+
 // ── Tests: marketing pages ───────────────────────────────────────────────
 
 test('pages: landing page renders without errors or horizontal overflow', async (page, errors) => {
