@@ -15,3 +15,4 @@ Disallow: /.netlify/
 # already carry a noindex tag.
 
 Sitemap: https://courtdraw.app/sitemap.xml
+Sitemap: https://courtdraw.app/sitemap-plays.xml

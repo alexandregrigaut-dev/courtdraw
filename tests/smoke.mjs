@@ -456,6 +456,79 @@ test('checkout: success.html claims no sale it cannot see', async () => {
     'the sale must be reported from the webhook, where the charge actually happens');
 });
 
+// ── Tests: internal linking ──────────────────────────────────────────────
+
+test('seo: every sport page passes authority to the guides and the library', async () => {
+  // The sport pages are where the organic traffic lands. Before this they
+  // linked only to each other, so the guides — which exist to convert — and
+  // the plays library got none of it.
+  const fs = await import('node:fs');
+  const pages = fs.readdirSync(ROOT).filter(d => d.endsWith('-tactics-board'));
+  assert(pages.length >= 30, `expected the full sport set, found ${pages.length}`);
+
+  const thin = [];
+  for (const dir of pages) {
+    const html = fs.readFileSync(path.join(ROOT, dir, 'index.html'), 'utf8');
+    const guideLinks = [...html.matchAll(/href="\/guides\/([a-z0-9-]*)\/?"/g)].map(m => m[1]);
+    const named = guideLinks.filter(Boolean);           // excludes the /guides/ index
+    if (named.length < 3) thin.push(`${dir}: ${named.length} guide links`);
+    if (!/href="\/community"/.test(html)) thin.push(`${dir}: no link to the plays library`);
+  }
+  assert(thin.length === 0, `sport pages must pass authority onward:\n  ${thin.join('\n  ')}`);
+});
+
+test('seo: no sport page links to a guide that does not exist', async () => {
+  // A dead internal link wastes the crawl and the click. Slugs are typed by
+  // hand into a generator, so this is the check that catches a typo.
+  const fs = await import('node:fs');
+  const broken = [];
+  for (const dir of fs.readdirSync(ROOT).filter(d => d.endsWith('-tactics-board'))) {
+    const html = fs.readFileSync(path.join(ROOT, dir, 'index.html'), 'utf8');
+    for (const [, slug] of html.matchAll(/href="\/guides\/([a-z0-9-]+)\/?"/g)) {
+      if (!fs.existsSync(path.join(ROOT, 'guides', slug, 'index.html'))) {
+        broken.push(`${dir} → /guides/${slug}/`);
+      }
+    }
+  }
+  assert(broken.length === 0, `links to guides that do not exist:\n  ${broken.join('\n  ')}`);
+});
+
+test('seo: no sport page links the same guide twice', async () => {
+  // Two of the 34 pages already linked a guide in their own prose, and both
+  // happened to be sports with a specific guide in the mapping — so adding
+  // the block blind gave them the same link twice. A duplicate internal link
+  // is not fatal, but it reads as padding to a reader and to a crawler, and
+  // nothing else here would have noticed.
+  const fs = await import('node:fs');
+  const dupes = [];
+  for (const dir of fs.readdirSync(ROOT).filter(d => d.endsWith('-tactics-board'))) {
+    const html = fs.readFileSync(path.join(ROOT, dir, 'index.html'), 'utf8');
+    const seen = new Map();
+    for (const [, slug] of html.matchAll(/href="\/guides\/([a-z0-9-]+)\/?"/g)) {
+      seen.set(slug, (seen.get(slug) || 0) + 1);
+    }
+    for (const [slug, count] of seen) {
+      if (count > 1) dupes.push(`${dir} links /guides/${slug}/ ${count} times`);
+    }
+  }
+  assert(dupes.length === 0, `duplicate guide links:\n  ${dupes.join('\n  ')}`);
+});
+
+test('seo: a sport with its own guide gets it, not a generic one', async () => {
+  // The point of the sport-specific mapping. A padel guide on the ice hockey
+  // page would be filler, and a tennis page without the tennis guides wastes
+  // the best match it has.
+  const fs = await import('node:fs');
+  const read = (d) => fs.readFileSync(path.join(ROOT, d, 'index.html'), 'utf8');
+
+  assertIncludes(read('tennis-tactics-board'), '/guides/tennis-drill-diagrams-for-coaches/',
+    'the tennis page should link the tennis drill guide');
+  assertIncludes(read('padel-tactics-board'), '/guides/padel-positioning-drills-for-beginners/',
+    'the padel page should link the padel guide');
+  assert(!read('ice-hockey-tactics-board').includes('padel-positioning-drills'),
+    'an unrelated sport guide must not appear as filler');
+});
+
 // ── Tests: marketing pages ───────────────────────────────────────────────
 
 test('pages: landing page renders without errors or horizontal overflow', async (page, errors) => {

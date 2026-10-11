@@ -1,6 +1,10 @@
 // Auto-generated court SVG lookup — used by community.html thumbnails
 // Source: courtdraw-app.html COURTS array
-window.COURT_SVGS = {
+// Loaded two ways: as a classic <script> by community.html, which reads it off
+// window, and as a CommonJS module by the Netlify function that renders a play
+// page server-side. Assigning straight to window broke the second, and keeping
+// a second copy for the server would have let the two drift.
+const COURT_SVGS = {
   tennis_singles: `<rect width="1000" height="600" fill="#0f2040"/>
       <rect x="70" y="151" width="860" height="298" fill="#1d4ed8"/>
       <rect x="70" y="151" width="860" height="298" fill="none" stroke="white" stroke-width="3"/>
@@ -471,3 +475,6 @@ window.COURT_SVGS = {
       \${Array.from({length:6}, (_,i)=>\`<line x1="30" y1="\${30+i*90}" x2="970" y2="\${30+i*90}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>\`).join('')}
       <text x="500" y="590" text-anchor="middle" font-family="system-ui" font-size="12" fill="rgba(255,255,255,0.18)" font-weight="600">WHITEBOARD</text>`,
 };
+
+if (typeof window !== 'undefined') window.COURT_SVGS = COURT_SVGS;
+if (typeof module !== 'undefined' && module.exports) module.exports = COURT_SVGS;

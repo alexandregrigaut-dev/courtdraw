@@ -143,6 +143,8 @@
       background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2);
       border-radius: 6px; padding: 3px 8px; width: fit-content;
     }
+    .play-card-link { color: inherit; text-decoration: none; }
+    .play-card-link:hover { text-decoration: underline; }
     .play-card-name {
       font-family: 'Cabinet Grotesk', system-ui, sans-serif;
       font-size: 1rem; font-weight: 700; line-height: 1.3;
@@ -363,14 +365,19 @@
       <div class="play-card-thumb">${renderThumbSvg(play)}</div>
       <div class="play-card-body">
         <div class="play-card-sport">${emoji} ${e(sportLabel)}</div>
-        <div class="play-card-name">${e(name)}</div>
+        <div class="play-card-name"><a class="play-card-link" href="/play/${encodeURIComponent(play.id)}">${e(name)}</a></div>
         <div class="play-card-footer">
           <span class="play-card-author">by @${e(author)}</span>
           <span class="play-card-saves">${saves > 0 ? saves + ' saves' : ''}</span>
         </div>
       </div>
     `;
-    card.addEventListener('click', () => {
+    card.addEventListener('click', (ev) => {
+      // Every play now has a server-rendered page of its own at /play/:id, and
+      // the title is a real link to it — which is how a crawler finds them,
+      // and what makes middle-click and "open in new tab" behave. Clicking
+      // the title should follow that link rather than be swallowed here.
+      if (ev.target.closest('.play-card-link')) return;
       // Store the specific play in sessionStorage so the app loads it directly
       try {
         sessionStorage.setItem('courtdraw_queued_play', JSON.stringify({
