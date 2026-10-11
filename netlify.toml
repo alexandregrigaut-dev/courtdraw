@@ -234,6 +234,22 @@
   to   = "/profile.html?u=:username"
   status = 200
 
+# One server-rendered page per published community play. Rendered by a
+# function rather than served as a file: the plays live in Firestore and
+# change without a deploy, and the diagram has to be in the HTML for the page
+# to be worth indexing at all.
+[[redirects]]
+  from = "/play/:id"
+  to   = "/.netlify/functions/play-page?id=:id"
+  status = 200
+
+# Those plays cannot go in the static sitemap for the same reason. robots.txt
+# names this as a second sitemap, which the protocol allows.
+[[redirects]]
+  from = "/sitemap-plays.xml"
+  to   = "/.netlify/functions/sitemap-plays"
+  status = 200
+
 [[headers]]
   for = "/.well-known/assetlinks.json"
   [headers.values]
