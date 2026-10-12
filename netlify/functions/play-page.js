@@ -40,9 +40,42 @@ const TACTIC_LABEL = {
   other:      'Tactic',
 };
 
-// Firestore ids are 20 alphanumeric characters. Anything else is a probe or a
-// stale link, and is refused before it costs a read.
+// Play ids are Firestore document ids: the generated twenty-character kind
+// for user-published plays, and readable ones like football_formation_442 for
+// the seeded set. Anything else is a probe or a stale link, and is refused
+// before it costs a read.
 const VALID_ID = /^[A-Za-z0-9_-]{6,64}$/;
+
+// Where the id actually arrives.
+//
+// The first version read only event.queryStringParameters.id, because that is
+// what the redirect writes. In production every single play returned 404 while
+// the sitemap — reading the same collection with the same credentials — listed
+// all 210, which placed the fault squarely on the id never reaching the
+// lookup. The tests did not catch it: they handed the function the same event
+// shape the function assumed, so they verified an assumption against itself.
+//
+// Netlify preserves the ORIGINAL request path across a 200 rewrite, so
+// /play/<id> is in event.path whatever happens to the query string. All three
+// sources are read, cheapest first, so the page no longer depends on one
+// detail of how the platform passes a parameter through a rewrite.
+function playIdFromEvent(event) {
+  const fromQuery = ((event.queryStringParameters || {}).id || '').trim();
+  if (fromQuery) return fromQuery;
+
+  // /play/<id>, with or without a trailing slash, and also the function's own
+  // path if it is ever called as /.netlify/functions/play-page/<id>.
+  const path = String(event.path || event.rawUrl || '');
+  const m = path.match(/\/(?:play|play-page)\/([^/?#]+)\/?$/);
+  if (m) { try { return decodeURIComponent(m[1]).trim(); } catch (e) { return m[1].trim(); } }
+
+  // Last resort: the raw query string, which some runtimes populate instead.
+  const raw = String(event.rawQuery || '');
+  const q = raw.match(/(?:^|&)id=([^&]*)/);
+  if (q) { try { return decodeURIComponent(q[1]).trim(); } catch (e) { return q[1].trim(); } }
+
+  return '';
+}
 
 const titleCase = (s) => String(s || '').replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim();
 
@@ -63,8 +96,17 @@ function notFound() {
 }
 
 exports.handler = async (event) => {
-  const id = ((event.queryStringParameters || {}).id || '').trim();
-  if (!VALID_ID.test(id)) return notFound();
+  const id = playIdFromEvent(event);
+  if (!VALID_ID.test(id)) {
+    // Logged with what arrived, so if this ever misfires again the Netlify
+    // function log says which field held the id rather than leaving it to be
+    // guessed from the outside, where a refused id and a missing play look
+    // identical by design.
+    console.warn('[play-page] no usable id;',
+      'path=', JSON.stringify(event.path || ''),
+      'query=', JSON.stringify(event.queryStringParameters || {}));
+    return notFound();
+  }
 
   let snap;
   try {
@@ -237,3 +279,6 @@ ${indexable ? '' : '<meta name="robots" content="noindex">\n'}<meta property="og
     body,
   };
 };
+
+// Exported for tests: the extraction is the part that broke in production.
+exports.playIdFromEvent = playIdFromEvent;

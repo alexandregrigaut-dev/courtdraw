@@ -78,10 +78,70 @@ Module._load = function (request) {
 process.env.PUBLIC_URL = 'https://courtdraw.app';
 process.env.FIREBASE_PRIVATE_KEY = 'x';
 
-const { handler: playPage }  = require(path.join(ROOT, 'netlify/functions/play-page.js'));
+const playPageModule = require(path.join(ROOT, 'netlify/functions/play-page.js'));
+const playPage = playPageModule.handler;
+const { playIdFromEvent } = playPageModule;
 const { handler: playSitemap } = require(path.join(ROOT, 'netlify/functions/sitemap-plays.js'));
 
 const get = (id) => playPage({ queryStringParameters: { id } });
+
+// ── Tests: the id has to survive the rewrite ─────────────────────────────────
+// This is where it broke in production. Every play 404'd while the sitemap,
+// reading the same collection with the same credentials, listed all 210 — so
+// the id was never reaching the lookup. The tests passed throughout, because
+// they handed the handler the one event shape the handler already assumed:
+// they verified an assumption against itself.
+//
+// These drive the shapes Netlify actually produces instead. A rewrite
+// preserves the original request path, so /play/<id> is in event.path whether
+// or not the query placeholder is substituted.
+
+const REAL_ID = 'E5FkXMW5TkXxv0YqE0nj';      // a user-published play
+const SEED_ID = 'football_formation_442';     // a seeded one, as the sitemap lists
+
+test('the id is found however the platform passes it through', async () => {
+  const shapes = [
+    ['query param substituted',  { queryStringParameters: { id: REAL_ID }, path: `/play/${REAL_ID}` }],
+    ['query param NOT substituted, path preserved',
+                                 { queryStringParameters: {}, path: `/play/${REAL_ID}` }],
+    ['queryStringParameters null', { queryStringParameters: null, path: `/play/${REAL_ID}` }],
+    ['trailing slash',           { path: `/play/${REAL_ID}/` }],
+    ['function path form',       { path: `/.netlify/functions/play-page/${REAL_ID}` }],
+    ['rawQuery only',            { rawQuery: `id=${REAL_ID}`, path: '/.netlify/functions/play-page' }],
+    ['rawUrl fallback',          { rawUrl: `https://courtdraw.app/play/${REAL_ID}` }],
+  ];
+  for (const [label, event] of shapes) {
+    assert(playIdFromEvent(event) === REAL_ID,
+      `${label}: expected ${REAL_ID}, got ${JSON.stringify(playIdFromEvent(event))}`);
+  }
+});
+
+test('a readable seeded id survives too, underscores and all', async () => {
+  // The sitemap lists 206 of these. A pattern that only matched the
+  // twenty-character generated form would 404 the bulk of the library.
+  assert(playIdFromEvent({ path: `/play/${SEED_ID}` }) === SEED_ID, 'path form');
+  assert(playIdFromEvent({ queryStringParameters: { id: SEED_ID } }) === SEED_ID, 'query form');
+  assert(/^[A-Za-z0-9_-]{6,64}$/.test(SEED_ID), 'and it must pass validation');
+});
+
+test('a real play renders from a path-only event, as Netlify sends it', async () => {
+  // The end-to-end version of the above: not just that the id is extracted,
+  // but that the page actually comes back with the diagram in it.
+  playDocs = { [SEED_ID]: makePlay({ name: '4-4-2 Formation' }) };
+  const res = await playPage({ queryStringParameters: {}, path: `/play/${SEED_ID}` });
+  assert(res.statusCode === 200, `expected 200 from a path-only event, got ${res.statusCode}`);
+  assertIncludes(res.body, '<svg', 'and the diagram must be in it');
+  assertIncludes(res.body, '4-4-2 Formation', 'and the name');
+});
+
+test('nothing usable anywhere still refuses, without a read', async () => {
+  playDocs = {};
+  dbReads = 0;
+  for (const event of [{}, { path: '/play/' }, { path: '/play' }, { queryStringParameters: {} }]) {
+    assert((await playPage(event)).statusCode === 404, `${JSON.stringify(event)} should 404`);
+  }
+  assert(dbReads === 0, `an unusable id must not reach Firestore, got ${dbReads} reads`);
+});
 
 // ── Tests: the page is worth indexing ─────────────────────────────────────────
 
