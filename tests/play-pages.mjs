@@ -246,6 +246,63 @@ test('the CTA hands the play to the app through the path the app expects', async
   assert(!body.includes('?play='), 'it must not use a parameter the app does not handle');
 });
 
+test('the play is queued before the link it belongs to exists', async () => {
+  // It used to be queued by a click handler in a script at the end of the
+  // body: a click landing before that parsed navigated to the app with
+  // nothing queued and opened an empty board. Ordering in the document is
+  // what removes the race, so ordering is what is asserted.
+  playDocs = { abc123xyz789: makePlay() };
+  const body = (await get('abc123xyz789')).body;
+  const queuedAt = body.indexOf('courtdraw_queued_play');
+  const linkAt   = body.indexOf('href="/app?loadplay=1"');
+  assert(queuedAt !== -1 && linkAt !== -1, 'both must be present');
+  assert(queuedAt < linkAt,
+    `the queue must come first in the document (queue at ${queuedAt}, link at ${linkAt})`);
+});
+
+test('the CTA is a plain link with nothing attached to it', async () => {
+  // Two separate browser checks reported the first click doing nothing. The
+  // markup is an ordinary anchor, so nothing in it can block navigation —
+  // but a listener on the one button that matters is a dependency it does
+  // not need, and removing it removes the only candidate explanation.
+  playDocs = { abc123xyz789: makePlay() };
+  const body = (await get('abc123xyz789')).body;
+  assert(!/addEventListener/.test(body), 'no listener should be wired to the CTA');
+  assert(!/onclick=/i.test(body), 'and no inline handler either');
+  assert(!/id="open-play"/.test(body), 'the element needs no id now that nothing targets it');
+});
+
+test('every inline script on the page is valid JavaScript', async () => {
+  // The play name and its geometry are interpolated into a script block. A
+  // quote or a line separator in the wrong place makes the whole block a
+  // syntax error, which fails silently: the page renders, and only the thing
+  // the script was for stops working. Parsed rather than eyeballed.
+  playDocs = {
+    trickyplay123: makePlay({
+      name: `O'Sullivan's "4-4-2" \u2028 — pressing`,
+      authorName: "Coach O'Brien",
+      objectsJson: JSON.stringify([
+        { type: 'arrow', points: [[100, 100], [400, 300]], color: '#fff' },
+        { type: 'text', x: 50, y: 60, text: 'don\'t drop deep' },
+      ]),
+    }),
+  };
+  const body = (await get('trickyplay123')).body;
+  let found = 0;
+  for (const m of body.matchAll(/<script(?![^>]*ld\+json)[^>]*>([\s\S]*?)<\/script>/g)) {
+    found++;
+    try { new Function(m[1]); }
+    catch (e) { assert(false, `inline script ${found} is a syntax error: ${e.message}`); }
+  }
+  assert(found >= 1, 'there should be an inline script to check');
+
+  // And the JSON-LD must still be parseable JSON, for the same reason.
+  const ld = body.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+  assert(ld, 'the JSON-LD block should be present');
+  try { JSON.parse(ld[1].replace(/\\u003c/g, '<')); }
+  catch (e) { assert(false, `JSON-LD is not valid JSON: ${e.message}`); }
+});
+
 test('nothing a user typed can close a script block early', async () => {
   // Two blocks on this page are scripts: the JSON-LD and the CTA's queue.
   // Neither JSON.stringify nor HTML escaping protects a </script> sequence
