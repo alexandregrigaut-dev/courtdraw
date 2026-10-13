@@ -242,7 +242,22 @@ ${indexable ? '' : '<meta name="robots" content="noindex">\n'}<meta property="og
     ${meta.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('\n    ')}
   </dl>
 
-  <a class="cta" id="open-play" href="/app?loadplay=1">Open this play in CourtDraw →</a>
+  <script>
+    // Queued here rather than on click. The app reads this key when it opens
+    // with ?loadplay=1, and the write has to have happened by then.
+    //
+    // This used to be a click handler on the link below, which was a race: the
+    // script sat at the end of the body, so a click landing before it parsed
+    // navigated to the app with nothing queued and opened an empty board. It
+    // also made the one button that matters depend on a listener attaching.
+    // Running at parse time, above the link, there is no ordering to lose and
+    // the link is a plain link again.
+    //
+    // Queuing for someone who never clicks costs nothing: one sessionStorage
+    // key, read only by ?loadplay=1 and overwritten by the next play page.
+    try { sessionStorage.setItem('courtdraw_queued_play', ${JSON.stringify(queued)}); } catch (e) {}
+  </script>
+  <a class="cta" href="/app?loadplay=1">Open this play in CourtDraw →</a>
   <p class="cta-note">Free to open and edit. Change the positions, add your own phases, export it for your squad.</p>
 
   <div class="more">
@@ -255,16 +270,6 @@ ${indexable ? '' : '<meta name="robots" content="noindex">\n'}<meta property="og
     </div>
   </div>
 </div>
-<script>
-  // Queue the play for the app, then follow the link as normal.
-  (function () {
-    var a = document.getElementById('open-play');
-    if (!a) return;
-    a.addEventListener('click', function () {
-      try { sessionStorage.setItem('courtdraw_queued_play', ${JSON.stringify(queued)}); } catch (e) {}
-    });
-  })();
-</script>
 </body>
 </html>`;
 
