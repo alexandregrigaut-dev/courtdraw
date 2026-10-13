@@ -2,7 +2,9 @@
  * activation-report.js — on-demand cohort analysis
  *
  * GET /.netlify/functions/activation-report
- * Header: x-internal-secret: <INTERNAL_SECRET>
+ * Auth: header  x-internal-secret: <INTERNAL_SECRET>
+ *       or query ?secret=<INTERNAL_SECRET>, so it can be opened in a browser
+ *       the same way user-activation-stats.js is.
  *
  * Returns JSON with conversion rates broken down by activation event,
  * plus time-to-activation stats for users who hit each moment.
@@ -38,16 +40,33 @@ function pct(n, d) {
   return Math.round((n / d) * 1000) / 10; // one decimal
 }
 
-function avgHours(msValues) {
-  if (!msValues.length) return null;
-  return Math.round(msValues.reduce((a, b) => a + b, 0) / msValues.length / 36000) / 100;
+// Both take values already expressed in hours. The earlier version divided by
+// 36000 as if it were handed milliseconds, so avgHoursToActivation reported 0.0
+// for every event no matter what the data said.
+function avgHours(hours) {
+  if (!hours.length) return null;
+  const sum = hours.reduce((a, b) => a + b, 0);
+  return Math.round((sum / hours.length) * 100) / 100;
+}
+
+// The mean is dragged up by the one coach who comes back on day six. The median
+// is what "when do people activate" actually means, and it decides whether the
+// trial email on day 2 lands before or after the moment that matters.
+function medianHours(hours) {
+  if (!hours.length) return null;
+  const sorted = [...hours].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const value = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  return Math.round(value * 100) / 100;
 }
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') return { statusCode: 405, body: 'Method Not Allowed' };
 
   const secret = process.env.INTERNAL_SECRET;
-  if (!secret || event.headers['x-internal-secret'] !== secret) {
+  const provided = (event.headers || {})['x-internal-secret']
+    || (event.queryStringParameters || {}).secret;
+  if (!secret || provided !== secret) {
     return { statusCode: 401, body: 'Unauthorized' };
   }
 
@@ -146,7 +165,8 @@ exports.handler = async (event) => {
         trialed:        b.trialed,
         converted:      b.converted,
         conversionRate: pct(b.converted, b.trialed),
-        avgHoursToActivation: avgHours(b.hoursToActivation),
+        avgHoursToActivation:    avgHours(b.hoursToActivation),
+        medianHoursToActivation: medianHours(b.hoursToActivation),
         pctActivatedWithin48h: b.hoursToActivation.length
           ? pct(b.hoursToActivation.filter(h => h <= 48).length, b.hoursToActivation.length)
           : null,
