@@ -198,7 +198,7 @@ ${indexable ? '' : '<meta name="robots" content="noindex">\n'}<meta property="og
 <meta property="og:title" content="${esc(name)} — ${esc(sport)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(canonical)}">
-<meta property="og:image" content="${SITE}/og-image.png">
+<meta property="og:image" content="${SITE}/assets/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/assets/icons/icon.svg" type="image/svg+xml">
 <script type="application/ld+json">${JSON.stringify(schema).replace(/</g, '\\u003c')}</script>

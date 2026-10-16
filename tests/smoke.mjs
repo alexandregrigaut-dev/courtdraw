@@ -458,6 +458,32 @@ test('checkout: success.html claims no sale it cannot see', async () => {
 
 // ── Tests: internal linking ──────────────────────────────────────────────
 
+test('social: every og:image points at a file that exists', async () => {
+  // profile.html, community.html and play-page.js all pointed at
+  // /og-image.png. The file lives at /assets/og-image.png, so the three most
+  // shareable surfaces on the site — the community library, coach profiles and
+  // all 210 play pages — offered a 404 as their preview image. Nothing breaks
+  // visibly: the page loads, the tag is present, the card is just blank.
+  const fs = await import('node:fs');
+  const files = [
+    ...fs.readdirSync(ROOT).filter(f => f.endsWith('.html')),
+    'netlify/functions/play-page.js',
+  ];
+  const broken = [];
+  for (const f of files) {
+    const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
+    for (const m of src.matchAll(/og:image"\s+content="([^"]+)"/g)) {
+      const asset = m[1]
+        .replace(/^https?:\/\/[^/]+/, '')
+        .replace(/^\$\{SITE\}/, '')
+        .replace(/^\//, '');
+      if (!asset || /^\$\{/.test(asset)) continue;   // fully dynamic, nothing to check
+      if (!fs.existsSync(path.join(ROOT, asset))) broken.push(`${f} -> /${asset}`);
+    }
+  }
+  assert(broken.length === 0, `og:image pointing at missing files:\n      ${broken.join('\n      ')}`);
+});
+
 test('email: every CTA points at something the app actually does', async () => {
   // A re-engagement email whose CTA reads "Start a session" pointed at
   // /courtdraw-app.html#sessions. No such anchor exists — the session planner
