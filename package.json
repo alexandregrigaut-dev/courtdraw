@@ -2,7 +2,12 @@
   "name": "courtdraw",
   "version": "1.0.0",
   "private": true,
-  "description": "CourtDraw — browser tactics board for 38+ sports. Static site; this manifest exists only to expose the test script.",
+  "description": "CourtDraw — browser tactics board for 38+ sports. Static site plus Netlify functions; the dependencies below are what those functions import at runtime.",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "resend": "^6.33.0",
+    "stripe": "^23.0.0"
+  },
   "scripts": {
     "test": "node tests/email-budget.mjs && node tests/trial-reminder.mjs && node tests/trial-capture.mjs && node tests/dunning.mjs && node tests/ga4-purchase.mjs && node tests/activation-report.mjs && node tests/stats-auth.mjs && node tests/trial-backfill.mjs && node tests/play-pages.mjs && node tests/smoke.mjs",
     "test:unit": "node tests/email-budget.mjs && node tests/trial-reminder.mjs",
