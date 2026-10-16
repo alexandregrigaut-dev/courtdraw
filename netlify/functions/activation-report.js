@@ -9,6 +9,9 @@
  * Returns JSON with conversion rates broken down by activation event,
  * plus time-to-activation stats for users who hit each moment.
  *
+ * Reads every account via admin.auth().listUsers() and fetches each user doc
+ * by id — the same pattern weekly-digest.js and user-activation-stats.js use.
+ *
  * Firestore fields read:
  *   trialStartedAt        — ISO, written by webhook on checkout.session.completed (trial)
  *   trialConverted        — bool, written by webhook on subscription.updated trialing→active
@@ -84,24 +87,53 @@ exports.handler = async (event) => {
   const anyActivation = { trialed: 0, converted: 0 };
   const noActivation  = { trialed: 0, converted: 0 };
 
-  // Page through all user docs that have trialStartedAt
-  let lastDoc = null;
-  let hasMore = true;
+  // Walk every registered account and read its doc, the way weekly-digest,
+  // drip-emails and user-activation-stats all do.
+  //
+  // This replaces a collection query filtered on `trialStartedAt != null`.
+  // That was the only `!=` query in the codebase, so nothing else proved the
+  // pattern worked, and in production it returned zero rows while
+  // user-activation-stats read 119 user docs from the same collection with
+  // listUsers. A filter that silently matches nothing reports an empty funnel
+  // as a real result, which is worse than an error.
+  //
+  // `scanned` and `fieldPresence` below say which of the two possible causes
+  // is true — the field is missing on every doc, or the old filter was wrong —
+  // without needing another round trip to find out.
+  const scanned = { accounts: 0, withUserDoc: 0 };
+  const fieldPresence = {
+    subscribedAt: 0,      // written on every completed checkout
+    stripeCustomerId: 0,  // ditto
+    trialStartedAt: 0,    // written only when the checkout was a trial
+    isTrialing: 0,
+    trialConverted: 0,
+  };
 
-  while (hasMore) {
-    let query = db.collection('users')
-      .where('trialStartedAt', '!=', null)
-      .orderBy('trialStartedAt')
-      .limit(500);
-    if (lastDoc) query = query.startAfter(lastDoc);
+  let pageToken;
+  do {
+    const result = await admin.auth().listUsers(1000, pageToken);
+    pageToken = result.pageToken;
 
-    const snap = await query.get();
-    if (snap.empty) break;
-    hasMore = snap.size === 500;
-    lastDoc = snap.docs[snap.docs.length - 1];
+    for (const user of result.users) {
+      scanned.accounts++;
 
-    for (const docSnap of snap.docs) {
-      const d = docSnap.data();
+      let d = null;
+      try {
+        const snap = await db.collection('users').doc(user.uid).get();
+        if (snap.exists) { d = snap.data(); scanned.withUserDoc++; }
+      } catch (e) {
+        console.warn(`activation-report: Firestore read failed for ${user.uid}: ${e.message}`);
+        continue;
+      }
+      if (!d) continue;
+
+      for (const f of Object.keys(fieldPresence)) {
+        if (d[f] !== undefined && d[f] !== null) fieldPresence[f]++;
+      }
+
+      // Only users who actually started a trial belong in the funnel.
+      if (d.trialStartedAt === undefined || d.trialStartedAt === null) continue;
+
       const trialStartMs = new Date(d.trialStartedAt).getTime();
       const converted    = d.trialConverted === true;
 
@@ -130,7 +162,7 @@ exports.handler = async (event) => {
         if (converted) noActivation.converted++;
       }
     }
-  }
+  } while (pageToken);
 
   // Build report
   const report = {
@@ -153,6 +185,15 @@ exports.handler = async (event) => {
       },
     },
     byActivationEvent: {},
+
+    // Reading zero trials is a claim that needs evidence. These say whether the
+    // collection was actually read and which fields were found, so an empty
+    // funnel can be told apart from a broken read without a code change.
+    diagnostics: {
+      accountsScanned:      scanned.accounts,
+      accountsWithUserDoc:  scanned.withUserDoc,
+      fieldPresence,
+    },
   };
 
   for (const key of ACTIVATION_KEYS) {
