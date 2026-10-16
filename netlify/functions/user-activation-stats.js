@@ -1,11 +1,18 @@
 /**
  * user-activation-stats.js — read-only activation snapshot across ALL registered users.
  *
- * Unlike activation-report.js (which only covers users who started a trial and
- * requires a POST-style header), this covers every registered account and can be
- * triggered by simply visiting a URL:
+ * Unlike activation-report.js, which only covers users who started a trial,
+ * this covers every registered account.
  *
- *   https://courtdraw.app/.netlify/functions/user-activation-stats?secret=YOUR_INTERNAL_SECRET
+ * Auth: header  x-internal-secret: <INTERNAL_SECRET>
+ *       or query ?secret=<INTERNAL_SECRET>
+ *
+ * Prefer the header. A secret in a query string is recorded in browser history
+ * and in the function's own access logs, and this one is shared with the email
+ * senders, so leaking it costs more than this endpoint.
+ *
+ *   curl -sS -H "x-internal-secret: $SECRET" \
+ *     https://courtdraw.app/.netlify/functions/user-activation-stats
  *
  * READ ONLY — this function never writes to Firestore or Auth.
  *
@@ -46,7 +53,9 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') return { statusCode: 405, body: 'Method Not Allowed' };
 
   const secret = process.env.INTERNAL_SECRET;
-  if (!secret || event.queryStringParameters?.secret !== secret) {
+  const provided = (event.headers || {})['x-internal-secret']
+    || (event.queryStringParameters || {}).secret;
+  if (!secret || provided !== secret) {
     return { statusCode: 401, body: 'Unauthorized' };
   }
 

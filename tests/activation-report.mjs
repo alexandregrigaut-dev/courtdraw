@@ -158,6 +158,21 @@ test('with INTERNAL_SECRET unset nothing opens the report', async () => {
   }
 });
 
+test('no header and no query object returns 401 rather than crashing', async () => {
+  // Short-circuit blind spot: with a valid header the query side is never
+  // evaluated, so an unguarded event.queryStringParameters.secret only throws
+  // on the unauthenticated request the endpoint must survive.
+  setUsers([trialUser()]);
+  const res = await handler({ httpMethod: 'GET', headers: {} });
+  assert(res && res.statusCode === 401, `got ${res && res.statusCode}`);
+});
+
+test('neither object present returns 401 rather than crashing', async () => {
+  setUsers([trialUser()]);
+  const res = await handler({ httpMethod: 'GET' });
+  assert(res && res.statusCode === 401, `got ${res && res.statusCode}`);
+});
+
 test('the secret is never echoed into the response', async () => {
   setUsers([trialUser()]);
   const res = await run({ headers: {}, queryStringParameters: { secret: 's3cret' } });
