@@ -458,6 +458,38 @@ test('checkout: success.html claims no sale it cannot see', async () => {
 
 // ── Tests: internal linking ──────────────────────────────────────────────
 
+test('activity: a free user\'s saves are tracked, not only a paying one\'s', async () => {
+  // recentActivity began as weekly-digest fuel for Pro/Club, so its writer was
+  // plan-gated. Two readers have since treated it as a signal about everyone:
+  // reengagement-emails.js calls an empty array "zero plays drawn", and
+  // user-activation-stats.js counts it as everSavedAPlay. With the gate in
+  // place a free user who drew every day still looked like they had never
+  // started, and was emailed accordingly.
+  const fs = await import('node:fs');
+  const app = fs.readFileSync(path.join(ROOT, 'courtdraw-app.html'), 'utf8');
+
+  const gated = /\(\s*state\.isPro\s*\|\|\s*state\.isClub\s*\)\s*&&\s*typeof window\.__trackPlaySaved/;
+  assert(!gated.test(app),
+    'the play-save tracker is plan-gated again — free users will look permanently inactive');
+  assert(app.includes("typeof window.__trackPlaySaved === 'function'"),
+    'the play-save tracker call site is gone');
+  assert(app.includes('window.__trackPlaySaved(name, sport)'),
+    'the play-save tracker is no longer called on save');
+});
+
+test('activity: the readers of recentActivity still treat it as universal', async () => {
+  // The guard above is only worth having while these two still read the field
+  // for every user. If either becomes plan-aware, the coupling changes and
+  // that test should be revisited rather than silently kept.
+  const fs = await import('node:fs');
+  const reengage = fs.readFileSync(path.join(ROOT, 'netlify/functions/reengagement-emails.js'), 'utf8');
+  const stats    = fs.readFileSync(path.join(ROOT, 'netlify/functions/user-activation-stats.js'), 'utf8');
+  assert(/hasZeroPlays\s*=\s*!Array\.isArray\(userData\.recentActivity\)/.test(reengage),
+    'the zero-plays trigger no longer reads recentActivity the way the tracker assumes');
+  assert(/Array\.isArray\(data\.recentActivity\)/.test(stats),
+    'the activation stats no longer count recentActivity the way the tracker assumes');
+});
+
 test('seo: every sport page passes authority to the guides and the library', async () => {
   // The sport pages are where the organic traffic lands. Before this they
   // linked only to each other, so the guides — which exist to convert — and
