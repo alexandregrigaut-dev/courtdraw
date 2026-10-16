@@ -5335,8 +5335,24 @@ function saveTactic() {
   if (_saveUid && typeof window.__savePlayToFirestore === 'function') {
     window.__savePlayToFirestore(_saveUid, tactic);
   }
-  // Track activity in Firestore for weekly digest (Pro/Club only, best-effort)
-  if ((state.isPro || state.isClub) && typeof window.__trackPlaySaved === 'function') {
+  // Track activity in Firestore for every signed-in user, best-effort.
+  //
+  // This was Pro/Club only, when recentActivity existed solely to fill the
+  // weekly digest. It has since been repurposed and the gate was never
+  // revisited, so a free user's saves were recorded nowhere:
+  //
+  //   reengagement-emails.js treats an empty recentActivity as "zero plays
+  //   drawn", so every free user looked permanently inactive and was sent
+  //   "you haven't drawn anything yet" however much they had drawn.
+  //
+  //   user-activation-stats.js counts it as everSavedAPlay, which read as
+  //   84.9% of accounts never saving anything. That number was measuring the
+  //   gate, not the users.
+  //
+  // Free saves are capped at FREE_SAVES, so this adds at most three small
+  // writes per free account. The weekly digest is unaffected: free users get
+  // the static weeklyDigestFree template, which reads none of this.
+  if (typeof window.__trackPlaySaved === 'function') {
     const court = COURTS.find(c => c.id === state.courtId);
     const sport = court ? court.name.replace(/ \(.*\)/, '') : '';
     window.__trackPlaySaved(name, sport);
