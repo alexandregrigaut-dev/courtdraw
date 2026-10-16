@@ -587,7 +587,7 @@ const templates = {
              In the app, tap <strong>Sessions</strong>, pick 3 plays from your library, set drill durations, and you'll have a full training plan ready to present on the sideline.<br><br>
              Your players will know exactly what's coming — no re-explaining between drills.`,
       ctaText: 'Start a session →',
-      ctaUrl: `${APP_URL}/courtdraw-app.html#sessions`,
+      ctaUrl: `${APP_URL}/courtdraw-app.html?sessions=1`,
       features: [
         { icon: '📅', label: 'Session plans' },
         { icon: '▶️', label: 'Present mode' },

@@ -458,6 +458,44 @@ test('checkout: success.html claims no sale it cannot see', async () => {
 
 // ── Tests: internal linking ──────────────────────────────────────────────
 
+test('email: every CTA points at something the app actually does', async () => {
+  // A re-engagement email whose CTA reads "Start a session" pointed at
+  // /courtdraw-app.html#sessions. No such anchor exists — the session planner
+  // is a modal — so the link opened the board and left the coach to find the
+  // feature. One account out of 119 has ever used the session planner.
+  //
+  // Checks three things per CTA: the page exists, a #fragment has a matching
+  // id, and a ?param is actually read by that page.
+  const fs = await import('node:fs');
+  const email = fs.readFileSync(path.join(ROOT, 'netlify/functions/send-email.js'), 'utf8');
+
+  const urls = [...email.matchAll(/ctaUrl:\s*`\$\{APP_URL\}([^`]*)`/g)].map(m => m[1]);
+  assert(urls.length >= 6, `expected the CTA set, found ${urls.length}`);
+
+  const broken = [];
+  for (const raw of new Set(urls)) {
+    const [beforeHash, frag] = raw.split('#');
+    const [rawPath, query]   = beforeHash.split('?');
+    const file = (rawPath === '' || rawPath === '/') ? 'index.html' : rawPath.replace(/^\//, '');
+
+    let html;
+    try { html = fs.readFileSync(path.join(ROOT, file), 'utf8'); }
+    catch { broken.push(`${raw} -> ${file} does not exist`); continue; }
+
+    if (frag && !new RegExp(`id=["']${frag}["']`).test(html)) {
+      broken.push(`${raw} -> no id="${frag}" in ${file}`);
+    }
+    if (query) {
+      const key = query.split('=')[0];
+      // The page has to read the parameter for the deep link to mean anything.
+      if (!new RegExp(`get\\(['"]${key}['"]\\)`).test(html)) {
+        broken.push(`${raw} -> ${file} never reads the "${key}" parameter`);
+      }
+    }
+  }
+  assert(broken.length === 0, `dead email CTAs:\n      ${broken.join('\n      ')}`);
+});
+
 test('activity: a free user\'s saves are tracked, not only a paying one\'s', async () => {
   // recentActivity began as weekly-digest fuel for Pro/Club, so its writer was
   // plan-gated. Two readers have since treated it as a signal about everyone:

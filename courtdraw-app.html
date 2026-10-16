@@ -6150,6 +6150,7 @@ let _trialBannerDayKey = null;
 // Guards the ?billing=1 deep link: onAuthStateChanged can fire more than once
 // (token refresh, tab focus) and the portal must not open twice.
 let _billingDeepLinkHandled = false;
+let _sessionsDeepLinkHandled = false;
 
 // Minor units -> the customer's own currency. Returns null rather than guessing:
 // checkout bills in five currencies, and a wrong figure is worse than none.
@@ -9152,6 +9153,19 @@ document.addEventListener('DOMContentLoaded', init);
         _billingDeepLinkHandled = true;
         history.replaceState(null, '', location.pathname);
         if (typeof openBillingPortal === 'function') openBillingPortal();
+      }
+
+      // ?sessions=1 — where the "Start a session" re-engagement email lands.
+      // That CTA used to point at /courtdraw-app.html#sessions, an anchor that
+      // does not exist: the session planner is a modal, not a section. The link
+      // opened the board and left the coach to find the feature themselves.
+      // One account out of 119 has ever used it.
+      if (!_sessionsDeepLinkHandled && new URLSearchParams(location.search).get('sessions') === '1') {
+        _sessionsDeepLinkHandled = true;
+        history.replaceState(null, '', location.pathname);
+        // Safe on any plan: openSessionBuilder shows the Pro feature preview to
+        // free users rather than opening an empty planner.
+        if (typeof openSessionBuilder === 'function') openSessionBuilder();
       }
     } catch {
       // Firestore unavailable — keep localStorage state as fallback
