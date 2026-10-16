@@ -101,8 +101,6 @@ exports.handler = async (event) => {
       return { statusCode: 200, body: JSON.stringify({ received: true }) };
     }
 
-    // Detect whether this is a trial checkout (any plan — no immediate charge means trial)
-    const isTrial = session.payment_status === 'no_payment_required';
 
     const update = {
       plan,
@@ -114,14 +112,40 @@ exports.handler = async (event) => {
     // days from now, when the trial converts and no browser is involved.
     if (session.metadata.gaClientId) update.gaClientId = session.metadata.gaClientId;
 
-    // Store trial metadata for any trialing plan
-    if (isTrial && session.subscription) {
+    // Whether this was a trial is the subscription's business, not the session's.
+    //
+    // This used to be gated on `session.payment_status === 'no_payment_required'`,
+    // an inference about the session. Across 37 completed checkouts the branch
+    // below never ran once — trialStartedAt was absent on every user doc — while
+    // 19 of those same subscriptions later fired trialing → active. The trials
+    // were real; the inference about them was not. `sub.trial_end` is the
+    // authoritative answer, so ask for it directly.
+    //
+    // The cost of being wrong here is invisible: the in-app trial banner is
+    // gated on isTrialing && trialEndsAt, so every one of those 37 coaches
+    // reached the end of a trial with no warning and no stated amount.
+    // Also decides which welcome email goes out below. While this was inferred
+    // from payment_status it was false for every one of those 37 checkouts, so
+    // coaches starting a free trial were emailed "payment confirmed".
+    let isTrial = false;
+    let trialDiag = { at: null, wrote: false, reason: 'no session.subscription' };
+    if (session.subscription) {
       try {
         const sub = await stripe.subscriptions.retrieve(session.subscription);
+        trialDiag = {
+          at: new Date().toISOString(),
+          wrote: false,
+          reason: 'subscription carries no trial_end',
+          subStatus: sub.status || null,
+          paymentStatus: session.payment_status || null,
+        };
         if (sub.trial_end) {
           update.isTrialing      = true;
           update.trialEndsAt     = new Date(sub.trial_end * 1000).toISOString();
           update.trialStartedAt  = new Date().toISOString();
+          isTrial = true;
+          trialDiag.wrote  = true;
+          trialDiag.reason = 'trial fields written';
           // Record the actual amount and currency so the in-app trial notice can
           // state what will be charged rather than guessing. Checkout bills in
           // five currencies, so assuming euros would show a US customer a figure
@@ -135,7 +159,22 @@ exports.handler = async (event) => {
       } catch (e) {
         // Non-fatal: trial info is nice-to-have, not required for access
         console.error('Could not retrieve subscription for trial info:', e.message);
+        trialDiag = {
+          at: new Date().toISOString(),
+          wrote: false,
+          reason: `subscriptions.retrieve failed: ${e.message}`,
+          paymentStatus: session.payment_status || null,
+        };
       }
+    }
+
+    // Record why the trial fields were or were not written. Netlify keeps
+    // function logs for 24 hours and checkouts arrive about once a day, so a
+    // log line is gone before anyone thinks to look. This survives.
+    try {
+      await db.collection('diagnostics').doc('trialCapture').set(trialDiag);
+    } catch (e) {
+      console.error('Could not record trial capture diagnostics:', e.message);
     }
 
     // Club plan: create the club document, assign a stable clubId, generate a join code.
