@@ -26,8 +26,10 @@ const test = (name, fn) => tests.push({ name, fn });
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed'); }
 
 // ── The world ────────────────────────────────────────────────────────────────
-let userDocs = {};     // id -> doc data
-let queries  = [];     // every query the handler built, for the paging tests
+let userDocs = {};        // id -> doc data
+let listUserCalls = [];  // one entry per listUsers page, for the paging tests
+let docReads = [];       // uids whose doc was fetched
+let failDocRead = null;  // uid whose read should throw
 
 const T0 = Date.parse('2026-09-01T00:00:00Z');
 const hoursAfterStart = (h) => T0 + h * 3600 * 1000;
@@ -48,44 +50,46 @@ function trialUser({ converted = false, activations = {}, startedAt = T0 } = {})
 function setUsers(docs) {
   userDocs = {};
   docs.forEach((d, i) => { userDocs[`u${i}`] = d; });
-  queries = [];
+  listUserCalls = []; docReads = []; failDocRead = null;
 }
 
 // ── Stubs ────────────────────────────────────────────────────────────────────
-// Faithful to the slice of Firestore the handler uses: an inequality filter on
-// trialStartedAt, ordered by that field, paged with limit + startAfter. The
-// handler relies on snap.size to decide whether another page exists, so the
-// stub honours the real limit rather than returning everything at once.
+// Faithful to what the report now does: walk every account with
+// admin.auth().listUsers(), then fetch each user doc by id. This is the access
+// pattern weekly-digest.js and user-activation-stats.js use, and the one that
+// demonstrably reads this collection in production.
 const Module = require('module');
 const realLoad = Module._load;
 Module._load = function (request) {
   if (request === 'firebase-admin') {
-    const buildQuery = (spec) => ({
-      where(field, op, value) { return buildQuery({ ...spec, where: { field, op, value } }); },
-      orderBy(field)          { return buildQuery({ ...spec, orderBy: field }); },
-      limit(n)                { return buildQuery({ ...spec, limit: n }); },
-      startAfter(cursor)      { return buildQuery({ ...spec, startAfter: cursor }); },
-      async get() {
-        queries.push(spec);
-        // The `!= null` filter drops docs missing the field, as Firestore does.
-        let rows = Object.entries(userDocs)
-          .filter(([, d]) => d[spec.where.field] !== undefined && d[spec.where.field] !== null)
-          .map(([id, d]) => ({ id, data: () => ({ ...d }) }));
-        rows.sort((a, b) => String(a.data()[spec.orderBy]).localeCompare(String(b.data()[spec.orderBy]))
-          || a.id.localeCompare(b.id));
-        if (spec.startAfter) {
-          const at = rows.findIndex(r => r.id === spec.startAfter.id);
-          rows = at === -1 ? [] : rows.slice(at + 1);
-        }
-        const page = rows.slice(0, spec.limit);
-        return { empty: page.length === 0, size: page.length, docs: page };
-      },
-    });
     return {
       apps: [{}],
       initializeApp() {},
       credential: { cert: () => ({}) },
-      firestore: () => ({ collection: () => buildQuery({}) }),
+      auth: () => ({
+        async listUsers(max, pageToken) {
+          listUserCalls.push({ max, pageToken });
+          const ids = Object.keys(userDocs);
+          const from = pageToken ? Number(pageToken) : 0;
+          const page = ids.slice(from, from + max);
+          const next = from + max;
+          return {
+            users: page.map(uid => ({ uid })),
+            pageToken: next < ids.length ? String(next) : undefined,
+          };
+        },
+      }),
+      firestore: () => ({
+        collection: () => ({
+          doc: (id) => ({
+            async get() {
+              docReads.push(id);
+              if (failDocRead === id) throw new Error('simulated Firestore outage');
+              return { exists: !!userDocs[id], data: () => ({ ...userDocs[id] }) };
+            },
+          }),
+        }),
+      }),
     };
   }
   return realLoad.apply(this, arguments);
@@ -369,7 +373,7 @@ test('users who never started a trial are excluded entirely', async () => {
     free2: { trialStartedAt: null },                    // field explicitly null
     t1:    trialUser({ converted: true, activations: { sharedPlay: 4 } }),
   };
-  queries = [];
+  listUserCalls = []; docReads = []; failDocRead = null;
   const r = await report();
   assert(r.overall.trialedUsers === 1, `got ${r.overall.trialedUsers}`);
   assert(r.overall.conversionRate === 100, `got ${r.overall.conversionRate}`);
@@ -387,10 +391,9 @@ test('only trialConverted === true counts as a conversion', async () => {
 });
 
 // ── Paging ───────────────────────────────────────────────────────────────────
-test('a cohort larger than one page is counted in full', async () => {
+test('a cohort larger than one listUsers page is counted in full', async () => {
   const docs = [];
-  for (let i = 0; i < 501; i++) {
-    // Distinct, ordered start times so the cursor has something to walk.
+  for (let i = 0; i < 1001; i++) {
     docs.push(trialUser({
       converted: i % 2 === 0,
       activations: { sharedPlay: 3 },
@@ -399,36 +402,97 @@ test('a cohort larger than one page is counted in full', async () => {
   }
   setUsers(docs);
   const r = await report();
-  assert(r.overall.trialedUsers === 501, `expected 501, got ${r.overall.trialedUsers}`);
-  assert(r.overall.convertedUsers === 251, `expected 251, got ${r.overall.convertedUsers}`);
-  assert(r.byActivationEvent.sharedPlay.hit.trialed === 501,
-    `expected 501, got ${r.byActivationEvent.sharedPlay.hit.trialed}`);
-  assert(queries.length === 2, `expected 2 pages, got ${queries.length}`);
-  assert(queries[1].startAfter, 'the second page was fetched without a cursor');
+  assert(r.overall.trialedUsers === 1001, `expected 1001, got ${r.overall.trialedUsers}`);
+  assert(r.overall.convertedUsers === 501, `expected 501, got ${r.overall.convertedUsers}`);
+  assert(r.byActivationEvent.sharedPlay.hit.trialed === 1001,
+    `expected 1001, got ${r.byActivationEvent.sharedPlay.hit.trialed}`);
+  assert(listUserCalls.length === 2, `expected 2 pages, got ${listUserCalls.length}`);
+  assert(listUserCalls[1].pageToken, 'the second page was fetched without a page token');
 });
 
 test('nobody is counted twice across a page boundary', async () => {
   const docs = [];
-  for (let i = 0; i < 500; i++) {
+  for (let i = 0; i < 1000; i++) {
     docs.push(trialUser({ converted: true, startedAt: T0 + i * 3600 * 1000 }));
   }
   setUsers(docs);
   const r = await report();
-  // A full first page means "there may be more", so a second query runs and
-  // must come back empty rather than replaying the same 500 docs.
-  assert(r.overall.trialedUsers === 500, `expected 500, got ${r.overall.trialedUsers}`);
-  assert(queries.length === 2, `expected a probe for a second page, got ${queries.length}`);
+  assert(r.overall.trialedUsers === 1000, `expected 1000, got ${r.overall.trialedUsers}`);
+  assert(docReads.length === 1000, `expected 1000 doc reads, got ${docReads.length}`);
 });
 
-test('the query is still the indexed one Firestore requires', async () => {
-  setUsers([trialUser()]);
-  await report();
-  const q = queries[0];
-  assert(q.where.field === 'trialStartedAt' && q.where.op === '!=',
-    'the inequality filter on trialStartedAt is gone');
-  assert(q.orderBy === 'trialStartedAt',
-    'an inequality filter must order by the same field or Firestore rejects it');
-  assert(q.limit === 500, `expected a 500 doc page, got ${q.limit}`);
+test('every account is read, not a filtered subset', async () => {
+  // The previous version filtered the collection with `trialStartedAt != null`,
+  // the only `!=` query in the codebase. In production it matched nothing while
+  // the same collection returned 119 docs through listUsers, and reported an
+  // empty funnel as a real answer. The report must now look at every account.
+  setUsers([
+    trialUser({ converted: true }),
+    { plan: 'free' },                 // never subscribed
+    { subscribedAt: '2026-07-01T00:00:00Z' },  // paid outright, no trial
+  ]);
+  const r = await report();
+  assert(docReads.length === 3, `expected all 3 docs read, got ${docReads.length}`);
+  assert(r.diagnostics.accountsScanned === 3,
+    `expected 3 scanned, got ${r.diagnostics.accountsScanned}`);
+  assert(r.overall.trialedUsers === 1,
+    `only the trial belongs in the funnel, got ${r.overall.trialedUsers}`);
+});
+
+test('a Firestore read failure skips that user instead of failing the report', async () => {
+  setUsers([trialUser({ converted: true }), trialUser({ converted: true })]);
+  failDocRead = 'u0';
+  const res = await run();
+  assert(res.statusCode === 200, `got ${res.statusCode}`);
+  const r = JSON.parse(res.body);
+  assert(r.overall.trialedUsers === 1, `expected 1 survivor, got ${r.overall.trialedUsers}`);
+  assert(r.diagnostics.accountsScanned === 2,
+    `the failed account is still scanned, got ${r.diagnostics.accountsScanned}`);
+  assert(r.diagnostics.accountsWithUserDoc === 1,
+    `expected 1 doc read, got ${r.diagnostics.accountsWithUserDoc}`);
+});
+
+test('an account with no user doc is scanned but not counted', async () => {
+  setUsers([trialUser({ converted: true })]);
+  userDocs.ghost = undefined;        // auth account, no Firestore doc
+  const r = await report();
+  assert(r.diagnostics.accountsScanned === 2,
+    `expected 2 scanned, got ${r.diagnostics.accountsScanned}`);
+  assert(r.diagnostics.accountsWithUserDoc === 1,
+    `expected 1 with a doc, got ${r.diagnostics.accountsWithUserDoc}`);
+  assert(r.overall.trialedUsers === 1, `got ${r.overall.trialedUsers}`);
+});
+
+test('field presence distinguishes a broken read from an empty funnel', async () => {
+  // Zero trials is only believable alongside evidence the docs were read. These
+  // counters say which: no accounts scanned means the read failed, while
+  // accounts with subscribedAt but no trialStartedAt means the webhook never
+  // wrote the trial fields.
+  setUsers([
+    { subscribedAt: '2026-07-01T00:00:00Z', stripeCustomerId: 'cus_1' },
+    { subscribedAt: '2026-07-02T00:00:00Z', stripeCustomerId: 'cus_2',
+      trialStartedAt: new Date(T0).toISOString(), isTrialing: true },
+    // An explicit null is a field Firestore holds but which carries no value.
+    // It must count as absent, or the diagnostics overstate what was written
+    // and point at the wrong cause.
+    { plan: 'free', subscribedAt: null, isTrialing: null, trialConverted: null },
+  ]);
+  const r = await report();
+  const f = r.diagnostics.fieldPresence;
+  assert(f.subscribedAt === 2, `subscribedAt: ${f.subscribedAt}`);
+  assert(f.stripeCustomerId === 2, `stripeCustomerId: ${f.stripeCustomerId}`);
+  assert(f.trialStartedAt === 1, `trialStartedAt: ${f.trialStartedAt}`);
+  assert(f.isTrialing === 1, `isTrialing: ${f.isTrialing}`);
+  assert(f.trialConverted === 0, `trialConverted: ${f.trialConverted}`);
+  assert(r.overall.trialedUsers === 1, `got ${r.overall.trialedUsers}`);
+});
+
+test('an empty collection still reports what it scanned', async () => {
+  setUsers([]);
+  const r = await report();
+  assert(r.diagnostics.accountsScanned === 0, `got ${r.diagnostics.accountsScanned}`);
+  assert(r.diagnostics.fieldPresence.trialStartedAt === 0,
+    `got ${r.diagnostics.fieldPresence.trialStartedAt}`);
 });
 
 test('the report is served as JSON with a generation timestamp', async () => {
