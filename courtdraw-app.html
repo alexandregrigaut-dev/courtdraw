@@ -6597,7 +6597,11 @@ function shareBoard() {
   };
   try {
     const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
-    const url = location.origin + location.pathname + '#s=' + encoded;
+    // /s renders this payload server-side, so the link carries a title, a
+    // description and the diagram instead of being a bare URL. encodeURIComponent
+    // is required: base64 contains + and /, and a raw + in a query string
+    // decodes to a space and corrupts the board.
+    const url = location.origin + '/s?p=' + encodeURIComponent(encoded);
     if (url.length > 4000) { showToast('Board too complex to share via link — save it to your library instead.'); return; }
     navigator.clipboard.writeText(url)
       .then(() => {

@@ -243,6 +243,20 @@
   to   = "/.netlify/functions/play-page?id=:id"
   status = 200
 
+# A shared board, rendered server-side so a link pasted into a team chat
+# carries a title, a description and the diagram instead of being a bare URL.
+# The payload rides in the query string because a fragment never reaches the
+# server. noindex is set by the function: these are private to the link holder.
+[[redirects]]
+  from = "/s"
+  to = "/.netlify/functions/share-page"
+  status = 200
+
+[[redirects]]
+  from = "/s/*"
+  to = "/.netlify/functions/share-page/:splat"
+  status = 200
+
 # Those plays cannot go in the static sitemap for the same reason. robots.txt
 # names this as a second sitemap, which the protocol allows.
 [[redirects]]
