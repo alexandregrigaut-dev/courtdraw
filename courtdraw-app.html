@@ -6633,7 +6633,15 @@ function loadFromHash() {
   const hash = location.hash;
   if (!hash.startsWith('#s=')) return false;
   try {
-    const payload = JSON.parse(decodeURIComponent(atob(hash.slice(3))));
+    // The fragment arrives in one of two shapes. "Copy share link" writes the
+    // base64 straight into location.hash, but the share page builds its
+    // "open in CourtDraw" link with encodeURIComponent, which turns base64's
+    // +, / and = into %2B, %2F and %3D. atob rejects a '%', so that second
+    // form threw and the app silently fell back to the default board —
+    // which, since base64 pads unless its length is a multiple of three, hit
+    // roughly two shared plays in three. Decoding first accepts both, and is
+    // safe for the raw form because base64 can never contain a '%'.
+    const payload = JSON.parse(decodeURIComponent(atob(decodeURIComponent(hash.slice(3)))));
     if (payload.courtId) state.courtId = payload.courtId;
     if (payload.objects) state.objects = payload.objects;
     if (payload.tokens) state.tokenPositions = payload.tokens;

@@ -988,6 +988,143 @@ test('seo: the sitemap never advertises a page we tell Google to drop', async ()
   assert(bad.length === 0, `sitemap lists noindexed pages:\n  ${bad.join('\n  ')}`);
 });
 
+// ── Tests: opening a shared play ─────────────────────────────────────────
+//
+// A share link's payload reaches the app and the embed through a #s=
+// fragment, and it arrives in two different shapes: "Copy share link"
+// writes the base64 straight into location.hash, while the share page
+// builds its open-in-app and embed links with encodeURIComponent. That
+// turns base64's +, / and = into %2B, %2F and %3D, and atob rejects a '%'.
+//
+// The damage was invisible because it depended on the payload: base64 only
+// pads when its length is not a multiple of three, so some shared plays
+// opened fine and roughly two in three silently loaded the default board
+// instead. Every test here therefore uses a payload whose base64 really
+// does contain those characters — with a padding-free one alongside to
+// show why the bug went unnoticed.
+
+/** Encode a board the way the app's "Copy share link" does. */
+const encodeBoard = (board) =>
+  Buffer.from(encodeURIComponent(JSON.stringify(board))).toString('base64');
+
+/** A board whose base64 contains +, / or = — the case that used to break. */
+function paddedBoard() {
+  for (let n = 0; n < 60; n++) {
+    const board = {
+      courtId: 'basketball_full',
+      objects: [],
+      tokens: [{ team: 'blue', label: 'A', pct: [0.25, 0.4] },
+               { team: 'red',  label: 'B', pct: [0.75, 0.6] }],
+      note: 'x'.repeat(n),
+    };
+    const b64 = encodeBoard(board);
+    if (/[+/=]/.test(b64)) return { board, b64 };
+  }
+  throw new Error('could not build a padded payload');
+}
+
+/** A board whose base64 has no +, / or = — the case that always worked. */
+function unpaddedBoard() {
+  for (let n = 0; n < 60; n++) {
+    const board = {
+      courtId: 'basketball_full',
+      objects: [],
+      tokens: [{ team: 'blue', label: 'A', pct: [0.25, 0.4] }],
+      note: 'y'.repeat(n),
+    };
+    const b64 = encodeBoard(board);
+    if (!/[+/=]/.test(b64)) return { board, b64 };
+  }
+  throw new Error('could not build an unpadded payload');
+}
+
+test('share: the fixtures really do cover both base64 shapes', async () => {
+  // Guards the two helpers above. Without this, a change to the payload
+  // shape could quietly make every test below use the easy case again.
+  const padded = paddedBoard().b64;
+  const plain  = unpaddedBoard().b64;
+  assert(/[+/=]/.test(padded), 'the "padded" fixture has no +, / or = in it');
+  assert(!/[+/=]/.test(plain), 'the "unpadded" fixture unexpectedly contains +, / or =');
+  assert(encodeURIComponent(padded) !== padded,
+    'encodeURIComponent does not alter the padded fixture, so it proves nothing');
+  assertEq(encodeURIComponent(plain), plain,
+    'the unpadded fixture should survive encodeURIComponent unchanged');
+});
+
+test('share: the app opens a play from a percent-encoded link', async (page) => {
+  // This is the share page's "Open this play in CourtDraw" link.
+  const { b64 } = paddedBoard();
+  await page.goto(url('courtdraw-app.html') + '#s=' + encodeURIComponent(b64),
+    { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1500);
+  const courtId = await page.evaluate(() => state.courtId);
+  assertEq(courtId, 'basketball_full',
+    'the shared court was not loaded — the app fell back to its default board');
+  const isShareView = await page.evaluate(() => document.body.classList.contains('share-view'));
+  assert(isShareView, 'body is missing the share-view class, so the import did not run');
+});
+
+test('share: the app still opens a play from a raw link', async (page) => {
+  // This is what "Copy share link" writes into the address bar directly.
+  const { b64 } = paddedBoard();
+  await page.goto(url('courtdraw-app.html') + '#s=' + b64,
+    { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1500);
+  assertEq(await page.evaluate(() => state.courtId), 'basketball_full',
+    'the raw fragment form regressed');
+});
+
+test('share: the tokens come through, not just the court', async (page) => {
+  const { b64 } = paddedBoard();
+  await page.goto(url('courtdraw-app.html') + '#s=' + encodeURIComponent(b64),
+    { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1500);
+  const labels = await page.evaluate(() =>
+    (state.tokenPositions || []).map(t => t && t.label));
+  assert(labels.includes('A') && labels.includes('B'),
+    `shared tokens were lost: ${JSON.stringify(labels)}`);
+});
+
+test('share: a padding-free link works too (why the bug hid so long)', async (page) => {
+  const { b64 } = unpaddedBoard();
+  await page.goto(url('courtdraw-app.html') + '#s=' + encodeURIComponent(b64),
+    { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1500);
+  assertEq(await page.evaluate(() => state.courtId), 'basketball_full',
+    'even the always-working case is now broken');
+});
+
+test('share: a malformed fragment leaves the default board alone', async (page, errors) => {
+  await page.goto(url('courtdraw-app.html') + '#s=not%20valid%20base64!!',
+    { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1500);
+  const isShareView = await page.evaluate(() => document.body.classList.contains('share-view'));
+  assert(!isShareView, 'a junk fragment was treated as a successful import');
+  assert(errors.length === 0, `a junk fragment threw: ${errors.join('; ')}`);
+});
+
+test('embed: renders a percent-encoded play', async (page) => {
+  // The share page's embed snippet uses the same encoding as its open link.
+  const { b64 } = paddedBoard();
+  await page.goto(url('embed.html') + '#s=' + encodeURIComponent(b64),
+    { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1200);
+  const holder = await page.locator('#board-svg-holder').innerHTML();
+  assertIncludes(holder, '<svg', 'the embed rendered no board at all');
+  assert(!/state-msg/.test(holder),
+    `the embed showed an error state instead of a board: ${holder.slice(0, 200)}`);
+  assertIncludes(holder, '>A<', 'the embed board is missing the shared tokens');
+});
+
+test('embed: still renders a raw play', async (page) => {
+  const { b64 } = paddedBoard();
+  await page.goto(url('embed.html') + '#s=' + b64, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1200);
+  const holder = await page.locator('#board-svg-holder').innerHTML();
+  assertIncludes(holder, '<svg', 'the raw fragment form regressed in the embed');
+  assert(!/state-msg/.test(holder), 'the embed showed an error state for a raw fragment');
+});
+
 // ── Runner ───────────────────────────────────────────────────────────────
 
 const filter = process.argv[2];
