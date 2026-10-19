@@ -134,7 +134,15 @@ exports.handler = async (event) => {
   const indexable  = playHasContent(play);
 
   const title = `${name} — ${sport} ${tactic.toLowerCase()} diagram | CourtDraw`;
-  const description = `${tactic} for ${sport}${ageGroup ? `, ${ageGroup}` : ''}. `
+  // The play's name leads, because it is the only part of this that is unique.
+  // Without it the description was (tactic x sport x ageGroup) only — five
+  // tactic types across a library that is mostly seeded content, so hundreds of
+  // pages carried a byte-identical <meta description>. The diagram differed;
+  // everything a crawler reads did not. Indexability is granted by
+  // playHasContent, which checks that a drawing exists, not that the page says
+  // anything a search engine has not already seen 40 times.
+  const description = `${name}: a ${tactic.toLowerCase()} for ${sport}`
+    + `${ageGroup ? `, ${ageGroup}` : ''}. `
     + `Free interactive diagram — open it in CourtDraw, edit it for your own squad, and export or share it.`;
   const canonical = `${SITE}/play/${encodeURIComponent(id)}`;
   const svg = playToSvg(play, { title: `${name} — ${sport} ${tactic.toLowerCase()}` });
