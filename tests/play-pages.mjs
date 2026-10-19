@@ -172,6 +172,28 @@ test('the title and description describe the play, not the site', async () => {
     'it needs a canonical url');
 });
 
+test('two plays of the same kind get different descriptions', async () => {
+  // The title always carried the play name, so it was unique. The description
+  // did not: it was (tacticType x sport x ageGroup) and nothing else, across
+  // five tactic types and a library that is 206/210 seeded content. Hundreds
+  // of pages shipped a byte-identical <meta description> while the only test
+  // here checked the title. Indexability is granted by playHasContent, which
+  // asks whether a drawing exists — not whether the page says anything new.
+  playDocs = { playaaa11111: makePlay({ name: '1-3-1 Zone Defence' }) };
+  const a = (await get('playaaa11111')).body;
+  playDocs = { playbbb22222: makePlay({ name: '2-3 Zone Trap' }) };
+  const b = (await get('playbbb22222')).body;
+
+  const desc = (html) => (html.match(/<meta name="description" content="([^"]*)"/) || [])[1] || '';
+  const da = desc(a), db = desc(b);
+
+  assert(da && db, 'both pages need a description');
+  assert(da !== db,
+    `same sport and tactic produced an identical description:\n      ${da}`);
+  assertIncludes(da, '1-3-1 Zone Defence', 'the play name belongs in the description');
+  assertIncludes(db, '2-3 Zone Trap', 'the play name belongs in the description');
+});
+
 test('an empty board is served but never offered for indexing', async () => {
   // A wall of near-identical thin pages is how a whole section gets
   // discounted. These stay reachable — someone may hold the link — but they
