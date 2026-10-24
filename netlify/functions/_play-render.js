@@ -111,6 +111,17 @@ function tokenToSvg(tk) {
   if (!tk || !Array.isArray(tk.pct) || tk.pct.length < 2) return '';
   const cx = num(tk.pct[0]) * 1000;
   const cy = num(tk.pct[1]) * 600;
+
+  // The ball is a token like any other in the payload, but it is not a player
+  // and must not look like one. Without this branch it fell through to the
+  // team colours below and rendered as an unlabelled team-A circle — on a
+  // tactics diagram that reads as an extra player standing on the pitch,
+  // which is worse than ugly. Smaller and neutrally coloured, matching the
+  // embed. Drawn before the label line, which a ball never has.
+  if (tk.team === 'ball') {
+    return `<circle cx="${cx}" cy="${cy}" r="14" fill="#f5f5f0" stroke="#78716c" stroke-width="3"/>`;
+  }
+
   const fill = tk.team === 'red' ? TEAM_B : TEAM_A;
   return `<circle cx="${cx}" cy="${cy}" r="22" fill="${fill}" stroke="#fff" stroke-width="4"/>`
        + `<text x="${cx}" y="${cy + 8}" text-anchor="middle" fill="#fff" font-size="18"`

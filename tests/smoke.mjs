@@ -1125,6 +1125,235 @@ test('embed: still renders a raw play', async (page) => {
   assert(!/state-msg/.test(holder), 'the embed showed an error state for a raw fragment');
 });
 
+// ── Tests: what a share link actually carries ────────────────────────────
+//
+// A single-phase board used to send phases[0] as a byte-for-byte copy of its
+// own objects and tokens, doubling the payload. That doubling, against a
+// 4000-character ceiling, is what made the full-squad sports unshareable: a
+// default hurling or Gaelic football team could not produce a link at all.
+
+/** Capture the URL shareBoard() copies, without touching the clipboard. */
+async function captureShareUrl(page) {
+  return page.evaluate(() => {
+    // shareBoard is Pro-gated and ends at the clipboard; neither is what these
+    // tests are about, so stand both aside and read what it built.
+    state.isPro = true;
+    let captured = null;
+    const realClipboard = navigator.clipboard;
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: (t) => { captured = t; return Promise.resolve(); } },
+    });
+    let toast = null;
+    const realToast = window.showToast;
+    window.showToast = (m) => { toast = m; };
+    try { shareBoard(); } finally {
+      window.showToast = realToast;
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: realClipboard });
+    }
+    return { url: captured, toast };
+  });
+}
+
+/** Decode a /s?p= link back into the payload the app put in it. */
+function decodeShareUrl(url) {
+  const p = new URL(url).searchParams.get('p');
+  return JSON.parse(decodeURIComponent(Buffer.from(p, 'base64').toString('latin1')));
+}
+
+test('share: a single-phase board does not send its board twice', async (page) => {
+  await openAppPastWelcome(page);
+  await drawStroke(page);
+  const { url, toast } = await captureShareUrl(page);
+  assert(url, `no link was produced; toast said: ${toast}`);
+  const payload = decodeShareUrl(url);
+  assert(payload.objects && payload.tokens, 'the board itself is missing from the payload');
+  assert(!('phases' in payload),
+    'a single-phase board still ships a duplicate phases[] copy');
+});
+
+test('share: a multi-phase board still sends its phases', async (page) => {
+  // The duplicate is only redundant while there is one phase. Drop it when
+  // there are several and the extra phases are simply lost.
+  await openAppPastWelcome(page);
+  await drawStroke(page);
+  await page.evaluate(() => {
+    state.phases = [
+      { objects: state.objects, tokens: state.tokenPositions },
+      { objects: [], tokens: state.tokenPositions },
+    ];
+    state.currentPhase = 1;
+  });
+  const { url, toast } = await captureShareUrl(page);
+  assert(url, `no link was produced; toast said: ${toast}`);
+  const payload = decodeShareUrl(url);
+  assert(Array.isArray(payload.phases) && payload.phases.length === 2,
+    `expected 2 phases to survive, got ${JSON.stringify(payload.phases && payload.phases.length)}`);
+  assertEq(payload.currentPhase, 1, 'the selected phase was lost');
+});
+
+test('share: a full-squad hurling board can be shared at all', async (page) => {
+  // The case that sent four GAA county boards to a product that refused to
+  // share its own hurling diagrams.
+  await openAppPastWelcome(page);
+  await page.evaluate(() => { state.courtId = 'hurling'; });
+  await drawStroke(page);
+  const { url, toast } = await captureShareUrl(page);
+  assert(url, `hurling still cannot be shared; toast said: ${toast}`);
+  assert(url.length <= 8000, `hurling link is ${url.length} chars, over the ceiling`);
+  const payload = decodeShareUrl(url);
+  assertEq(payload.courtId, 'hurling', 'the hurling court did not survive the round trip');
+});
+
+test('share: a genuinely oversized board is still refused', async (page) => {
+  // Raising the ceiling is not the same as removing it.
+  await openAppPastWelcome(page);
+  await page.evaluate(() => {
+    state.tokenPositions = Array.from({ length: 4000 }, (_, i) => ({
+      team: i % 2 ? 'red' : 'blue', label: 'XXXX', pct: [0.5, 0.5],
+    }));
+  });
+  const { url, toast } = await captureShareUrl(page);
+  assert(!url, 'an absurd board produced a link instead of being refused');
+  assert(/too complex/i.test(toast || ''), `expected a refusal toast, got: ${toast}`);
+});
+
+test('share: the link a single-phase board makes still opens', async (page) => {
+  // End to end: the slimmed payload has to survive its own reader.
+  await openAppPastWelcome(page);
+  await page.evaluate(() => { state.courtId = 'basketball_full'; });
+  await drawStroke(page);
+  const { url: shareUrl } = await captureShareUrl(page);   // `url` is the file:// helper
+  const p = new URL(shareUrl).searchParams.get('p');
+  await page.goto(url('courtdraw-app.html') + '#s=' + p, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1500);
+  assertEq(await page.evaluate(() => state.courtId), 'basketball_full',
+    'a slimmed single-phase payload no longer opens on its own board');
+});
+
+// ── Tests: the shared-play footer ────────────────────────────────────────
+
+test('share footer: offered to a visitor with no account', async (page) => {
+  const { b64 } = paddedBoard();
+  await page.goto(url('courtdraw-app.html') + '#s=' + encodeURIComponent(b64),
+    { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1200);
+  const shown = await page.evaluate(() =>
+    getComputedStyle(document.getElementById('share-footer')).display);
+  assert(shown !== 'none', 'the sign-up footer is hidden from signed-out visitors');
+});
+
+test('share footer: never shown to someone who already has an account', async (page) => {
+  // It reads "sign up free to draw your own" over a Create Account button.
+  // To a paying Pro or Club subscriber that looks like their subscription
+  // was not registered.
+  const { b64 } = paddedBoard();
+  await page.goto(url('courtdraw-app.html') + '#s=' + encodeURIComponent(b64),
+    { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => document.body.classList.add('is-signed-in'));
+  const shown = await page.evaluate(() =>
+    getComputedStyle(document.getElementById('share-footer')).display);
+  assertEq(shown, 'none', 'a signed-in viewer is still being pitched a free sign-up');
+});
+
+test('share footer: auth actually flags the body, and does it before giving up on a signed-out user', async () => {
+  // The two tests above add is-signed-in by hand, so they prove the CSS rule
+  // works and nothing about the code that applies it. Deleting the toggle
+  // would put the sign-up pitch back in front of paying subscribers without
+  // failing a single browser assertion, so the wiring is checked at source.
+  //
+  // Position matters as much as presence: onAuthStateChanged returns early
+  // for a signed-out user, so a toggle placed after that return would latch
+  // on at sign-in and never clear at sign-out — the footer would then stay
+  // hidden from the visitors it exists for.
+  const fs = await import('node:fs');
+  const src = fs.readFileSync(path.join(ROOT, 'courtdraw-app.html'), 'utf8');
+
+  const handler = src.indexOf('onAuthStateChanged(auth, async user => {');
+  assert(handler !== -1, 'the auth handler has moved; this test needs updating');
+
+  const toggle = src.indexOf("classList.toggle('is-signed-in'", handler);
+  assert(toggle !== -1, 'nothing sets is-signed-in when auth resolves');
+
+  const signedOutReturn = src.indexOf('if (!user) {', handler);
+  assert(signedOutReturn !== -1, 'the signed-out branch has moved; this test needs updating');
+  assert(toggle < signedOutReturn,
+    'is-signed-in is set after the signed-out early return, so signing out never restores the footer');
+});
+
+test('share footer: the save nudge stays suppressed for signed-in viewers too', async (page) => {
+  // The fix hides the footer but must leave share-view in place, because that
+  // class is also what stops the save nudge from pestering someone looking at
+  // another coach's play.
+  const { b64 } = paddedBoard();
+  await page.goto(url('courtdraw-app.html') + '#s=' + encodeURIComponent(b64),
+    { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => document.body.classList.add('is-signed-in'));
+  const stillShareView = await page.evaluate(() =>
+    document.body.classList.contains('share-view'));
+  assert(stillShareView, 'share-view was dropped, which re-enables the save nudge');
+});
+
+// ── Tests: arrowheads in the embed ───────────────────────────────────────
+
+test('embed: an arrow is drawn with its head', async (page) => {
+  // Without the head it is a line, and on a tactics board the direction is
+  // most of what an arrow means.
+  const board = {
+    courtId: 'basketball_full',
+    tokens: [{ team: 'blue', label: 'A', pct: [0.2, 0.5] }],
+    objects: [{ type: 'arrow', color: '#ef4444', lineWidth: 3,
+                points: [[200, 200], [600, 400]] }],
+  };
+  const b64 = encodeBoard(board);
+  await page.goto(url('embed.html') + '#s=' + encodeURIComponent(b64),
+    { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1200);
+  const holder = await page.locator('#board-svg-holder').innerHTML();
+  assertIncludes(holder, '<marker', 'the embed drew no arrowhead marker');
+  assertIncludes(holder, 'marker-end', 'the arrow does not reference an arrowhead');
+});
+
+test('embed: two arrows keep their own colours', async (page) => {
+  // Each head is tinted to match its arrow, so shared marker ids would make
+  // every arrow wear the first one's colour.
+  const board = {
+    courtId: 'basketball_full',
+    tokens: [],
+    objects: [
+      { type: 'arrow', color: '#ef4444', lineWidth: 3, points: [[100, 100], [400, 200]] },
+      { type: 'arrow', color: '#22c55e', lineWidth: 3, points: [[100, 400], [400, 500]] },
+    ],
+  };
+  const b64 = encodeBoard(board);
+  await page.goto(url('embed.html') + '#s=' + encodeURIComponent(b64),
+    { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1200);
+  const holder = await page.locator('#board-svg-holder').innerHTML();
+  const ids = [...holder.matchAll(/<marker id="([^"]+)"/g)].map(m => m[1]);
+  assert(ids.length === 2, `expected 2 markers, got ${ids.length}`);
+  assert(new Set(ids).size === 2, `the two arrowheads share an id: ${ids.join(', ')}`);
+  assertIncludes(holder, '#ef4444', 'the first arrow colour is missing');
+  assertIncludes(holder, '#22c55e', 'the second arrow colour is missing');
+});
+
+test('embed: a plain line is left headless', async (page) => {
+  const board = {
+    courtId: 'basketball_full',
+    tokens: [],
+    objects: [{ type: 'line', color: '#ffffff', lineWidth: 3, points: [[100, 100], [400, 200]] }],
+  };
+  const b64 = encodeBoard(board);
+  await page.goto(url('embed.html') + '#s=' + encodeURIComponent(b64),
+    { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1200);
+  const holder = await page.locator('#board-svg-holder').innerHTML();
+  assertIncludes(holder, '<path', 'the line was not drawn');
+  assert(!holder.includes('marker-end'), 'a plain line was given an arrowhead');
+});
+
 // ── Runner ───────────────────────────────────────────────────────────────
 
 const filter = process.argv[2];

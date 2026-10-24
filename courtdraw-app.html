@@ -761,6 +761,13 @@ body.portrait-mode #trial-banner {
   font-size: 13px; color: rgba(255,255,255,0.65);
 }
 body.share-view #share-footer { display: flex; }
+/* ...but never to someone who already has an account. The footer pitches a
+   free sign-up, and showing "sign up free" with a Create Account button to a
+   paying Pro or Club subscriber reads as though their subscription isn't
+   registered. The share-view class itself has to stay on the body either way:
+   it also suppresses the save nudge, which is right for anyone viewing
+   another coach's play, signed in or not. */
+body.share-view.is-signed-in #share-footer { display: none; }
 #share-footer-text strong { color: #f1f5f9; font-weight: 700; }
 #share-footer-cta {
   display: inline-flex; align-items: center;
@@ -6592,9 +6599,20 @@ function shareBoard() {
     courtId: state.courtId,
     objects: state.objects,
     tokens: state.tokenPositions,
-    phases: state.phases,
-    currentPhase: state.currentPhase,
   };
+  // A single-phase board is the common case, and for it phases[0] is a
+  // byte-for-byte copy of objects and tokens above — every player and every
+  // arrow travelling twice. That doubling is what put the full-squad sports
+  // over the length limit: a default hurling or Gaelic football team could
+  // not be shared at all, and football and rugby league only barely failed.
+  // Readers already cope with its absence (the embed rebuilds a single phase
+  // from the top level, the app's importer treats phases as optional, and the
+  // share page only consults it to say "N phases" when there is more than
+  // one), so it is sent only when it carries something new.
+  if (Array.isArray(state.phases) && state.phases.length > 1) {
+    payload.phases = state.phases;
+    payload.currentPhase = state.currentPhase;
+  }
   try {
     const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
     // /s renders this payload server-side, so the link carries a title, a
@@ -6602,7 +6620,15 @@ function shareBoard() {
     // is required: base64 contains + and /, and a raw + in a query string
     // decodes to a space and corrupts the board.
     const url = location.origin + '/s?p=' + encodeURIComponent(encoded);
-    if (url.length > 4000) { showToast('Board too complex to share via link — save it to your library instead.'); return; }
+    // 4000 was the old ceiling, and nothing on the serving side asked for it:
+    // /s already accepts a payload of up to 8000 characters, so the app was
+    // refusing links the server would have rendered. Capping the whole URL at
+    // 8000 keeps the ?p= value just inside that server limit while leaving
+    // every sport's default squad room to fit — the largest, a full hurling
+    // or Gaelic football team, lands near 4100 once the duplicated phase is
+    // gone. Still bounded, because a URL has to survive being pasted into
+    // WhatsApp, an email client and a server access log.
+    if (url.length > 8000) { showToast('Board too complex to share via link — save it to your library instead.'); return; }
     navigator.clipboard.writeText(url)
       .then(() => {
         gtag('event', 'share_play', { event_category: 'engagement', court_id: state.courtId });
@@ -9108,6 +9134,10 @@ document.addEventListener('DOMContentLoaded', init);
   onAuthStateChanged(auth, async user => {
     const myGen = ++_authGen;
     window.__currentUser = user;
+    // Drives the shared-play footer, which must not pitch a free sign-up to
+    // someone who already has an account. Set before the signed-out early
+    // return below so signing out puts the footer back.
+    document.body.classList.toggle('is-signed-in', !!user);
     // Immediately reflect sign-in / sign-out in the account button
     if (typeof updateAccountUI === 'function') {
       updateAccountUI(user, false, false, false);
