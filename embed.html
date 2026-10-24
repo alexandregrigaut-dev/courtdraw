@@ -188,6 +188,11 @@
 
     const MAX_ITEMS = 500; // defensive cap against an oversized crafted payload
 
+    // Arrowhead marker ids. Kept counting across re-renders (phase changes
+    // replace the SVG wholesale) so a stale marker can never be matched by a
+    // freshly drawn arrow mid-swap.
+    let markerSeq = 0;
+
     function renderBoardSvg(snap, courtId) {
       const objects = Array.isArray(snap.objects) ? snap.objects.slice(0, MAX_ITEMS) : [];
       const tokens  = Array.isArray(snap.tokens)  ? snap.tokens.slice(0, MAX_ITEMS)  : [];
@@ -209,7 +214,22 @@
         const dashed = (o.type === 'dashed-arrow' || o.type === 'dash') ? 'stroke-dasharray="8,5"' : '';
         let d = `M${pts[0][0]},${pts[0][1]}`;
         for (let i = 1; i < pts.length; i++) d += ` L${pts[i][0]},${pts[i][1]}`;
-        return `<path d="${d}" stroke="${color}" stroke-width="${w}" fill="none" ${dashed} stroke-linecap="round" opacity="0.85"/>`;
+
+        // An arrow without a head is just a line, and on a tactics board the
+        // direction is most of what the arrow means — which way the player
+        // runs, where the pass goes. The server renderer has always drawn the
+        // head; this one did not, so an embedded play lost that. Each marker
+        // needs its own id because the head is tinted to match its arrow, and
+        // two ids that collide would make every arrow wear the first colour.
+        const headed = (o.type === 'arrow' || o.type === 'dashed-arrow');
+        if (!headed) {
+          return `<path d="${d}" stroke="${color}" stroke-width="${w}" fill="none" ${dashed} stroke-linecap="round" opacity="0.85"/>`;
+        }
+        const id = `cd-ah${++markerSeq}`;
+        return `<defs><marker id="${id}" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">`
+             + `<path d="M0,0 L0,6 L8,3 z" fill="${color}"/></marker></defs>`
+             + `<path d="${d}" stroke="${color}" stroke-width="${w}" fill="none" ${dashed}`
+             + ` marker-end="url(#${id})" stroke-linecap="round" opacity="0.85"/>`;
       }).join('');
 
       const tokenSvgs = tokens.map(tk => {

@@ -404,6 +404,86 @@ test('the shared court shapes still load in both worlds', async () => {
   assertIncludes(src, 'module.exports', 'and so must the module export');
 });
 
+// ── Tests: the ball is not a player ───────────────────────────────────────────
+//
+// The ball travels in the payload as a token like any other, distinguished
+// only by team: 'ball' and an empty label. tokenToSvg had no branch for it,
+// so it fell through to the team colours and came out as an unlabelled
+// team-A circle. On a tactics diagram that is not merely ugly: it reads as
+// an extra player standing on the pitch, and it did so on every /play/ page
+// and every share page, which are the indexed, public surfaces.
+
+test('a ball does not render in a team colour', async () => {
+  const { playToSvg } = require(path.join(ROOT, 'netlify/functions/_play-render.js'));
+  const svg = playToSvg({
+    courtId: 'basketball_full',
+    tokens: [{ team: 'ball', label: '', pct: [0.5, 0.5] }],
+    objects: [],
+  });
+  // TEAM_A is what it used to borrow. Matching on the shared blue would be
+  // brittle, so assert on the ball's own neutral fill being present and the
+  // player radius being absent for this single token.
+  assertIncludes(svg, '#f5f5f0', 'the ball is not drawn in its own neutral colour');
+  assert(!/r="22"/.test(svg), 'the ball is still drawn at the player radius');
+});
+
+// The court art carries its own <text> (a "BASKETBALL" watermark) and its own
+// circles, so asserting against the whole document counts the chrome as if it
+// were tokens. Rendering the same court with no tokens and subtracting gives
+// just the markup the tokens contributed.
+function tokenMarkup(tokens) {
+  const { playToSvg } = require(path.join(ROOT, 'netlify/functions/_play-render.js'));
+  const opts = { courtId: 'basketball_full', objects: [] };
+  const bare = playToSvg({ ...opts, tokens: [] });
+  const full = playToSvg({ ...opts, tokens });
+  const court = bare.slice(0, bare.lastIndexOf('</svg>'));
+  assert(full.startsWith(court), 'the court markup is not a stable prefix; this helper needs rethinking');
+  return full.slice(court.length, full.lastIndexOf('</svg>'));
+}
+
+test('the token-markup helper really does strip the court', async () => {
+  // If this ever returns the whole document, every test below it goes quiet.
+  assert(tokenMarkup([]) === '', `expected no markup for no tokens, got: ${tokenMarkup([])}`);
+  assert(!tokenMarkup([{ team: 'blue', label: 'PG', pct: [0.2, 0.3] }]).includes('BASKETBALL'),
+    'the court watermark leaked into the token markup');
+});
+
+test('a ball carries no label text of its own', async () => {
+  const markup = tokenMarkup([{ team: 'ball', label: '', pct: [0.5, 0.5] }]);
+  assert(!/<text/.test(markup), `a ball should have no label element: ${markup}`);
+});
+
+test('players are still drawn as players', async () => {
+  // Guards the obvious over-correction: a branch that swallowed every token.
+  const { playToSvg } = require(path.join(ROOT, 'netlify/functions/_play-render.js'));
+  const svg = playToSvg({
+    courtId: 'basketball_full',
+    tokens: [
+      { team: 'blue', label: 'PG', pct: [0.2, 0.3] },
+      { team: 'red',  label: 'C',  pct: [0.8, 0.7] },
+    ],
+    objects: [],
+  });
+  assertIncludes(svg, 'r="22"', 'players lost their radius');
+  assertIncludes(svg, '>PG<', 'a player label went missing');
+  assertIncludes(svg, '>C<', 'a player label went missing');
+  assert(!svg.includes('#f5f5f0'), 'a player was drawn with the ball fill');
+});
+
+test('a ball and players coexist on one board', async () => {
+  const markup = tokenMarkup([
+    { team: 'blue', label: 'PG', pct: [0.2, 0.3] },
+    { team: 'ball', label: '',   pct: [0.5, 0.5] },
+    { team: 'red',  label: 'C',  pct: [0.8, 0.7] },
+  ]);
+  assertIncludes(markup, '#f5f5f0', 'the ball vanished when players were present');
+  assertIncludes(markup, 'r="22"', 'the players vanished when a ball was present');
+  const labels = (markup.match(/<text/g) || []).length;
+  assert(labels === 2, `expected 2 labels for 2 players, got ${labels}`);
+  const balls = (markup.match(/#f5f5f0/g) || []).length;
+  assert(balls === 1, `expected exactly 1 ball, got ${balls}`);
+});
+
 // ── Runner ────────────────────────────────────────────────────────────────────
 let passed = 0; const failures = [];
 for (const t of tests) {
