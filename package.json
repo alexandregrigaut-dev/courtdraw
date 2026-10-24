@@ -9,7 +9,7 @@
     "stripe": "^23.0.0"
   },
   "scripts": {
-    "test": "node tests/email-budget.mjs && node tests/trial-reminder.mjs && node tests/trial-capture.mjs && node tests/dunning.mjs && node tests/ga4-purchase.mjs && node tests/activation-report.mjs && node tests/stats-auth.mjs && node tests/trial-backfill.mjs && node tests/play-pages.mjs && node tests/share-page.mjs && node tests/club-prospects.mjs && node tests/smoke.mjs",
+    "test": "node tests/email-budget.mjs && node tests/trial-reminder.mjs && node tests/trial-capture.mjs && node tests/dunning.mjs && node tests/ga4-purchase.mjs && node tests/activation-report.mjs && node tests/stats-auth.mjs && node tests/trial-backfill.mjs && node tests/play-pages.mjs && node tests/share-page.mjs && node tests/club-prospects.mjs && node tests/sport-tokens.mjs && node tests/smoke.mjs",
     "test:unit": "node tests/email-budget.mjs && node tests/trial-reminder.mjs",
     "test:browser": "node tests/smoke.mjs"
   }
