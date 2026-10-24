@@ -25,6 +25,9 @@ const require = createRequire(import.meta.url);
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed'); }
+function assertEqual(actual, expected, what) {
+  if (actual !== expected) throw new Error(`${what}: expected ${expected}, got ${actual}`);
+}
 
 const SECRET = 'test-secret';
 
@@ -213,6 +216,111 @@ test('a Pro account does not disqualify a domain, but is counted', async () => {
   assert(e, 'a domain with a Pro account should still be a prospect');
   assert(e.paying === 1, `expected paying=1, got ${e.paying}`);
   assert(e.accounts === 2, `expected accounts=2, got ${e.accounts}`);
+});
+
+// ---------------------------------------------- what the first real run taught
+
+const edu = (res) => body(res).educationDomains;
+
+test('the national consumer providers the first list missed are excluded', async () => {
+  // gmx.ch and home.nl were both reported as organisations on the first real
+  // run. GMX sells the same mailbox per country code; home.nl is a Dutch ISP.
+  resetWorld();
+  for (const d of ['gmx.ch', 'home.nl', 'ziggo.nl', 'telenet.be', 'bluewin.ch', 'chello.at']) {
+    acct(`someone@${d}`, { plan: 'free' });
+  }
+  const res = await call();
+  const reported = [...shared(res), ...edu(res), ...lone(res)].map(e => e.domain);
+  assert(reported.length === 0,
+    `national consumer providers still read as organisations: ${reported.join(', ')}`);
+});
+
+test('a throwaway mailbox is never a shared organisation', async () => {
+  // The first run's ONLY "shared organisation" was yopmail.com: two accounts
+  // on a disposable service, which looks identical to two coaches at a club.
+  resetWorld();
+  acct('a@yopmail.com', { plan: 'free' });
+  acct('b@yopmail.com', { plan: 'free' });
+  const res = await call();
+  assert(!find(shared(res), 'yopmail.com'),
+    'a disposable mailbox was reported as an organisation with two coaches');
+  assertEqual(body(res).excluded.disposable, 1,
+    'the disposable domain was dropped without being counted');
+});
+
+test('our own domains are left out, and counted rather than hidden', async () => {
+  resetWorld();
+  acct('alex@courtdraw.app', { plan: 'free' });
+  acct('coach@musketastenisz.hu', { plan: 'free' });
+  acct('real@someclub.ie', { plan: 'free' });
+  const res = await call();
+  const reported = [...shared(res), ...edu(res), ...lone(res)].map(e => e.domain);
+  assert(!reported.includes('courtdraw.app') && !reported.includes('musketastenisz.hu'),
+    `our own domains were offered as leads: ${reported.join(', ')}`);
+  assert(reported.includes('someclub.ie'), 'a real domain was dropped along with them');
+  assertEqual(body(res).excluded.own, 2, 'own-domain exclusions were not counted');
+});
+
+test('schools are reported separately from other organisations', async () => {
+  // Half of every organisation-looking domain on the first run was a school
+  // or university, and nobody had gone looking for them.
+  resetWorld();
+  acct('coach@umich.edu', { plan: 'free' });
+  acct('pe@lakeside.vic.edu.au', { plan: 'free' });
+  acct('staff@canterbury.ac.uk', { plan: 'free' });
+  acct('teacher@stu.cpsk12.org', { plan: 'free' });
+  acct('someone@someclub.ie', { plan: 'free' });
+  const res = await call();
+  const schools = edu(res).map(e => e.domain);
+  for (const d of ['umich.edu', 'lakeside.vic.edu.au', 'canterbury.ac.uk', 'stu.cpsk12.org']) {
+    assert(schools.includes(d), `${d} was not recognised as a school`);
+  }
+  assert(!schools.includes('someclub.ie'), 'a sports club was filed as a school');
+  assert(find(lone(res), 'someclub.ie'), 'the sports club left the report entirely');
+});
+
+test('an ordinary domain is never guessed to be a school', async () => {
+  // The heuristic reads address shape only. Guessing from a name would put
+  // real companies in the schools bucket, which is worse than under-counting.
+  resetWorld();
+  for (const d of ['sprattonhall.com', 'ocdsb.ca', 'benet.org', 'acme-widgets.com']) {
+    acct(`a@${d}`, { plan: 'free' });
+  }
+  const res = await call();
+  assert(edu(res).length === 0,
+    `ordinary domains were guessed to be schools: ${edu(res).map(e => e.domain).join(', ')}`);
+  assert(lone(res).length === 4, 'the under-counted schools fell out of the report entirely');
+});
+
+test('several accounts at a school still count as the strong signal', async () => {
+  // Two coaches at one organisation is the thing worth finding, school or
+  // not, so it must not be filed away under schools and lost.
+  resetWorld();
+  acct('pe1@someschool.edu', { plan: 'free' });
+  acct('pe2@someschool.edu', { plan: 'free' });
+  const res = await call();
+  assert(find(shared(res), 'someschool.edu'),
+    'a school with two accounts was not reported as a shared organisation');
+  assert(!find(edu(res), 'someschool.edu'),
+    'it was also filed under schools, so it appears twice');
+});
+
+test('the exclusion counts explain an empty report', async () => {
+  // An empty report should read as "nobody qualified", not "it broke".
+  resetWorld();
+  acct('a@gmail.com', { plan: 'free' });
+  acct('b@gmx.ch', { plan: 'free' });
+  acct('c@yopmail.com', { plan: 'free' });
+  acct('d@courtdraw.app', { plan: 'free' });
+  acct('e@bigclub.com', { plan: 'club' });
+  const res = await call();
+  const b = body(res);
+  assert(shared(res).length === 0 && edu(res).length === 0 && lone(res).length === 0,
+    'expected nothing to qualify');
+  assertEqual(b.excluded.consumer, 2, 'consumer exclusions');
+  assertEqual(b.excluded.disposable, 1, 'disposable exclusions');
+  assertEqual(b.excluded.own, 1, 'own-domain exclusions');
+  assertEqual(b.excluded.alreadyClub, 1, 'existing-Club exclusions');
 });
 
 // ------------------------------------------------------------ PII guarantee
