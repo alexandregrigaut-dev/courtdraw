@@ -242,7 +242,12 @@
       const hash = location.hash;
       if (!hash.startsWith('#s=')) return null;
       try {
-        const payload = JSON.parse(decodeURIComponent(atob(hash.slice(3))));
+        // Same two fragment shapes as the app: raw base64 from "Copy share
+        // link", or percent-encoded from the share page's embed snippet,
+        // where base64's +, / and = arrive as %2B, %2F and %3D. atob rejects
+        // a '%', so decode first. Safe for the raw form too, since base64
+        // can never contain a '%'.
+        const payload = JSON.parse(decodeURIComponent(atob(decodeURIComponent(hash.slice(3)))));
         if (!payload || typeof payload !== 'object') return null;
         return payload;
       } catch (e) {
