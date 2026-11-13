@@ -421,6 +421,108 @@ test('upgrade: closing the Google window is not treated as a failure', async (pa
     'the button stayed disabled, so they cannot try again');
 });
 
+// ── Tests: work drawn before signing in ──────────────────────────────────
+//
+// Plays made as a visitor live under courtdraw_tactics_guest. The moment a
+// uid exists the library is reloaded from courtdraw_tactics_<uid>, and
+// nothing ever carried the guest copy across — so a coach who drew, saved,
+// then made an account lost everything, with the guest copy still sitting in
+// localStorage unread. Signing in now happens over the paywall with the board
+// in view, so this would play out in front of them.
+
+/** Put plays under the guest key, then sign a uid in and let __updatePro run. */
+async function signInWith(page, guestPlays, uid = 'uid-test-1', existing = null) {
+  return page.evaluate(({ guestPlays, uid, existing }) => {
+    localStorage.setItem('courtdraw_tactics_guest', JSON.stringify(guestPlays));
+    if (existing) localStorage.setItem('courtdraw_tactics_' + uid, JSON.stringify(existing));
+    window.__currentUser = { uid };
+    window.__updatePro(false, false, null, '', false, null, null, null);
+    return {
+      library: (state.savedTactics || []).map(t => t && t.name),
+      guestKey: localStorage.getItem('courtdraw_tactics_guest'),
+      stored: JSON.parse(localStorage.getItem('courtdraw_tactics_' + uid) || '[]').map(t => t.name),
+    };
+  }, { guestPlays, uid, existing });
+}
+
+test('guest plays: survive signing in', async (page) => {
+  await openAppPastWelcome(page);
+  const r = await signInWith(page, [
+    { name: 'Puckout short', courtId: 'hurling', objects: [], tokens: [] },
+    { name: 'Zone press', courtId: 'hurling', objects: [], tokens: [] },
+  ]);
+  assert(r.library.includes('Puckout short') && r.library.includes('Zone press'),
+    `work drawn before signing in was lost: ${JSON.stringify(r.library)}`);
+});
+
+test('guest plays: are written to the account, not just held in memory', async (page) => {
+  await openAppPastWelcome(page);
+  const r = await signInWith(page, [{ name: 'Kickout', courtId: 'gaelic_football', objects: [], tokens: [] }]);
+  assert(r.stored.includes('Kickout'),
+    'the play is in the library but not saved, so it dies on reload');
+});
+
+test('guest plays: the guest key is cleared, so a second sign-in cannot duplicate them', async (page) => {
+  await openAppPastWelcome(page);
+  const r = await signInWith(page, [{ name: 'Kickout', courtId: 'gaelic_football', objects: [], tokens: [] }]);
+  assertEq(r.guestKey, null, 'the guest copy was left behind and will be migrated again');
+});
+
+test('guest plays: a second account on the device does not inherit the first one', async (page) => {
+  await openAppPastWelcome(page);
+  await signInWith(page, [{ name: 'Mine', courtId: 'hurling', objects: [], tokens: [] }], 'uid-aaa');
+  const second = await signInWith(page, [], 'uid-bbb');
+  assert(!second.library.includes('Mine'),
+    `the next account picked up the first one's drafts: ${JSON.stringify(second.library)}`);
+});
+
+test('guest plays: existing account plays are kept, not replaced', async (page) => {
+  await openAppPastWelcome(page);
+  const r = await signInWith(page,
+    [{ name: 'From the guest board', courtId: 'hurling', objects: [], tokens: [] }],
+    'uid-with-history',
+    [{ name: 'Already saved', courtId: 'hurling', objects: [], tokens: [] }]);
+  assert(r.library.includes('Already saved'), 'the account lost plays it already had');
+  assert(r.library.includes('From the guest board'), 'the guest play did not arrive');
+});
+
+test('guest plays: a name clash keeps both copies', async (page) => {
+  // Same name almost certainly means two different plays. Dropping either
+  // would be losing work, which is the fault being fixed.
+  await openAppPastWelcome(page);
+  const r = await signInWith(page,
+    [{ name: 'Zone defence', courtId: 'hurling', objects: [], tokens: [] }],
+    'uid-clash',
+    [{ name: 'Zone defence', courtId: 'hurling', objects: [], tokens: [] }]);
+  assertEq(r.library.length, 2, `expected both copies, got ${JSON.stringify(r.library)}`);
+  assert(r.library.includes('Zone defence'), 'the account copy was renamed or lost');
+  assert(r.library.some(n => /^Zone defence \(\d\)$/.test(n)),
+    `the guest copy should be kept under a numbered name: ${JSON.stringify(r.library)}`);
+});
+
+test('guest plays: a corrupt guest key does not break signing in', async (page) => {
+  await openAppPastWelcome(page);
+  const r = await page.evaluate(() => {
+    localStorage.setItem('courtdraw_tactics_guest', '{not json');
+    window.__currentUser = { uid: 'uid-corrupt' };
+    window.__updatePro(false, false, null, '', false, null, null, null);
+    return { library: state.savedTactics, guestKey: localStorage.getItem('courtdraw_tactics_guest') };
+  });
+  assert(Array.isArray(r.library), 'signing in threw on unreadable guest data');
+  assertEq(r.guestKey, null, 'unreadable guest data should be cleared, not kept forever');
+});
+
+test('guest plays: signing out does not migrate anything', async (page) => {
+  await openAppPastWelcome(page);
+  const r = await page.evaluate(() => {
+    localStorage.setItem('courtdraw_tactics_guest', JSON.stringify([{ name: 'Draft', objects: [], tokens: [] }]));
+    window.__currentUser = null;
+    window.__updatePro(false, false, null, '', false, null, null, null);
+    return localStorage.getItem('courtdraw_tactics_guest');
+  });
+  assert(r && r.includes('Draft'), 'a signed-out visitor had their own drafts cleared');
+});
+
 // ── Tests: checkout ──────────────────────────────────────────────────────
 
 /**
