@@ -660,6 +660,23 @@ body.portrait-mode #trial-banner {
   flex-shrink: 0;
 }
 .pw-cta-sub { font-size: 11.5px; color: rgba(255,255,255,0.55); margin-top: 5px; }
+/* Inline sign-in, shown inside the paywall instead of navigating away. */
+.pw-signin-head { text-align: center; margin: 4px 0 14px; }
+.pw-signin-title { font-size: 1.05rem; font-weight: 700; color: #f1f5f9; }
+.pw-signin-sub { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-top: 6px; }
+.pw-signin-alt { text-align: center; font-size: 12px; margin-top: 12px; color: var(--muted); }
+.pw-signin-alt a { color: #60a5fa; text-decoration: none; }
+.pw-signin-alt a:hover { text-decoration: underline; }
+.pw-signin-error {
+  margin-top: 10px; padding: 9px 12px; border-radius: 8px; font-size: 12.5px;
+  background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35); color: #fca5a5;
+}
+/* While signing in, the plan list steps aside. Direct children only: the
+   Google button is itself a .pw-cta-primary, nested inside #paywall-signin. */
+.modal-body.signin-mode > .pw-grid,
+.modal-body.signin-mode > .pw-club-note,
+.modal-body.signin-mode > .pw-cta-primary,
+.modal-body.signin-mode > .pw-sec-row { display: none; }
 
 .pw-sec-row {
   display: grid; grid-template-columns: 1fr 1fr;
@@ -2384,6 +2401,35 @@ a.comm-author:hover { color: #93c5fd; text-decoration: underline; }
           <div class="pw-sec-price">€99<small>/yr</small></div>
           <div class="pw-sec-badge club-badge">€10/coach/yr</div>
         </button>
+      </div>
+
+      <!-- Shown in place of the plan buttons when someone picks a plan while
+           signed out. Clicking a plan used to send them to /login.html, and
+           GA4 says 83 people clicked Upgrade while only 7 reached a checkout:
+           the ones who were signed out lost their board to a page navigation
+           and mostly never came back. Signing in here keeps them on their
+           drawing, and __updatePro's pending-checkout branch carries them
+           into Stripe the moment auth resolves, with no reload. -->
+      <div id="paywall-signin" hidden>
+        <div class="pw-signin-head">
+          <div class="pw-signin-title">One step first</div>
+          <div class="pw-signin-sub" id="paywall-signin-sub">
+            Your trial needs an account so the plays you draw stay yours.
+            Your board is still here — you won't lose it.
+          </div>
+        </div>
+        <button class="pw-cta-primary" id="paywall-google-btn" onclick="paywallGoogleSignIn()">
+          <div class="pw-cta-row">
+            <span class="pw-cta-text">Continue with Google →</span>
+          </div>
+          <div class="pw-cta-sub">Then straight to checkout</div>
+        </button>
+        <div class="pw-signin-alt">
+          <a href="#" id="paywall-signin-page">Use email instead</a>
+          <span aria-hidden="true"> · </span>
+          <a href="#" onclick="hidePaywallSignIn(); return false;">Back to plans</a>
+        </div>
+        <div class="pw-signin-error" id="paywall-signin-error" hidden></div>
       </div>
 
     </div>
@@ -6070,6 +6116,81 @@ function ga4ClientId() {
 
 let _checkoutInFlight = false;
 
+// ── Signing in without leaving the board ────────────────────────────────────
+// A signed-out visitor who picks a plan is someone who already decided to pay.
+// Sending them to /login.html cost the board they had just drawn, because the
+// app keeps a guest's plays under a guest key it never reads again once a uid
+// exists. These three functions keep that person on the page: the paywall
+// swaps its plan list for a sign-in step, and __updatePro's pending-checkout
+// branch takes over the instant auth resolves, with no reload.
+
+function showPaywallSignIn() {
+  const panel = document.getElementById('paywall-signin');
+  const body  = panel && panel.closest('.modal-body');
+  // No panel means an older cached page: fall back to what used to happen
+  // rather than leaving someone staring at a dead button.
+  if (!panel || !body) {
+    window.location.href = '/login.html?next=' + encodeURIComponent(location.pathname);
+    return;
+  }
+  const err = document.getElementById('paywall-signin-error');
+  if (err) { err.hidden = true; err.textContent = ''; }
+  // startCheckout can be reached from CTAs outside the paywall, so make sure
+  // the modal this panel lives in is actually open.
+  openModal('modal-paywall');
+  body.classList.add('signin-mode');
+  panel.hidden = false;
+  const link = document.getElementById('paywall-signin-page');
+  if (link) {
+    // The pending plan is already in localStorage, so the full page resumes
+    // checkout exactly as before for anyone who wants email instead.
+    link.href = '/login.html?next=' + encodeURIComponent(location.pathname);
+  }
+}
+
+function hidePaywallSignIn() {
+  const panel = document.getElementById('paywall-signin');
+  if (!panel) return;
+  const body = panel.closest('.modal-body');
+  if (body) body.classList.remove('signin-mode');
+  panel.hidden = true;
+  // They backed out of signing in, so the stored intent is stale. Leaving it
+  // would fire a checkout at them the next time they happen to sign in.
+  localStorage.removeItem('courtdraw_pending_checkout');
+  localStorage.removeItem('courtdraw_pending_checkout_source');
+}
+
+async function paywallGoogleSignIn() {
+  const btn = document.getElementById('paywall-google-btn');
+  const err = document.getElementById('paywall-signin-error');
+  if (btn) btn.disabled = true;
+  if (err) { err.hidden = true; err.textContent = ''; }
+
+  const outcome = typeof window.__signInWithGoogleInline === 'function'
+    ? await window.__signInWithGoogleInline()
+    : 'failed';
+
+  if (outcome === 'ok') {
+    // Deliberately nothing further: onAuthStateChanged → __updatePro → the
+    // pending-checkout branch starts Stripe. Racing it from here would be the
+    // double-session bug that startCheckout already guards against.
+    if (btn) btn.textContent = 'Opening checkout…';
+    return;
+  }
+  if (btn) btn.disabled = false;
+  if (outcome === 'dismissed') return;   // they closed the window themselves
+
+  // Popup blocked or sign-in broken — the old full-page route still works,
+  // and the pending plan in localStorage means it resumes checkout there.
+  if (err) {
+    err.textContent = 'That window did not open. Taking you to the sign-in page…';
+    err.hidden = false;
+  }
+  setTimeout(() => {
+    window.location.href = '/login.html?next=' + encodeURIComponent(location.pathname);
+  }, 1200);
+}
+
 async function startCheckout(planKey, sourceOverride) {
   // GA4 — top-of-funnel signal: fires the moment any upgrade/trial CTA is
   // clicked, regardless of auth state. This function is also re-entered by
@@ -6085,12 +6206,17 @@ async function startCheckout(planKey, sourceOverride) {
 
   const user = window.__currentUser;
   if (!user) {
-    // Save the intended plan so we can auto-trigger checkout after login
+    // Save the intended plan so checkout can be resumed the moment auth
+    // resolves. __updatePro reads these; they outlive a page load, which the
+    // fallback path below still needs.
     localStorage.setItem('courtdraw_pending_checkout', planKey);
     localStorage.setItem('courtdraw_pending_checkout_source', source);
-    closeModal('modal-paywall');
-    showToast('Sign in to complete your upgrade — redirecting…');
-    setTimeout(() => { window.location.href = '/login.html?next=' + encodeURIComponent(location.pathname); }, 1400);
+    // This used to navigate to /login.html. GA4 recorded 83 people clicking
+    // Upgrade against 7 reaching a checkout, and the ones who were signed out
+    // lost their drawing to the page change — the board is held under a guest
+    // key that the signed-in app never reads back. Sign-in happens here now,
+    // over the paywall, with the board untouched behind it.
+    showPaywallSignIn();
     return;
   }
 
@@ -8985,8 +9111,30 @@ document.addEventListener('DOMContentLoaded', init);
 </script>
 <script type="module">
   import { auth, db } from '/src/firebase.js';
-  import { onAuthStateChanged, signOut } from 'firebase/auth';
+  import { onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
   import { doc, collection, getDocs, getDoc, setDoc, deleteDoc, arrayUnion } from 'firebase/firestore';
+
+  // Sign in from inside the paywall, so someone who came to buy never leaves
+  // the board they drew. Resolves to a reason string the caller can act on
+  // rather than throwing: 'ok' when signed in, 'dismissed' when they closed
+  // the Google window themselves (not an error, say nothing), and 'failed'
+  // for everything else, which is the caller's cue to fall back to the full
+  // sign-in page — popups are blocked often enough, on iOS Safari and inside
+  // the Facebook and Instagram browsers especially, that the old redirect has
+  // to stay reachable.
+  window.__signInWithGoogleInline = async () => {
+    try {
+      await signInWithPopup(auth, new GoogleAuthProvider());
+      return 'ok';
+    } catch (err) {
+      const code = err && err.code;
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        return 'dismissed';
+      }
+      console.warn('Inline Google sign-in failed:', code || err);
+      return 'failed';
+    }
+  };
 
   // Expose activation event tracker. Writes to Firestore only on the first occurrence of each
   // event — subsequent calls for the same key are no-ops (setDoc merge won't overwrite).
