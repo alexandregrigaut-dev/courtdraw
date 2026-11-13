@@ -3509,10 +3509,18 @@ window.__updatePro = function(isPro, isClub, clubId, clubName, isClubOwner, club
   updateAccountUI(window.__currentUser, isPro, isClub, isClubOwner);
   // Reload tactics from this user's scoped key now that we have their UID.
   // (On cold load the key was 'guest'; now we switch to 'courtdraw_tactics_<uid>'.)
+  // Must run before the read below: it writes the guest plays into the key
+  // that read is about to load from.
+  const _carried = typeof migrateGuestTactics === 'function' ? migrateGuestTactics() : 0;
   try {
     const t = localStorage.getItem(tacticsKey());
     state.savedTactics = t ? JSON.parse(t) : [];
   } catch { state.savedTactics = []; }
+  if (_carried > 0 && typeof showToast === 'function') {
+    showToast(_carried === 1
+      ? 'Your play from before signing in is in your library.'
+      : `Your ${_carried} plays from before signing in are in your library.`);
+  }
   loadSessionsFromStorage();
   // Firestore plays sync — fire-and-forget; merges remote plays and runs one-time migration.
   // Runs after localStorage is loaded so local plays are never lost even if Firestore is slow.
@@ -7926,9 +7934,76 @@ function showUpgradeToast(msg, ctaLabel, ctaFn, ms = 6000, onDismiss) {
 // ══════════════════════════════════════════════
 // Returns a per-user localStorage key for tactics so different accounts
 // on the same device never share saves.
+const GUEST_TACTICS_KEY = 'courtdraw_tactics_guest';
+
 function tacticsKey() {
   const uid = window.__currentUser && window.__currentUser.uid;
-  return uid ? 'courtdraw_tactics_' + uid : 'courtdraw_tactics_guest';
+  return uid ? 'courtdraw_tactics_' + uid : GUEST_TACTICS_KEY;
+}
+
+/**
+ * Carry anything drawn before signing in into the account that just appeared.
+ *
+ * A visitor's plays are stored under the guest key. The moment a uid exists
+ * tacticsKey() points somewhere else, and __updatePro reloads the library
+ * from there — so a coach who drew, saved, then made an account watched their
+ * work vanish, with the guest copy still sitting in localStorage unread. That
+ * was survivable while signing in meant leaving the page, because the loss
+ * happened out of sight. Signing in now happens over the paywall with the
+ * board in view, so the same bug would play out in front of them.
+ *
+ * Runs before the library is reloaded, so the merged list is what gets read.
+ * The guest key is cleared afterwards: signing in twice must not duplicate
+ * anything, and a second account on the same device must not inherit the
+ * first one's drafts.
+ */
+function migrateGuestTactics() {
+  const uid = window.__currentUser && window.__currentUser.uid;
+  if (!uid) return 0;
+
+  let guest = null;
+  try {
+    const raw = localStorage.getItem(GUEST_TACTICS_KEY);
+    guest = raw ? JSON.parse(raw) : null;
+  } catch { guest = null; }
+  if (!Array.isArray(guest) || guest.length === 0) {
+    localStorage.removeItem(GUEST_TACTICS_KEY);
+    return 0;
+  }
+
+  const key = 'courtdraw_tactics_' + uid;
+  let mine = [];
+  try {
+    const raw = localStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(parsed)) mine = parsed;
+  } catch { mine = []; }
+
+  // A name already in the account keeps its own play; the guest one is kept
+  // too, under a numbered name. Dropping either would be losing work, which
+  // is the whole fault being fixed here.
+  const taken = new Set(mine.map(t => t && t.name).filter(Boolean));
+  for (const play of guest) {
+    if (!play || typeof play !== 'object') continue;
+    let name = play.name || 'Untitled';
+    if (taken.has(name)) {
+      let n = 2;
+      while (taken.has(`${name} (${n})`)) n++;
+      name = `${name} (${n})`;
+    }
+    taken.add(name);
+    mine.push({ ...play, name });
+  }
+
+  try {
+    localStorage.setItem(key, JSON.stringify(mine));
+    localStorage.removeItem(GUEST_TACTICS_KEY);
+  } catch {
+    // Storage full or blocked. Leave the guest key alone rather than clearing
+    // it after a failed write, which would destroy the only copy.
+    return 0;
+  }
+  return guest.length;
 }
 function saveToStorage() {
   localStorage.setItem(tacticsKey(), JSON.stringify(state.savedTactics));
