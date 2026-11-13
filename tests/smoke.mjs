@@ -295,6 +295,132 @@ test('paywall: an unlabelled trigger is reported as unspecified, not dropped', a
     'a missing source should be visible as a gap, not absent');
 });
 
+// ── Tests: signing in without leaving the board ──────────────────────────
+//
+// GA4 for 1 Oct - 13 Nov: 83 people clicked Upgrade, 7 reached a checkout.
+// The signed-out ones were sent to /login.html, which cost them the board
+// they had just drawn — a guest's plays live under a guest key the signed-in
+// app never reads back. These pin the replacement in place: the person stays
+// on the page, and the navigation survives only as a fallback.
+
+test('upgrade: a signed-out visitor is no longer navigated off their board', async (page) => {
+  await openAppPastWelcome(page);
+  await drawStroke(page);
+  const before = page.url();
+  await page.evaluate(() => { state.isPro = false; state.isClub = false; window.__currentUser = null; });
+  await page.evaluate(() => startCheckout('proMonthly', 'save_cap'));
+  await page.waitForTimeout(1800);   // longer than the old 1400ms redirect timer
+  assertEq(page.url(), before, 'the old /login.html redirect is still firing');
+  assert(await page.locator('#paywall-signin').isVisible(),
+    'the inline sign-in step did not appear');
+});
+
+test('upgrade: the drawing is still there behind the sign-in step', async (page) => {
+  // The whole point. Losing the board was the reason not to come back.
+  await openAppPastWelcome(page);
+  await drawStroke(page);
+  const drawn = await page.evaluate(() => state.objects.length);
+  assert(drawn > 0, 'nothing was drawn, so this test proves nothing');
+  await page.evaluate(() => { state.isPro = false; state.isClub = false; window.__currentUser = null; });
+  await page.evaluate(() => startCheckout('proYearly'));
+  await page.waitForTimeout(600);
+  assertEq(await page.evaluate(() => state.objects.length), drawn,
+    'the board was cleared while asking them to sign in');
+});
+
+test('upgrade: the chosen plan is remembered so checkout can resume', async (page) => {
+  await openAppPastWelcome(page);
+  await page.evaluate(() => { state.isPro = false; state.isClub = false; window.__currentUser = null; });
+  await page.evaluate(() => startCheckout('club', 'locked_court'));
+  await page.waitForTimeout(400);
+  assertEq(await page.evaluate(() => localStorage.getItem('courtdraw_pending_checkout')), 'club',
+    'the plan was not stored, so sign-in would land on no checkout');
+  assertEq(await page.evaluate(() => localStorage.getItem('courtdraw_pending_checkout_source')),
+    'locked_court', 'the wall that sent them is no longer attributable');
+});
+
+test('upgrade: the plan list steps aside, but the Google button stays', async (page) => {
+  // The sign-in button is itself a .pw-cta-primary nested in the panel, so a
+  // careless selector hiding the plan CTA would hide the way forward too.
+  await openAppPastWelcome(page);
+  await page.evaluate(() => { state.isPro = false; state.isClub = false; window.__currentUser = null; });
+  await page.evaluate(() => startCheckout('proMonthly'));
+  await page.waitForTimeout(500);
+  assert(await page.locator('#paywall-google-btn').isVisible(),
+    'the sign-in button was hidden along with the plan buttons');
+  assert(!(await page.locator('#modal-paywall .pw-sec-row').isVisible()),
+    'the plan buttons are still showing underneath the sign-in step');
+});
+
+test('upgrade: backing out clears the stored plan', async (page) => {
+  // Otherwise the next sign-in, for any reason, throws them into a checkout
+  // they abandoned days earlier.
+  await openAppPastWelcome(page);
+  await page.evaluate(() => { state.isPro = false; state.isClub = false; window.__currentUser = null; });
+  await page.evaluate(() => startCheckout('proMonthly'));
+  await page.waitForTimeout(400);
+  await page.evaluate(() => hidePaywallSignIn());
+  await page.waitForTimeout(200);
+  assertEq(await page.evaluate(() => localStorage.getItem('courtdraw_pending_checkout')), null,
+    'a stale checkout intent was left behind');
+  assert(!(await page.locator('#paywall-signin').isVisible()), 'the sign-in step stayed open');
+});
+
+test('upgrade: a blocked popup still falls back to the sign-in page', async (page) => {
+  // Popups are blocked often enough on iOS Safari and in the Facebook and
+  // Instagram browsers that the fallback has to work.
+  //
+  // These pages are served over file:// here, where an absolute /login.html
+  // cannot resolve, so the browser lands on chrome-error. That is the test
+  // rig, not the product: what matters is that it tells the person what is
+  // happening and then leaves the page. The destination itself is asserted
+  // from the code's own target below.
+  await openAppPastWelcome(page);
+  await page.evaluate(() => { state.isPro = false; state.isClub = false; window.__currentUser = null; });
+  await page.evaluate(() => { window.__signInWithGoogleInline = async () => 'failed'; });
+  await page.evaluate(() => startCheckout('proMonthly'));
+  await page.waitForTimeout(400);
+  const before = page.url();
+
+  await page.evaluate(() => paywallGoogleSignIn());
+  await page.waitForTimeout(500);          // inside the 1200ms grace period
+  const msg = await page.locator('#paywall-signin-error').textContent();
+  assert(/sign-in page/i.test(msg || ''),
+    `the person should be told what is happening; saw: ${JSON.stringify(msg)}`);
+
+  await page.waitForTimeout(1800);         // past the redirect
+  assert(page.url() !== before,
+    'a failed popup left them stranded on the paywall with no way forward');
+});
+
+test('upgrade: the fallback aims at the real sign-in page', async (page) => {
+  // Pins the destination, which the test above cannot observe over file://.
+  const fs = await import('node:fs');
+  const src = fs.readFileSync(path.join(ROOT, 'courtdraw-app.html'), 'utf8');
+  const fn = src.slice(src.indexOf('async function paywallGoogleSignIn'));
+  const body = fn.slice(0, fn.indexOf('\n}'));
+  assertIncludes(body, "/login.html?next=",
+    'the popup fallback no longer points at the sign-in page');
+  assertIncludes(body, 'encodeURIComponent(location.pathname)',
+    'the fallback must carry where to return to');
+});
+
+test('upgrade: closing the Google window is not treated as a failure', async (page) => {
+  // Dismissing the popup is a decision, not an error. Bouncing them to a
+  // login page for it would be worse than doing nothing.
+  await openAppPastWelcome(page);
+  await page.evaluate(() => { state.isPro = false; state.isClub = false; window.__currentUser = null; });
+  await page.evaluate(() => { window.__signInWithGoogleInline = async () => 'dismissed'; });
+  await page.evaluate(() => startCheckout('proMonthly'));
+  await page.waitForTimeout(400);
+  const before = page.url();
+  await page.evaluate(() => paywallGoogleSignIn());
+  await page.waitForTimeout(2200);
+  assertEq(page.url(), before, 'a dismissed popup navigated them away anyway');
+  assert(await page.locator('#paywall-google-btn').isEnabled(),
+    'the button stayed disabled, so they cannot try again');
+});
+
 // ── Tests: checkout ──────────────────────────────────────────────────────
 
 /**
