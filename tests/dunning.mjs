@@ -115,22 +115,78 @@ function subDeleted({ reason = 'cancellation_requested', withDetails = true } = 
 const fire = (evt) => handler({ headers: { 'stripe-signature': 'sig' }, body: JSON.stringify(evt) });
 const templatesSent = () => sentEmails.map(m => m.template);
 
+// Walk a complete retry schedule the way Stripe does: one event per attempt,
+// each naming the next one, and the last naming none. Tests state the
+// dashboard setting (8 attempts) instead of hand-picking attempt numbers.
+async function runSchedule(attempts, { id = 'in_1' } = {}) {
+  for (let n = 1; n <= attempts; n++) {
+    await fire(failedInvoice({
+      id,
+      attempt_count: n,
+      next_payment_attempt: n < attempts ? SOON + n * 7 * DAY : null,
+    }));
+  }
+}
+
 // ── Tests: escalation ─────────────────────────────────────────────────────────
 
 test('the retries escalate instead of repeating one mail', async () => {
-  // The defect this exists to prevent: attempts 2, 3 and 4 all fired the same
-  // template, so the last warning before cancellation read like the first.
+  // The defect this exists to prevent: every attempt fired the same template,
+  // so the last warning before cancellation read like the first.
   resetWorld();
-  await fire(failedInvoice({ attempt_count: 2, next_payment_attempt: SOON }));
-  await fire(failedInvoice({ attempt_count: 3, next_payment_attempt: SOON + 2 * DAY }));
-  await fire(failedInvoice({ attempt_count: 4, next_payment_attempt: null }));
+  await runSchedule(8);
 
-  assert(sentEmails.length === 3, `expected 3 mails, got ${sentEmails.length}`);
-  assert(templatesSent()[2] === 'paymentFailedFinal',
-    `the last attempt must send the final notice, got ${templatesSent()[2]}`);
-  const dates = sentEmails.slice(0, 2).map(m => m.templateData.retryDate);
-  assert(dates[0] && dates[1] && dates[0] !== dates[1],
-    `the two notices must name different retry dates, got ${JSON.stringify(dates)}`);
+  assert(templatesSent()[templatesSent().length - 1] === 'paymentFailedFinal',
+    `the last attempt must send the final notice, got ${templatesSent()}`);
+  const notices = sentEmails.filter(m => m.template === 'paymentFailed');
+  const dates = notices.map(m => m.templateData.retryDate);
+  assert(new Set(dates).size === dates.length,
+    `each notice must name its own retry date, got ${JSON.stringify(dates)}`);
+});
+
+test('the 60-day schedule sends three mails, not one per attempt', async () => {
+  // 8 attempts over 60 days. Mailing from the second attempt onward meant
+  // seven near-identical notices in two months; two notices and the final
+  // warning carry the same information across the same window.
+  resetWorld();
+  await runSchedule(8);
+  assert(JSON.stringify(templatesSent())
+    === JSON.stringify(['paymentFailed', 'paymentFailed', 'paymentFailedFinal']),
+    `expected two notices then the final, got ${JSON.stringify(templatesSent())}`);
+});
+
+test('the quiet middle attempts say nothing at all', async () => {
+  // Each of these is a real retry that must not produce a mail of its own.
+  for (const n of [3, 4, 6, 7]) {
+    resetWorld();
+    await fire(failedInvoice({ attempt_count: n, next_payment_attempt: SOON }));
+    assert(sentEmails.length === 0,
+      `attempt ${n} must stay quiet, got ${JSON.stringify(templatesSent())}`);
+  }
+});
+
+test('the final warning is never skipped, whichever attempt it lands on', async () => {
+  // The exemption that matters. The final warning is keyed on Stripe having
+  // given up, so it must survive landing on an attempt number that is not in
+  // the notice set — otherwise shortening the schedule in the dashboard
+  // silences the one mail that says access is about to end.
+  for (const n of [2, 3, 4, 6, 7, 8]) {
+    resetWorld();
+    await fire(failedInvoice({ attempt_count: n, next_payment_attempt: null }));
+    assert(templatesSent()[0] === 'paymentFailedFinal',
+      `a final attempt at ${n} must still warn, got ${JSON.stringify(templatesSent())}`);
+  }
+});
+
+test('a schedule shortened in the dashboard still warns twice', async () => {
+  // Graceful degradation: back at 4 attempts, attempt 5 never happens, so the
+  // sequence must fall back to one notice plus the final rather than to the
+  // final alone.
+  resetWorld();
+  await runSchedule(4);
+  assert(JSON.stringify(templatesSent())
+    === JSON.stringify(['paymentFailed', 'paymentFailedFinal']),
+    `expected a notice then the final, got ${JSON.stringify(templatesSent())}`);
 });
 
 test('the final notice follows Stripe, not a hardcoded attempt number', async () => {
@@ -212,8 +268,8 @@ test('templateData key order matches both template signatures', async () => {
 
 test('a re-delivered event does not mail the customer twice', async () => {
   resetWorld();
-  await fire(failedInvoice({ attempt_count: 3 }));
-  await fire(failedInvoice({ attempt_count: 3 }));
+  await fire(failedInvoice({ attempt_count: 2 }));
+  await fire(failedInvoice({ attempt_count: 2 }));
   assert(sentEmails.length === 1, `re-delivery must not resend, got ${sentEmails.length}`);
 });
 

@@ -20,6 +20,21 @@ const PLAN_BY_PRICE = {
   [process.env.STRIPE_PRICE_ID_CLUB]:        'club'
 };
 
+// Which retry attempts get a "payment failed" notice.
+//
+// Stripe is configured to retry a failed card 8 times over 60 days. Mailing on
+// every attempt from the second onward meant seven near-identical notices in
+// two months, which is how a coach with a recoverable dead card stops reading
+// them. Two notices plus the final warning carry the same information across
+// the same window.
+//
+// The final warning is deliberately not listed here: it is keyed on Stripe
+// having stopped retrying, not on a number in this file, so shortening the
+// schedule in the dashboard cannot silence it. If the schedule is ever cut
+// below 5 attempts, the attempt that falls outside this set simply never
+// happens and the sequence degrades to one notice plus the final.
+const DUNNING_NOTICE_ATTEMPTS = new Set([2, 5]);
+
 // Generate a 6-char alphanumeric club join code (no ambiguous chars)
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function generateClubCode() {
@@ -391,10 +406,11 @@ exports.handler = async (event) => {
   // invoice has billing_reason 'subscription_cycle' (not 'subscription_create'),
   // so it passes the isFirstInvoice check and follows the retry/alert path.
   //
-  // Smart Retries makes several attempts over about five days. Every one of
-  // them used to fire the identical mail, so the final notice — the one before
-  // the subscription is cancelled, when someone is most willing to go and find
-  // their card — read exactly like the first. It now escalates.
+  // Smart Retries makes up to 8 attempts over 60 days. Every one of them used
+  // to fire the identical mail, so the final notice — the one before the
+  // subscription is cancelled, when someone is most willing to go and find
+  // their card — read exactly like the first. It now escalates, and only the
+  // attempts in DUNNING_NOTICE_ATTEMPTS are mailed at all.
   if (stripeEvent.type === 'invoice.payment_failed') {
     const invoice = stripeEvent.data.object;
     const isFirstInvoice = invoice.billing_reason === 'subscription_create';
@@ -428,7 +444,11 @@ exports.handler = async (event) => {
       const sentKey     = `${invoice.id || 'unknown'}:${stage}:${attemptCount}`;
       const alreadySent = userData.dunningSentFor === sentKey;
 
-      if (email && !alreadySent) {
+      // A middle attempt nobody needs to hear about. The final warning is
+      // exempt: stage is already keyed on Stripe having given up.
+      const worthSending = stage === 'final' || DUNNING_NOTICE_ATTEMPTS.has(attemptCount);
+
+      if (worthSending && email && !alreadySent) {
         const planName   = planLabel(userData.plan);
         const amountText = formatMoney(invoice.amount_due, invoice.currency);
 
